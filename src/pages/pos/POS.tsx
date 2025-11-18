@@ -44,6 +44,9 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { printReceipt, Receipt, openCashDrawer } from "@/utils/thermalPrinter";
 import { useTitle } from "@/context/TitleContext";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import { MobileInvoice } from "@/components/MobileInvoice";
+import { printElement } from "@/utils/print";
 
 interface CartItemType {
   id: string;
@@ -52,6 +55,7 @@ interface CartItemType {
   quantity: number;
   stock: number;
   lowStock: boolean;
+  type?: 'mobile' | 'accessory';
 }
 
 interface Customer {
@@ -84,7 +88,10 @@ export default function POS() {
   ]);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
+  const [currentReceipt, setCurrentReceipt] = useState<Receipt | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<{ amountPaid: number; change: number } | null>(null);
   const [heldOrders, setHeldOrders] = useState<
     { cart: CartItemType[]; customer: Customer | null }[]
   >([]);
@@ -135,6 +142,7 @@ export default function POS() {
           quantity: 1,
           stock: product.stock,
           lowStock: product.stock < product.lowStockThreshold,
+          type: product.type,
         },
       ]);
     }
@@ -233,15 +241,81 @@ export default function POS() {
       cashierName: "Current User",
     };
 
+    setCurrentReceipt(receipt);
+
+    if (paymentMethod === "cash") {
+      setShowPaymentDialog(true);
+    } else {
+      await processPayment(receipt);
+    }
+  };
+
+  const handlePaymentConfirm = async (amountPaid: number, change: number) => {
+    if (!currentReceipt) return;
+
+    await processPayment(currentReceipt, amountPaid, change);
+  };
+
+  const processPayment = async (receipt: Receipt, amountPaid?: number, change?: number) => {
     try {
-      await printReceipt(receipt, paymentMethod === "cash");
+      const cartSnapshot = [...cart];
+      const hasMobileProduct = cartSnapshot.some((item) => item.type === 'mobile');
+      const hasAccessoryProduct = cartSnapshot.some((item) => item.type === 'accessory' || !item.type);
+
+      setPaymentDetails(amountPaid && change !== undefined ? { amountPaid, change } : null);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (hasMobileProduct) {
+        await printElement('mobile-invoice', { 
+          title: `Invoice ${receipt.id}`,
+          onBeforePrint: () => {
+            const invoiceEl = document.getElementById('mobile-invoice');
+            if (invoiceEl) {
+              invoiceEl.classList.remove('hidden');
+            }
+          },
+          onAfterPrint: () => {
+            const invoiceEl = document.getElementById('mobile-invoice');
+            if (invoiceEl) {
+              invoiceEl.classList.add('hidden');
+            }
+          }
+        });
+      }
+
+      if (hasAccessoryProduct && !hasMobileProduct) {
+        await printReceipt(receipt, false);
+      }
+
+      if (paymentMethod === "cash") {
+        try {
+          const drawerCommand = openCashDrawer();
+          await fetch("http://localhost:9100/print", {
+            method: "POST",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: drawerCommand,
+          });
+        } catch (error) {
+          console.log("Cash drawer not available");
+        }
+      }
+
       toast({
         title: "Sale Completed",
-        description: `Total: $${total.toFixed(2)}`,
+        description: change !== undefined 
+          ? `Total: $${total.toFixed(2)} | Change: $${change.toFixed(2)}`
+          : `Total: $${total.toFixed(2)}`,
       });
+      
       setCart([]);
       setDiscount(0);
       setSelectedCustomer(null);
+      
+      setTimeout(() => {
+        setCurrentReceipt(null);
+        setPaymentDetails(null);
+      }, 500);
     } catch (error) {
       toast({
         title: "Print Error",
@@ -719,6 +793,21 @@ export default function POS() {
         onOpenChange={setShowScannerDialog}
         onScanSuccess={handleBarcodeScanned}
       />
+
+      <PaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        total={total}
+        onConfirmPayment={handlePaymentConfirm}
+      />
+
+      {currentReceipt && (
+        <MobileInvoice
+          receipt={currentReceipt}
+          amountPaid={paymentDetails?.amountPaid}
+          change={paymentDetails?.change}
+        />
+      )}
     </div>
   );
 }
