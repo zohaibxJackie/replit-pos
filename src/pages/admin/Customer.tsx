@@ -109,17 +109,28 @@ export default function Customer() {
   const handleCustomerAdded = (customerData: CustomerFormData) => {
     if (editingClient) {
       setClients((prev) =>
-        prev.map((c) => (c.id === editingClient.id ? { ...c, ...customerData } : c))
+        prev.map((c) => (c.id === editingClient.id ? { 
+          ...c, 
+          name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone,
+          address: customerData.address,
+          idNumber: customerData.documentNumber || c.idNumber,
+        } : c))
       );
     } else {
       const newClient = {
-        ...customerData,
         id: clients.length + 1,
-        unpaidBalance: 0,
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        idNumber: customerData.documentNumber || "",
+        address: customerData.address,
         status: "Active",
         joiningDate: new Date().toISOString().split("T")[0],
-        lastPurchase: "-",
+        unpaidBalance: 0,
         paymentMethod: "Cash",
+        lastPurchase: "-",
       };
       setClients([...clients, newClient]);
     }
@@ -130,16 +141,16 @@ export default function Customer() {
     {
       key: "index",
       label: "#",
-      filterType: "none",
+      filterType: "none" as const,
       render: (_: any, __: any, index: number) => (page - 1) * limit + index + 1,
     },
-    { key: "name", label: t("admin.clients.name"), filterType: "text" },
-    { key: "idNumber", label: t("admin.clients.id_number"), filterType: "text" },
-    { key: "phone", label: t("admin.clients.phone"), filterType: "text" },
+    { key: "name", label: t("admin.clients.name"), filterType: "text" as const },
+    { key: "idNumber", label: t("admin.clients.id_number"), filterType: "text" as const },
+    { key: "phone", label: t("admin.clients.phone"), filterType: "text" as const },
     {
       key: "unpaidBalance",
       label: t("admin.clients.unpaid_balance"),
-      filterType: "select",
+      filterType: "select" as const,
       filterOptions: ["Paid", "Unpaid"],
       render: (value: number) =>
         value > 0 ? (

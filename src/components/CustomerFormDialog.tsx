@@ -240,7 +240,7 @@ export function CustomerFormDialog({
             <Label>Nationality</Label>
             <ReactSelect
               options={options}
-              value={options.find((c) => c.label === formData.nationality) || null}
+              value={options.find((c: any) => c.label === formData.nationality) || null}
               onChange={(selected: any) => {
                 setFormData((prev) => ({ ...prev, nationality: selected?.label || "" }));
                 setErrors((prev) => ({ ...prev, nationality: "" }));
