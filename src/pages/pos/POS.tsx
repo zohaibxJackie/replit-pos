@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import ProductSearch from "@/components/ProductSearch";
 import CartItem from "@/components/CartItem";
-import { QuickCustomerDialog } from "@/components/QuickCustomerDialog";
+import { CustomerFormDialog, CustomerFormData } from "@/components/CustomerFormDialog";
 import { QuickProductsDialog } from "@/components/QuickProductsDialog";
 import { BarcodeScannerDialog } from "@/components/BarcodeScannerDialog";
 import { useQuickProducts } from "@/hooks/useQuickProducts";
@@ -414,7 +414,12 @@ export default function POS() {
     }
   };
 
-  const handleCustomerAdded = (customer: Customer) => {
+  const handleCustomerAdded = (customerData: CustomerFormData) => {
+    const customer: Customer = {
+      id: customerData.id?.toString() || `temp_${Date.now()}`,
+      name: customerData.name,
+      phone: customerData.phone,
+    };
     setCustomers([...customers, customer]);
     setSelectedCustomer(customer);
   };
@@ -782,7 +787,7 @@ export default function POS() {
         </Sheet>
       </div>
 
-      <QuickCustomerDialog
+      <CustomerFormDialog
         open={showCustomerDialog}
         onOpenChange={setShowCustomerDialog}
         onCustomerAdded={handleCustomerAdded}
