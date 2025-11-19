@@ -5,31 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Plus, Eye, Printer, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import FormPopupModal from "@/components/ui/FormPopupModal";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { printElement } from "@/utils/print";
 import { useTranslation } from "react-i18next";
 import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 import { useTitle } from "@/context/TitleContext";
-import {
-  Select as ShadSelect,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import ReactSelect from "react-select";
-import countryList from "react-select-country-list";
+import { CustomerFormDialog, CustomerFormData } from "@/components/CustomerFormDialog";
 
 export default function Customer() {
   useAuth(["admin", "sales_person"]);
   const { toast } = useToast();
   const { t } = useTranslation();
   const { setTitle } = useTitle();
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const options = countryList().getData();
 
   useEffect(() => {
     setTitle(t("admin.clients.title"));
@@ -41,20 +28,7 @@ export default function Customer() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [viewingClient, setViewingClient] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<any | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    documentType: "",
-    documentNumber: "",
-    dob: "",
-    nationality: "",
-    address: "",
-    postelCode: "",
-    city: "",
-    province: "",
-    phone: "",
-    email: "",
-  });
+  const [editingClient, setEditingClient] = useState<CustomerFormData | null>(null);
 
   const [clients, setClients] = useState(
     Array.from({ length: 100 }, (_, i) => ({
@@ -96,37 +70,7 @@ export default function Customer() {
 
   // Open Add/Edit Modal
   const handleOpenModal = (client?: any) => {
-    if (client) {
-      setEditingClient(client);
-      setFormData({
-        name: client.name,
-        email: client.email,
-        phone: client.phone,
-        documentType: client.documentType || "",
-        documentNumber: client.documentNumber || "",
-        dob: client.dob || "",
-        nationality: client.nationality || "",
-        address: client.address,
-        postelCode: client.postelCode || "",
-        city: client.city || "",
-        province: client.province || "",
-      });
-    } else {
-      setEditingClient(null);
-      setFormData({
-        name: "",
-        documentType: "",
-        documentNumber: "",
-        dob: "",
-        nationality: "",
-        address: "",
-        postelCode: "",
-        city: "",
-        province: "",
-        phone: "",
-        email: "",
-      });
-    }
+    setEditingClient(client || null);
     setIsModalOpen(true);
   };
 
@@ -161,55 +105,35 @@ export default function Customer() {
     });
   };
 
-  // 🧠 Handle form input changes
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   // 💾 Save client (Add or Edit)
-  const handleSubmitClient = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const newErrors: Record<string, string> = {};
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value === null || value === undefined || value === "") {
-        newErrors[key] = "This field is required";
-      }
-    });
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast({ title: "Please fill all required fields", variant: "destructive" });
-      return;
-    }
-
+  const handleCustomerAdded = (customerData: CustomerFormData) => {
     if (editingClient) {
       setClients((prev) =>
-        prev.map((c) => (c.id === editingClient.id ? { ...c, ...formData } : c))
+        prev.map((c) => (c.id === editingClient.id ? { 
+          ...c, 
+          name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone,
+          address: customerData.address,
+          idNumber: customerData.documentNumber || c.idNumber,
+        } : c))
       );
-      toast({
-        title: "Client Updated",
-        description: `${formData.name} has been updated.`,
-      });
     } else {
       const newClient = {
         id: clients.length + 1,
-        ...formData,
-        unpaidBalance: 0,
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        idNumber: customerData.documentNumber || "",
+        address: customerData.address,
         status: "Active",
         joiningDate: new Date().toISOString().split("T")[0],
+        unpaidBalance: 0,
+        paymentMethod: "Cash",
         lastPurchase: "-",
       };
       setClients([...clients, newClient]);
-      toast({
-        title: "Client Added",
-        description: `${formData.name} has been added.`,
-      });
     }
-
-    setIsModalOpen(false);
-    setErrors({});
   };
 
   // Table columns
@@ -217,16 +141,16 @@ export default function Customer() {
     {
       key: "index",
       label: "#",
-      filterType: "none",
+      filterType: "none" as const,
       render: (_: any, __: any, index: number) => (page - 1) * limit + index + 1,
     },
-    { key: "name", label: t("admin.clients.name"), filterType: "text" },
-    { key: "idNumber", label: t("admin.clients.id_number"), filterType: "text" },
-    { key: "phone", label: t("admin.clients.phone"), filterType: "text" },
+    { key: "name", label: t("admin.clients.name"), filterType: "text" as const },
+    { key: "idNumber", label: t("admin.clients.id_number"), filterType: "text" as const },
+    { key: "phone", label: t("admin.clients.phone"), filterType: "text" as const },
     {
       key: "unpaidBalance",
       label: t("admin.clients.unpaid_balance"),
-      filterType: "select",
+      filterType: "select" as const,
       filterOptions: ["Paid", "Unpaid"],
       render: (value: number) =>
         value > 0 ? (
@@ -307,137 +231,12 @@ export default function Customer() {
       />
 
       {/* ✅ Add/Edit Modal */}
-      <FormPopupModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h2 className="text-2xl font-semibold mb-4">
-          {editingClient ? "Edit Client" : "Add New Client"}
-        </h2>
-
-        <form onSubmit={handleSubmitClient} className="space-y-4">
-          {/* Name field */}
-          <div>
-            <Label>Name</Label>
-            <Input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={(e) => {
-                handleFormChange(e);
-                setErrors((prev) => ({ ...prev, name: "" }));
-              }}
-              required
-            />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-            )}
-          </div>
-
-          {/* Document Type Dropdown */}
-          <div>
-            <Label>Document Type</Label>
-            <ShadSelect
-              value={formData.documentType}
-              onValueChange={(value) => {
-                setFormData((prev) => ({ ...prev, documentType: value }));
-                setErrors((prev) => ({ ...prev, documentType: "" }));
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nid">National ID</SelectItem>
-                <SelectItem value="nie">Foreigner ID (NIE)</SelectItem>
-                <SelectItem value="dni">Citizen ID (DNI)</SelectItem>
-                <SelectItem value="passport">Passport</SelectItem>
-              </SelectContent>
-            </ShadSelect>
-            {errors.documentType && (
-              <p className="text-red-500 text-sm mt-1">{errors.documentType}</p>
-            )}
-          </div>
-
-          {/* Rest of the fields */}
-          {[
-            { label: "Document Number", name: "documentNumber", type: "text" },
-            { label: "Date of Birth", name: "dob", type: "date" },
-          ].map((field) => (
-            <div key={field.name}>
-              <Label>{field.label}</Label>
-              <Input
-                type={field.type}
-                name={field.name}
-                value={formData[field.name as keyof typeof formData]}
-                onChange={(e) => {
-                  handleFormChange(e);
-                  setErrors((prev) => ({ ...prev, [field.name]: "" }));
-                }}
-                required
-              />
-              {errors[field.name] && (
-                <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
-              )}
-            </div>
-          ))}
-
-          {/* 🌍 Nationality Dropdown */}
-          <div>
-            <Label>Nationality</Label>
-            <ReactSelect
-              options={options}
-              value={options.find((c) => c.label === formData.nationality) || null}
-              onChange={(selected: any) => {
-                setFormData((prev) => ({ ...prev, nationality: selected.label }));
-                setErrors((prev) => ({ ...prev, nationality: "" }));
-              }}
-              placeholder="Select country"
-            />
-            {errors.nationality && (
-              <p className="text-red-500 text-sm mt-1">{errors.nationality}</p>
-            )}
-          </div>
-
-          {/* Address and other info */}
-          {[
-            { label: "Address", name: "address", type: "text" },
-            { label: "Postal Code", name: "postelCode", type: "text" },
-            { label: "City", name: "city", type: "text" },
-            { label: "Province", name: "province", type: "text" },
-            { label: "Phone", name: "phone", type: "text" },
-            { label: "Email", name: "email", type: "email" },
-          ].map((field) => (
-            <div key={field.name}>
-              <Label>{field.label}</Label>
-              <Input
-                type={field.type}
-                name={field.name}
-                value={formData[field.name as keyof typeof formData]}
-                onChange={(e) => {
-                  handleFormChange(e);
-                  setErrors((prev) => ({ ...prev, [field.name]: "" }));
-                }}
-                required
-              />
-              {errors[field.name] && (
-                <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
-              )}
-            </div>
-          ))}
-
-          {/* Submit buttons */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">
-              {editingClient ? "Update Client" : "Add Client"}
-            </Button>
-          </div>
-        </form>
-      </FormPopupModal>
+      <CustomerFormDialog
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onCustomerAdded={handleCustomerAdded}
+        editingCustomer={editingClient}
+      />
     </div>
   );
 }
