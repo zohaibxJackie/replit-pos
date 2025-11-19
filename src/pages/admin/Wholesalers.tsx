@@ -89,22 +89,48 @@ export default function Wholesalers() {
       {
         key: "index",
         label: "#",
-        filterType: "none",
+        filterType: "none" as const,
         render: (_: any, __: any, idx: number) => (page - 1) * limit + idx + 1,
       },
-      { key: "businessName", label: "Business Name", filterType: "none" },
-      { key: "contactPerson", label: "Contact Person", filterType: "none" },
-      { key: "email", label: "Email", filterType: "none" },
-      { key: "phone", label: "Phone", filterType: "none" },
+      { 
+        key: "businessName", 
+        label: "Business Name", 
+        filterType: "none" as const,
+        render: (value: string, row: Wholesaler) => (
+          <button 
+            onClick={() => viewProfile(row)} 
+            className="text-primary hover:underline font-medium text-left"
+            data-testid={`link-business-${row.id}`}
+          >
+            {value}
+          </button>
+        )
+      },
+      { 
+        key: "contactPerson", 
+        label: "Contact Person", 
+        filterType: "none" as const,
+        render: (value: string, row: Wholesaler) => (
+          <button 
+            onClick={() => viewProfile(row)} 
+            className="text-primary hover:underline text-left"
+            data-testid={`link-contact-${row.id}`}
+          >
+            {value}
+          </button>
+        )
+      },
+      { key: "email", label: "Email", filterType: "none" as const },
+      { key: "phone", label: "Phone", filterType: "none" as const },
       {
         key: "totalProducts",
         label: "Products",
-        filterType: "none",
+        filterType: "none" as const,
       },
       {
         key: "avgDiscount",
         label: "Avg Discount",
-        filterType: "none",
+        filterType: "none" as const,
         render: (value: number) => `${value}%`,
       },
       

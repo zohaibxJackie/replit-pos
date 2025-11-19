@@ -1,6 +1,5 @@
 import { Bell, Check, X, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Popover,
@@ -123,11 +122,11 @@ export default function NotificationPanel() {
         >
           <Bell className="w-5 h-5 text-muted-foreground" />
           {unreadCount > 0 && (
-            <Badge
-              className="absolute -top-1 -right-1 flex items-center justify-center text-[10px] font-semibold bg-accent text-white rounded-full min-w-4 h-4 px-1"
+            <span
+              className="absolute -top-0.5 -right-0.5 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] h-[18px] px-1 z-10 border-2 border-background"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
-            </Badge>
+            </span>
           )}
         </Button>
       </PopoverTrigger>

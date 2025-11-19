@@ -2,14 +2,15 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTitle } from "@/context/TitleContext";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import DataTable from "@/components/DataTable";
 import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
-import { Eye } from "lucide-react";
+import { Eye, Clock, DollarSign } from "lucide-react";
 import FormPopupModal from "@/components/ui/FormPopupModal";
+import { Badge } from "@/components/ui/badge";
 
 type RepairMan = {
   id: number;
@@ -87,22 +88,48 @@ export default function RepairMen() {
       {
         key: "index",
         label: "#",
-        filterType: "none",
+        filterType: "none" as const,
         render: (_: any, __: any, idx: number) => (page - 1) * limit + idx + 1,
       },
-      { key: "businessName", label: "Business Name", filterType: "none" },
-      { key: "contactPerson", label: "Contact Person", filterType: "none" },
-      { key: "email", label: "Email", filterType: "none" },
-      { key: "phone", label: "Phone", filterType: "none" },
+      { 
+        key: "businessName", 
+        label: "Business Name", 
+        filterType: "none" as const,
+        render: (value: string, row: RepairMan) => (
+          <button 
+            onClick={() => viewProfile(row)} 
+            className="text-primary hover:underline font-medium text-left"
+            data-testid={`link-business-${row.id}`}
+          >
+            {value}
+          </button>
+        )
+      },
+      { 
+        key: "contactPerson", 
+        label: "Contact Person", 
+        filterType: "none" as const,
+        render: (value: string, row: RepairMan) => (
+          <button 
+            onClick={() => viewProfile(row)} 
+            className="text-primary hover:underline text-left"
+            data-testid={`link-contact-${row.id}`}
+          >
+            {value}
+          </button>
+        )
+      },
+      { key: "email", label: "Email", filterType: "none" as const },
+      { key: "phone", label: "Phone", filterType: "none" as const },
       {
         key: "totalServices",
         label: "Services",
-        filterType: "none",
+        filterType: "none" as const,
       },
       {
         key: "avgPrice",
         label: "Avg Price",
-        filterType: "none",
+        filterType: "none" as const,
         render: (value: number) => `$${value.toFixed(2)}`,
       }
     ],
@@ -142,43 +169,73 @@ export default function RepairMen() {
 
       <FormPopupModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {selectedRepairMan && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">{selectedRepairMan.businessName}</h2>
-
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Contact Person</p>
-                <p className="font-semibold">{selectedRepairMan.contactPerson}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
-                <p className="font-semibold">{selectedRepairMan.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
-                <p className="font-semibold">{selectedRepairMan.phone}</p>
-              </div>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">{selectedRepairMan.businessName}</h2>
+              <p className="text-sm text-muted-foreground">
+                {selectedRepairMan.totalServices} services • Avg ${selectedRepairMan.avgPrice.toFixed(2)}
+              </p>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Contact Person</p>
+                    <p className="font-medium">{selectedRepairMan.contactPerson}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Email</p>
+                    <p className="font-medium">{selectedRepairMan.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Phone</p>
+                    <p className="font-medium">{selectedRepairMan.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Status</p>
+                    <Badge variant={selectedRepairMan.isActive ? "default" : "secondary"}>
+                      {selectedRepairMan.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             <div>
-              <h3 className="text-lg font-semibold mb-3">Services Offered</h3>
-              <div className="space-y-2">
+              <h3 className="text-lg font-semibold mb-4">Services Offered</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(mockServices[selectedRepairMan.id] || []).map((service, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{service.name}</p>
-                      <p className="text-sm text-gray-600">Estimated time: {service.estimatedTime} minutes</p>
-                    </div>
-                    <p className="font-bold text-lg">${service.price.toFixed(2)}</p>
-                  </div>
+                  <Card key={idx} className="hover-elevate">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">{service.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span>{service.estimatedTime} minutes</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-5 h-5 text-primary" />
+                        <span className="text-2xl font-bold">{service.price.toFixed(2)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
-                {(mockServices[selectedRepairMan.id] || []).length === 0 && (
-                  <p className="text-gray-500 text-center py-4">No services listed yet</p>
-                )}
               </div>
+              {(mockServices[selectedRepairMan.id] || []).length === 0 && (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">No services listed yet</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-4 border-t">
               <Button onClick={() => setIsModalOpen(false)} data-testid="button-close">
                 Close
               </Button>
