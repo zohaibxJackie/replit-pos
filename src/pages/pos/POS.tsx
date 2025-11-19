@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import ProductSearch from "@/components/ProductSearch";
 import CartItem from "@/components/CartItem";
-import { CustomerFormDialog, CustomerFormData } from "@/components/CustomerFormDialog";
+import {
+  CustomerFormDialog,
+  CustomerFormData,
+} from "@/components/CustomerFormDialog";
 import { QuickProductsDialog } from "@/components/QuickProductsDialog";
 import { BarcodeScannerDialog } from "@/components/BarcodeScannerDialog";
 import { useQuickProducts } from "@/hooks/useQuickProducts";
@@ -20,7 +23,13 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Printer,
   Check,
@@ -37,6 +46,7 @@ import {
   Menu,
   ShoppingCart,
   Camera,
+  BanknoteIcon,
 } from "lucide-react";
 import { mockProducts } from "@/utils/mockData";
 import { useToast } from "@/hooks/use-toast";
@@ -55,7 +65,7 @@ interface CartItemType {
   quantity: number;
   stock: number;
   lowStock: boolean;
-  type?: 'mobile' | 'accessory';
+  type?: "mobile" | "accessory";
 }
 
 interface Customer {
@@ -67,7 +77,7 @@ interface Customer {
 const PAYMENT_METHODS = [
   { value: "cash", label: "Cash", icon: Banknote },
   { value: "card", label: "Card", icon: CreditCard },
-  { value: "mobile", label: "Mobile Payment", icon: Smartphone },
+  { value: "mobile", label: "Bank", icon: BanknoteIcon },
 ] as const;
 
 export default function POS() {
@@ -91,7 +101,10 @@ export default function POS() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [currentReceipt, setCurrentReceipt] = useState<Receipt | null>(null);
-  const [paymentDetails, setPaymentDetails] = useState<{ amountPaid: number; change: number } | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<{
+    amountPaid: number;
+    change: number;
+  } | null>(null);
   const [heldOrders, setHeldOrders] = useState<
     { cart: CartItemType[]; customer: Customer | null }[]
   >([]);
@@ -256,31 +269,41 @@ export default function POS() {
     await processPayment(currentReceipt, amountPaid, change);
   };
 
-  const processPayment = async (receipt: Receipt, amountPaid?: number, change?: number) => {
+  const processPayment = async (
+    receipt: Receipt,
+    amountPaid?: number,
+    change?: number,
+  ) => {
     try {
       const cartSnapshot = [...cart];
-      const hasMobileProduct = cartSnapshot.some((item) => item.type === 'mobile');
-      const hasAccessoryProduct = cartSnapshot.some((item) => item.type === 'accessory' || !item.type);
+      const hasMobileProduct = cartSnapshot.some(
+        (item) => item.type === "mobile",
+      );
+      const hasAccessoryProduct = cartSnapshot.some(
+        (item) => item.type === "accessory" || !item.type,
+      );
 
-      setPaymentDetails(amountPaid && change !== undefined ? { amountPaid, change } : null);
+      setPaymentDetails(
+        amountPaid && change !== undefined ? { amountPaid, change } : null,
+      );
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       if (hasMobileProduct) {
-        await printElement('mobile-invoice', { 
+        await printElement("mobile-invoice", {
           title: `Invoice ${receipt.id}`,
           onBeforePrint: () => {
-            const invoiceEl = document.getElementById('mobile-invoice');
+            const invoiceEl = document.getElementById("mobile-invoice");
             if (invoiceEl) {
-              invoiceEl.classList.remove('hidden');
+              invoiceEl.classList.remove("hidden");
             }
           },
           onAfterPrint: () => {
-            const invoiceEl = document.getElementById('mobile-invoice');
+            const invoiceEl = document.getElementById("mobile-invoice");
             if (invoiceEl) {
-              invoiceEl.classList.add('hidden');
+              invoiceEl.classList.add("hidden");
             }
-          }
+          },
         });
       }
 
@@ -303,15 +326,16 @@ export default function POS() {
 
       toast({
         title: "Sale Completed",
-        description: change !== undefined 
-          ? `Total: $${total.toFixed(2)} | Change: $${change.toFixed(2)}`
-          : `Total: $${total.toFixed(2)}`,
+        description:
+          change !== undefined
+            ? `Total: $${total.toFixed(2)} | Change: $${change.toFixed(2)}`
+            : `Total: $${total.toFixed(2)}`,
       });
-      
+
       setCart([]);
       setDiscount(0);
       setSelectedCustomer(null);
-      
+
       setTimeout(() => {
         setCurrentReceipt(null);
         setPaymentDetails(null);
@@ -559,7 +583,9 @@ export default function POS() {
             <div className="lg:col-span-2 flex flex-col gap-4">
               <Card>
                 <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="text-base sm:text-lg">Product Search</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">
+                    Product Search
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ProductSearch
@@ -632,8 +658,15 @@ export default function POS() {
                 </Button>
 
                 <div className="flex-1 min-w-fit">
-                  <Button variant="outline" size="sm" className="w-full" disabled>
-                    <span className="text-xs text-muted-foreground mr-1">Items:</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled
+                  >
+                    <span className="text-xs text-muted-foreground mr-1">
+                      Items:
+                    </span>
                     <span className="font-semibold">
                       {cart.reduce((sum, item) => sum + item.quantity, 0)}
                     </span>
@@ -641,7 +674,10 @@ export default function POS() {
                 </div>
               </div>
 
-              <Tabs defaultValue="cart" className="flex-1 flex flex-col min-h-0">
+              <Tabs
+                defaultValue="cart"
+                className="flex-1 flex flex-col min-h-0"
+              >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="cart" data-testid="tab-cart">
                     <ShoppingCart className="w-4 h-4 mr-2" />
@@ -656,7 +692,9 @@ export default function POS() {
                 <TabsContent value="cart" className="flex-1 mt-4 min-h-0">
                   <Card className="h-full flex flex-col">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base sm:text-lg">Current Sale</CardTitle>
+                      <CardTitle className="text-base sm:text-lg">
+                        Current Sale
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-y-auto">
                       {cart.length === 0 ? (
@@ -692,7 +730,9 @@ export default function POS() {
                     <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2 space-y-0">
                       <div className="flex items-center gap-2">
                         <Star className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                        <CardTitle className="text-base sm:text-lg">Quick Products</CardTitle>
+                        <CardTitle className="text-base sm:text-lg">
+                          Quick Products
+                        </CardTitle>
                       </div>
                       <QuickProductsDialog
                         products={mockProducts}
@@ -706,7 +746,7 @@ export default function POS() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {quickProducts.map((productId) => {
                             const product = mockProducts.find(
-                              (p) => p.id === productId
+                              (p) => p.id === productId,
                             );
                             if (!product) return null;
 
@@ -725,7 +765,10 @@ export default function POS() {
                                   ${product.price}
                                 </div>
                                 {product.stock < product.lowStockThreshold && (
-                                  <Badge variant="destructive" className="text-xs mt-1">
+                                  <Badge
+                                    variant="destructive"
+                                    className="text-xs mt-1"
+                                  >
                                     Low Stock
                                   </Badge>
                                 )}
@@ -771,9 +814,17 @@ export default function POS() {
         </div>
         <Sheet>
           <SheetTrigger asChild>
-            <Button className="w-full" size="lg" data-testid="button-checkout-mobile">
+            <Button
+              className="w-full"
+              size="lg"
+              data-testid="button-checkout-mobile"
+            >
               <Check className="w-5 h-5 mr-2" />
-              Checkout ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)
+              Checkout ({cart.reduce(
+                (sum, item) => sum + item.quantity,
+                0,
+              )}{" "}
+              items)
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="h-[85vh]">
