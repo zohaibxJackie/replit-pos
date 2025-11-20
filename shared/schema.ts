@@ -180,6 +180,57 @@ export const purchaseOrderItems = pgTable("purchase_order_items", {
 
 export const dealRequestStatusEnum = pgEnum("deal_request_status", ["pending", "approved", "rejected", "negotiating"]);
 
+export const repairPriorityEnum = pgEnum("repair_priority", ["normal", "urgent"]);
+export const repairStatusEnum = pgEnum("repair_status", ["pending", "assigned", "in_progress", "waiting_parts", "completed", "delivered", "cancelled"]);
+
+export const repairPersons = pgTable("repair_persons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  isAvailable: boolean("is_available").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const repairJobs = pgTable("repair_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  ticketNumber: text("ticket_number").notNull().unique(),
+  customerId: varchar("customer_id"),
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone").notNull(),
+  customerDni: text("customer_dni"),
+  deviceBrand: text("device_brand").notNull(),
+  deviceModel: text("device_model").notNull(),
+  imei: text("imei"),
+  defectSummary: text("defect_summary").notNull(),
+  problemDescription: text("problem_description").notNull(),
+  priority: repairPriorityEnum("priority").notNull().default("normal"),
+  status: repairStatusEnum("status").notNull().default("pending"),
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }),
+  advancePayment: decimal("advance_payment", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalPaid: decimal("total_paid", { precision: 10, scale: 2 }).notNull().default("0"),
+  repairPersonId: varchar("repair_person_id"),
+  repairPersonName: text("repair_person_name"),
+  autoAssign: boolean("auto_assign").notNull().default(false),
+  photos: text("photos").array(),
+  dueDate: timestamp("due_date"),
+  assignedAt: timestamp("assigned_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const repairPayments = pgTable("repair_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  repairJobId: varchar("repair_job_id").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: text("payment_method").notNull().default("cash"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const dealRequests = pgTable("deal_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   shopId: varchar("shop_id").notNull(),
@@ -213,6 +264,9 @@ export const insertWholesalerProductSchema = createInsertSchema(wholesalerProduc
 export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true });
 export const insertDealRequestSchema = createInsertSchema(dealRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRepairPersonSchema = createInsertSchema(repairPersons).omit({ id: true, createdAt: true });
+export const insertRepairJobSchema = createInsertSchema(repairJobs).omit({ id: true, createdAt: true, updatedAt: true, totalPaid: true });
+export const insertRepairPaymentSchema = createInsertSchema(repairPayments).omit({ id: true, createdAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
@@ -225,6 +279,9 @@ export type InsertWholesalerProduct = z.infer<typeof insertWholesalerProductSche
 export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
 export type InsertPurchaseOrderItem = z.infer<typeof insertPurchaseOrderItemSchema>;
 export type InsertDealRequest = z.infer<typeof insertDealRequestSchema>;
+export type InsertRepairPerson = z.infer<typeof insertRepairPersonSchema>;
+export type InsertRepairJob = z.infer<typeof insertRepairJobSchema>;
+export type InsertRepairPayment = z.infer<typeof insertRepairPaymentSchema>;
 export type User = typeof users.$inferSelect;
 export type Shop = typeof shops.$inferSelect;
 export type Product = typeof products.$inferSelect;
@@ -240,3 +297,6 @@ export type WholesalerProduct = typeof wholesalerProducts.$inferSelect;
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type DealRequest = typeof dealRequests.$inferSelect;
+export type RepairPerson = typeof repairPersons.$inferSelect;
+export type RepairJob = typeof repairJobs.$inferSelect;
+export type RepairPayment = typeof repairPayments.$inferSelect;
