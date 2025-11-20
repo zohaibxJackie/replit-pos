@@ -264,6 +264,7 @@ export interface MobileProductPayload {
   model: string;
   color: string;
   imei: string;
+  imei2?: string;
   purchasePrice: number;
   sellingPrice: number;
   taxId?: string;
@@ -281,6 +282,7 @@ export function MobileProductForm({ onSubmit, onCancel }: MobileProductFormProps
   const [model, setModel] = useState<string>("");
   const [color, setColor] = useState<string>("");
   const [imei, setImei] = useState<string>("");
+  const [imei2, setImei2] = useState<string>("");
   const [purchasePrice, setPurchasePrice] = useState<string>("");
   const [sellingPrice, setSellingPrice] = useState<string>("");
   const [taxId, setTaxId] = useState<string | undefined>(undefined);
@@ -288,6 +290,7 @@ export function MobileProductForm({ onSubmit, onCancel }: MobileProductFormProps
 
   // Scanner state
   const [showScanner, setShowScanner] = useState(false);
+  const [showScanner2, setShowScanner2] = useState(false);
 
   // Handle brand change - reset model when brand changes
   const handleBrandChange = useCallback((newBrand: string) => {
@@ -309,6 +312,11 @@ export function MobileProductForm({ onSubmit, onCancel }: MobileProductFormProps
   const handleIMEIScan = useCallback((scannedCode: string) => {
     setImei(scannedCode);
     setShowScanner(false);
+  }, []);
+
+  const handleIMEI2Scan = useCallback((scannedCode: string) => {
+    setImei2(scannedCode);
+    setShowScanner2(false);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -351,6 +359,7 @@ export function MobileProductForm({ onSubmit, onCancel }: MobileProductFormProps
       model: model.trim(),
       color: color.trim(),
       imei: imei.trim(),
+      imei2: imei2.trim() || undefined,
       purchasePrice: parseFloat(purchasePrice),
       sellingPrice: parseFloat(sellingPrice),
       taxId,
@@ -439,6 +448,32 @@ export function MobileProductForm({ onSubmit, onCancel }: MobileProductFormProps
         )}
       </div>
 
+      {/* IMEI 2 (Optional) */}
+      <div>
+        <Label htmlFor="imei2" className="text-sm font-medium">
+          IMEI 2 <span className="text-muted-foreground text-xs">(Optional)</span>
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            id="imei2"
+            value={imei2}
+            onChange={(e) => setImei2(e.target.value)}
+            placeholder="Enter or scan IMEI 2"
+            className="flex-1"
+            data-testid="input-imei2"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setShowScanner2(true)}
+            data-testid="button-scan-imei2"
+          >
+            <Camera className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
       {/* Purchase Price */}
       <div>
         <Label htmlFor="purchasePrice" className="text-sm font-medium">
@@ -524,6 +559,13 @@ export function MobileProductForm({ onSubmit, onCancel }: MobileProductFormProps
         open={showScanner}
         onOpenChange={setShowScanner}
         onScanSuccess={handleIMEIScan}
+      />
+
+      {/* IMEI 2 Scanner Dialog */}
+      <BarcodeScannerDialog
+        open={showScanner2}
+        onOpenChange={setShowScanner2}
+        onScanSuccess={handleIMEI2Scan}
       />
     </form>
   );
