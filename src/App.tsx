@@ -37,6 +37,17 @@ import Category from "./pages/admin/sub pages/Category";
 import AdminActivityLogs from "@/pages/admin/ActivityLogs";
 import DrawerOpenHistory from "@/pages/admin/DrawerOpenHistory";
 import SalesReport from "./pages/admin/reports/SalesReport";
+import AvailableStockReport from "./pages/admin/reports/AvailableStockReport";
+import StockSoldReport from "./pages/admin/reports/StockSoldReport";
+import GenericProductsReport from "./pages/admin/reports/GenericProductsReport";
+import InvoicesReport from "./pages/admin/reports/InvoicesReport";
+import ContractsReport from "./pages/admin/reports/ContractsReport";
+import TopMobileSalesReport from "./pages/admin/reports/TopMobileSalesReport";
+import MobileRecordReport from "./pages/admin/reports/MobileRecordReport";
+import MobileLowStockReport from "./pages/admin/reports/MobileLowStockReport";
+import GenericLowStockReport from "./pages/admin/reports/GenericLowStockReport";
+import NetProfitReport from "./pages/admin/reports/NetProfitReport";
+import SaleReturnReport from "./pages/admin/reports/SaleReturnReport";
 import Subscription from "@/pages/admin/Subscription";
 import SalesManagers from "@/pages/admin/SaleManagers";
 
@@ -170,6 +181,39 @@ function Router() {
       </Route>
       <Route path="/admin/reports/sales">
         <ProtectedLayout><SalesReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/available-stock">
+        <ProtectedLayout><AvailableStockReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/stock-sold">
+        <ProtectedLayout><StockSoldReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/generic-products">
+        <ProtectedLayout><GenericProductsReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/invoices">
+        <ProtectedLayout><InvoicesReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/contracts">
+        <ProtectedLayout><ContractsReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/top-mobile-sales">
+        <ProtectedLayout><TopMobileSalesReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/mobile-record">
+        <ProtectedLayout><MobileRecordReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/mobile-low-stock">
+        <ProtectedLayout><MobileLowStockReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/generic-low-stock">
+        <ProtectedLayout><GenericLowStockReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/net-profit">
+        <ProtectedLayout><NetProfitReport /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/reports/sale-return">
+        <ProtectedLayout><SaleReturnReport /></ProtectedLayout>
       </Route>
       <Route path="/admin/drawer-history">
         <ProtectedLayout><DrawerOpenHistory /></ProtectedLayout>
