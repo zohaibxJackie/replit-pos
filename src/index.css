@@ -422,7 +422,7 @@ div[data-slot="sidebar-content"] {
 
   /* Add cursor pointer to dropdown triggers */
   button[role="combobox"],
-  [data-testid*="select-"] button {
+  button[aria-haspopup="listbox"] {
     cursor: pointer;
   }
 }

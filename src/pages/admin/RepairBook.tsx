@@ -64,6 +64,7 @@ import {
   X,
   Check,
   ChevronsUpDown,
+  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddRepairJobDialog } from "@/components/AddRepairJobDialog";
@@ -368,14 +369,6 @@ export default function RepairBook() {
     });
   };
 
-  const clearFilters = () => {
-    setSearchQuery("");
-    setStatusFilter("");
-    setRepairPersonFilter("");
-    setPriorityFilter("");
-  };
-
-  const hasActiveFilters = searchQuery || statusFilter || repairPersonFilter || priorityFilter;
 
   return (
     <div className="space-y-4">
@@ -401,56 +394,6 @@ export default function RepairBook() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap items-center">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40" data-testid="select-status-filter">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="assigned">Assigned</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="waiting_parts">Waiting Parts</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={repairPersonFilter} onValueChange={setRepairPersonFilter}>
-          <SelectTrigger className="w-40" data-testid="select-person-filter">
-            <SelectValue placeholder="All Technicians" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Technicians</SelectItem>
-            {mockRepairPersons.map((person) => (
-              <SelectItem key={person.id} value={person.id}>
-                {person.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-32" data-testid="select-priority-filter">
-            <SelectValue placeholder="All Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priority</SelectItem>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="urgent">Urgent</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} data-testid="button-clear-filters">
-            <X className="w-4 h-4 mr-2" />
-            Clear Filters
-          </Button>
-        )}
-      </div>
 
       {/* Bulk Actions */}
       {selectedRows.size > 0 && (
@@ -505,15 +448,108 @@ export default function RepairBook() {
               <th className="p-3 text-left">Customer</th>
               <th className="p-3 text-left">Contact</th>
               <th className="p-3 text-left">ID</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-left">Repair Person</th>
+              <th className="p-3 text-left">
+                <div className="flex items-center gap-2">
+                  Priority
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 p-0"
+                        data-testid="filter-priority"
+                      >
+                        <Filter className={cn("w-3 h-3", priorityFilter && "text-primary")} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-48 p-3">
+                      <Select value={priorityFilter || "all"} onValueChange={(v) => setPriorityFilter(v === "all" ? "" : v)}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Priority</SelectItem>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </th>
+              <th className="p-3 text-left">
+                <div className="flex items-center gap-2">
+                  Status
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 p-0"
+                        data-testid="filter-status"
+                      >
+                        <Filter className={cn("w-3 h-3", statusFilter && "text-primary")} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-56 p-3">
+                      <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="assigned">Assigned</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="waiting_parts">Waiting Parts</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </th>
+              <th className="p-3 text-left">
+                <div className="flex items-center gap-2">
+                  Repair Person
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 p-0"
+                        data-testid="filter-person"
+                      >
+                        <Filter className={cn("w-3 h-3", repairPersonFilter && "text-primary")} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-48 p-3">
+                      <Select value={repairPersonFilter || "all"} onValueChange={(v) => setRepairPersonFilter(v === "all" ? "" : v)}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Technicians" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Technicians</SelectItem>
+                          {mockRepairPersons.map((person) => (
+                            <SelectItem key={person.id} value={person.id}>
+                              {person.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginatedJobs.length === 0 ? (
               <tr>
-                <td colSpan={12} className="p-8 text-center text-muted-foreground">
+                <td colSpan={13} className="p-8 text-center text-muted-foreground">
                   No repair jobs found
                 </td>
               </tr>
@@ -551,14 +587,14 @@ export default function RepairBook() {
                       </Tooltip>
                     </TooltipProvider>
                   </td>
-                  <td className="p-3 text-sm">
-                    {job.customerName}
-                    {job.priority === "urgent" && (
-                      <Badge variant="destructive" className="ml-2 text-xs">URGENT</Badge>
-                    )}
-                  </td>
+                  <td className="p-3 text-sm">{job.customerName}</td>
                   <td className="p-3 text-sm font-mono">{job.customerPhone}</td>
                   <td className="p-3 text-sm">{job.customerDni || "N/A"}</td>
+                  <td className="p-3">
+                    <Badge variant={job.priority === "urgent" ? "destructive" : "secondary"}>
+                      {job.priority === "urgent" ? "URGENT" : "NORMAL"}
+                    </Badge>
+                  </td>
                   <td className="p-3">
                     <Badge variant={statusConfig[job.status]?.variant || "outline"}>
                       {statusConfig[job.status]?.label || job.status}
