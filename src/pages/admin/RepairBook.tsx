@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -24,7 +25,21 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {  Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -44,12 +59,13 @@ import {
   Phone,
   MessageCircle,
   Printer,
-  DollarSign,
   MoreHorizontal,
   Search,
-  Filter,
   X,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AddRepairJobDialog } from "@/components/AddRepairJobDialog";
 import { RepairJobTicket } from "@/components/RepairJobTicket";
 import { printElement } from "@/utils/print";
@@ -166,6 +182,9 @@ export default function RepairBook() {
   const [viewJob, setViewJob] = useState<RepairJob | null>(null);
   const [editJob, setEditJob] = useState<RepairJob | null>(null);
   const [printJob, setPrintJob] = useState<RepairJob | null>(null);
+  const [assignJob, setAssignJob] = useState<RepairJob | null>(null);
+  const [selectedRepairPerson, setSelectedRepairPerson] = useState<string>("");
+  const [openAssignCombo, setOpenAssignCombo] = useState(false);
 
   // Filtered and paginated data
   const filteredJobs = useMemo(() => {
@@ -207,7 +226,7 @@ export default function RepairBook() {
       customerName: data.customerName,
       customerPhone: data.customerPhone,
       customerDni: data.customerDni,
-      status: "pending",
+      status: data.repairPersonId ? "assigned" : "pending",
       priority: data.priority,
       repairPersonId: data.repairPersonId,
       repairPersonName: data.repairPersonId ? mockRepairPersons.find(p => p.id === data.repairPersonId)?.name : undefined,
@@ -222,6 +241,60 @@ export default function RepairBook() {
     toast({
       title: "Repair Job Created",
       description: `Job ${newJob.ticketNumber} has been created successfully`,
+    });
+  };
+
+  const handleEditJob = async (data: any) => {
+    if (!editJob) return;
+
+    setRepairJobs(prev =>
+      prev.map(job =>
+        job.id === editJob.id
+          ? {
+              ...job,
+              deviceBrand: data.deviceBrand,
+              deviceModel: data.deviceModel,
+              imei: data.imei,
+              defectSummary: data.defectSummary,
+              problemDescription: data.problemDescription,
+              priority: data.priority,
+              estimatedCost: data.estimatedCost,
+              advancePayment: data.advancePayment,
+            }
+          : job
+      )
+    );
+
+    setEditJob(null);
+
+    toast({
+      title: "Job Updated",
+      description: "Repair job has been updated successfully",
+    });
+  };
+
+  const handleAssignJob = (jobId: string, repairPersonId: string) => {
+    const person = mockRepairPersons.find(p => p.id === repairPersonId);
+    
+    setRepairJobs(prev =>
+      prev.map(job =>
+        job.id === jobId
+          ? {
+              ...job,
+              repairPersonId,
+              repairPersonName: person?.name,
+              status: "assigned" as any,
+              isRepairPersonAvailable: person?.isAvailable,
+            }
+          : job
+      )
+    );
+
+    setAssignJob(null);
+
+    toast({
+      title: "Job Assigned",
+      description: `Job assigned to ${person?.name}`,
     });
   };
 
@@ -523,7 +596,7 @@ export default function RepairBook() {
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem data-testid={`action-assign-${index}`}>
+                          <DropdownMenuItem onClick={() => setAssignJob(job)} data-testid={`action-assign-${index}`}>
                             <UserPlus className="w-4 h-4 mr-2" />
                             Assign/Reassign
                           </DropdownMenuItem>
@@ -540,10 +613,6 @@ export default function RepairBook() {
                           <DropdownMenuItem onClick={() => handlePrint(job)} data-testid={`action-print-${index}`}>
                             <Printer className="w-4 h-4 mr-2" />
                             Print Ticket
-                          </DropdownMenuItem>
-                          <DropdownMenuItem data-testid={`action-payment-${index}`}>
-                            <DollarSign className="w-4 h-4 mr-2" />
-                            Add Payment
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -666,6 +735,117 @@ export default function RepairBook() {
                   Print Ticket
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Job Dialog */}
+      {editJob && (
+        <AddRepairJobDialog
+          open={!!editJob}
+          onClose={() => setEditJob(null)}
+          onSubmit={handleEditJob}
+          customers={mockCustomers}
+          repairPersons={mockRepairPersons}
+        />
+      )}
+
+      {/* Assign/Reassign Dialog */}
+      <Dialog open={!!assignJob} onOpenChange={() => {
+        setAssignJob(null);
+        setSelectedRepairPerson("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign/Reassign Repair Person</DialogTitle>
+          </DialogHeader>
+          {assignJob && (
+            <div className="space-y-4">
+              <div className="text-sm">
+                <p className="font-semibold">Job: {assignJob.ticketNumber}</p>
+                <p className="text-muted-foreground">{assignJob.deviceBrand} {assignJob.deviceModel}</p>
+                {assignJob.repairPersonName && (
+                  <p className="mt-2">
+                    Currently assigned to: <span className="font-semibold">{assignJob.repairPersonName}</span>
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label>Select Repair Person</Label>
+                <Popover open={openAssignCombo} onOpenChange={setOpenAssignCombo}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openAssignCombo}
+                      className="w-full justify-between"
+                      data-testid="select-assign-person"
+                    >
+                      {selectedRepairPerson
+                        ? mockRepairPersons.find((p) => p.id === selectedRepairPerson)?.name
+                        : "Search for a repair person..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search repair persons..." />
+                      <CommandList>
+                        <CommandEmpty>No repair person found.</CommandEmpty>
+                        <CommandGroup>
+                          {mockRepairPersons.map((person) => (
+                            <CommandItem
+                              key={person.id}
+                              value={person.name}
+                              onSelect={() => {
+                                setSelectedRepairPerson(person.id);
+                                setOpenAssignCombo(false);
+                              }}
+                              disabled={!person.isAvailable}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedRepairPerson === person.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className={`w-2 h-2 rounded-full ${
+                                    person.isAvailable ? "bg-green-500" : "bg-gray-400"
+                                  }`}
+                                />
+                                {person.name} {!person.isAvailable && "(Unavailable)"}
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAssignJob(null);
+                    setSelectedRepairPerson("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => selectedRepairPerson && handleAssignJob(assignJob.id, selectedRepairPerson)}
+                  disabled={!selectedRepairPerson}
+                  data-testid="button-confirm-assign"
+                >
+                  Assign
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
