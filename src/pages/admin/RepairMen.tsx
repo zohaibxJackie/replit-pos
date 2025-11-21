@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import FormPopupModal from "@/components/ui/FormPopupModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Clock, DollarSign, Phone, Mail, Wrench, User } from "lucide-react";
+import { Clock, DollarSign, Phone, Mail, Wrench, User, MessageSquare } from "lucide-react";
 
 type RepairMan = {
   id: number;
@@ -112,6 +112,16 @@ export default function RepairMen() {
     setIsModalOpen(true);
   };
 
+  const handleContact = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    // Remove any non-digit characters from phone number
+    const cleanPhone = phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}`, '_blank');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
@@ -156,57 +166,107 @@ export default function RepairMen() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-        {filteredRepairMen.map((repairMan) => (
-          <Card key={repairMan.id} className="flex flex-col hover-elevate" data-testid={`repairman-card-${repairMan.id}`}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <Badge 
-                  variant={repairMan.isActive ? "default" : "secondary"}
-                  className="text-xs"
-                  data-testid={`badge-status-${repairMan.id}`}
-                >
-                  {repairMan.isActive ? "Active" : "Inactive"}
-                </Badge>
-                <Badge variant="outline" className="text-xs" data-testid={`badge-services-${repairMan.id}`}>
-                  <Wrench className="w-3 h-3 mr-1" />
-                  {repairMan.totalServices} Services
-                </Badge>
-              </div>
-              <CardTitle className="text-base line-clamp-1" data-testid={`text-business-name-${repairMan.id}`}>{repairMan.businessName}</CardTitle>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                <User className="w-3 h-3" />
-                <span data-testid={`text-contact-${repairMan.id}`}>{repairMan.contactPerson}</span>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-3 flex-1">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs truncate" data-testid={`text-email-${repairMan.id}`}>{repairMan.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs" data-testid={`text-phone-${repairMan.id}`}>{repairMan.phone}</span>
-                </div>
-                <div className="flex items-baseline gap-2 pt-2">
-                  <DollarSign className="w-5 h-5 text-primary" />
-                  <span className="text-2xl font-bold text-primary" data-testid={`text-avgprice-${repairMan.id}`}>{repairMan.avgPrice.toFixed(2)}</span>
-                  <span className="text-xs text-muted-foreground">avg price</span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <Button
-                className="w-full"
+        {filteredRepairMen.map((repairMan) => {
+          const services = mockServices[repairMan.id] || [];
+          const previewServices = services.slice(0, 3);
+          
+          return (
+            <Card key={repairMan.id} className="flex flex-col" data-testid={`repairman-card-${repairMan.id}`}>
+              <CardHeader 
+                className="pb-3 cursor-pointer hover-elevate rounded-t-lg"
                 onClick={() => viewProfile(repairMan)}
-                data-testid={`button-view-${repairMan.id}`}
+                data-testid={`header-profile-${repairMan.id}`}
               >
-                <Eye className="w-4 h-4 mr-2" />
-                View Details
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <Badge 
+                    variant={repairMan.isActive ? "default" : "secondary"}
+                    className="text-xs"
+                    data-testid={`badge-status-${repairMan.id}`}
+                  >
+                    {repairMan.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs" data-testid={`badge-services-${repairMan.id}`}>
+                    <Wrench className="w-3 h-3 mr-1" />
+                    {repairMan.totalServices} Services
+                  </Badge>
+                </div>
+                <CardTitle className="text-base line-clamp-1" data-testid={`text-business-name-${repairMan.id}`}>{repairMan.businessName}</CardTitle>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                  <User className="w-3 h-3" />
+                  <span data-testid={`text-contact-${repairMan.id}`}>{repairMan.contactPerson}</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-3 flex-1">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs truncate" data-testid={`text-email-${repairMan.id}`}>{repairMan.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs" data-testid={`text-phone-${repairMan.id}`}>{repairMan.phone}</span>
+                    </div>
+                  </div>
+
+                  {previewServices.length > 0 && (
+                    <div className="pt-3 border-t space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground">Services Preview:</p>
+                      {previewServices.map((service, idx) => (
+                        <div 
+                          key={idx} 
+                          className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1.5"
+                          data-testid={`preview-service-${repairMan.id}-${idx}`}
+                        >
+                          <span className="font-medium truncate flex-1" data-testid={`preview-service-name-${repairMan.id}-${idx}`}>
+                            {service.name}
+                          </span>
+                          <div className="flex items-center gap-1 ml-2">
+                            <DollarSign className="w-3 h-3 text-primary" />
+                            <span className="font-bold text-primary" data-testid={`preview-service-price-${repairMan.id}-${idx}`}>
+                              {service.price}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {services.length > 3 && (
+                        <p className="text-xs text-muted-foreground text-center pt-1">
+                          +{services.length - 3} more services
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0 gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContact(repairMan.email);
+                  }}
+                  data-testid={`button-contact-${repairMan.id}`}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Contact
+                </Button>
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleWhatsApp(repairMan.phone);
+                  }}
+                  data-testid={`button-whatsapp-${repairMan.id}`}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  WhatsApp
+                </Button>
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
 
       {filteredRepairMen.length === 0 && (
