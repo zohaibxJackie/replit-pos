@@ -11,10 +11,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, X, Upload, Camera } from "lucide-react";
+import { Camera, Check, ChevronsUpDown } from "lucide-react";
 import { BarcodeScannerDialog } from "./BarcodeScannerDialog";
+import { cn } from "@/lib/utils";
 
 interface Customer {
   id: string;
@@ -43,8 +56,6 @@ interface AddRepairJobData {
   estimatedCost?: number;
   advancePayment?: number;
   repairPersonId?: string;
-  autoAssign: boolean;
-  photos: string[];
 }
 
 interface AddRepairJobDialogProps {
@@ -85,11 +96,11 @@ export function AddRepairJobDialog({
   const [estimatedCost, setEstimatedCost] = useState("");
   const [advancePayment, setAdvancePayment] = useState("");
   const [repairPersonId, setRepairPersonId] = useState("");
-  const [autoAssign, setAutoAssign] = useState(false);
-  const [photos, setPhotos] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [openCustomerCombo, setOpenCustomerCombo] = useState(false);
+  const [openRepairPersonCombo, setOpenRepairPersonCombo] = useState(false);
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.id === selectedCustomerId),
@@ -112,35 +123,6 @@ export function AddRepairJobDialog({
     setImei(scannedCode);
     setShowScanner(false);
   }, []);
-
-  // Handle photo upload
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newPhotos = Array.from(files).map(file => URL.createObjectURL(file));
-      setPhotos(prev => [...prev, ...newPhotos]);
-    }
-  };
-
-  // Remove photo
-  const removePhoto = (index: number) => {
-    setPhotos(prev => {
-      const photoToRemove = prev[index];
-      // Clean up object URL to prevent memory leak
-      if (photoToRemove) {
-        URL.revokeObjectURL(photoToRemove);
-      }
-      return prev.filter((_, i) => i !== index);
-    });
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Revoke all object URLs on unmount
-      photos.forEach(photo => URL.revokeObjectURL(photo));
-    };
-  }, [photos]);
 
   // Validation
   const validate = (): boolean => {
@@ -175,7 +157,7 @@ export function AddRepairJobDialog({
   };
 
   // Submit handler
-  const handleSubmit = async (e: React.FormEvent, saveType: "draft" | "assign") => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validate()) {
@@ -204,8 +186,6 @@ export function AddRepairJobDialog({
         estimatedCost: estimatedCost ? Number(estimatedCost) : undefined,
         advancePayment: advancePayment ? Number(advancePayment) : undefined,
         repairPersonId: repairPersonId || undefined,
-        autoAssign: saveType === "assign" ? autoAssign : false,
-        photos,
       };
 
       await onSubmit(data);
@@ -214,7 +194,7 @@ export function AddRepairJobDialog({
       
       toast({
         title: "Success",
-        description: saveType === "assign" ? "Repair job created and assigned" : "Repair job saved as draft",
+        description: "Repair job created successfully",
       });
     } catch (error) {
       toast({
@@ -243,8 +223,6 @@ export function AddRepairJobDialog({
     setEstimatedCost("");
     setAdvancePayment("");
     setRepairPersonId("");
-    setAutoAssign(false);
-    setPhotos([]);
     setErrors({});
   };
 
@@ -291,18 +269,50 @@ export function AddRepairJobDialog({
                   <Label htmlFor="customer">
                     Select Customer <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={selectedCustomerId} onValueChange={handleCustomerSelect}>
-                    <SelectTrigger data-testid="select-customer">
-                      <SelectValue placeholder="Choose a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name} - {customer.phone}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={openCustomerCombo} onOpenChange={setOpenCustomerCombo}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openCustomerCombo}
+                        className="w-full justify-between"
+                        data-testid="select-customer"
+                      >
+                        {selectedCustomerId
+                          ? customers.find((c) => c.id === selectedCustomerId)?.name
+                          : "Search for a customer..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search customers..." />
+                        <CommandList>
+                          <CommandEmpty>No customer found.</CommandEmpty>
+                          <CommandGroup>
+                            {customers.map((customer) => (
+                              <CommandItem
+                                key={customer.id}
+                                value={`${customer.name} ${customer.phone}`}
+                                onSelect={() => {
+                                  handleCustomerSelect(customer.id);
+                                  setOpenCustomerCombo(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedCustomerId === customer.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {customer.name} - {customer.phone}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {errors.selectedCustomerId && (
                     <p className="text-destructive text-xs mt-1">{errors.selectedCustomerId}</p>
                   )}
@@ -528,83 +538,60 @@ export function AddRepairJobDialog({
 
               <div>
                 <Label htmlFor="repairPerson">
-                  Preferred Repair Person <span className="text-muted-foreground text-xs">(Optional)</span>
+                  Assign Repair Person <span className="text-muted-foreground text-xs">(Optional)</span>
                 </Label>
-                <Select value={repairPersonId} onValueChange={setRepairPersonId}>
-                  <SelectTrigger data-testid="select-repair-person">
-                    <SelectValue placeholder="Choose repair person" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {repairPersons.map((person) => (
-                      <SelectItem key={person.id} value={person.id} disabled={!person.isAvailable}>
-                        {person.name} {!person.isAvailable && "(Unavailable)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="autoAssign"
-                  checked={autoAssign}
-                  onCheckedChange={setAutoAssign}
-                  data-testid="switch-auto-assign"
-                />
-                <Label htmlFor="autoAssign" className="cursor-pointer">
-                  Auto-assign to available repair person
-                </Label>
-              </div>
-            </div>
-
-            {/* Photo Upload */}
-            <div className="space-y-4 p-4 bg-muted rounded-md">
-              <h3 className="font-semibold">Photos</h3>
-
-              <div>
-                <Label htmlFor="photos">
-                  Upload Photos <span className="text-muted-foreground text-xs">(Optional)</span>
-                </Label>
-                <div className="mt-2">
-                  <label
-                    htmlFor="photo-upload"
-                    className="flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 cursor-pointer hover-elevate"
-                  >
-                    <Upload className="w-5 h-5" />
-                    <span>Click to upload photos</span>
-                  </label>
-                  <input
-                    id="photo-upload"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                    data-testid="input-photo-upload"
-                  />
-                </div>
-
-                {photos.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2 mt-4">
-                    {photos.map((photo, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={photo}
-                          alt={`Upload ${index + 1}`}
-                          className="w-full h-20 object-cover rounded-md"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(index)}
-                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          data-testid={`button-remove-photo-${index}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <Popover open={openRepairPersonCombo} onOpenChange={setOpenRepairPersonCombo}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openRepairPersonCombo}
+                      className="w-full justify-between"
+                      data-testid="select-repair-person"
+                    >
+                      {repairPersonId
+                        ? repairPersons.find((p) => p.id === repairPersonId)?.name
+                        : "Search for a repair person..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search repair persons..." />
+                      <CommandList>
+                        <CommandEmpty>No repair person found.</CommandEmpty>
+                        <CommandGroup>
+                          {repairPersons.map((person) => (
+                            <CommandItem
+                              key={person.id}
+                              value={person.name}
+                              onSelect={() => {
+                                setRepairPersonId(person.id);
+                                setOpenRepairPersonCombo(false);
+                              }}
+                              disabled={!person.isAvailable}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  repairPersonId === person.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className={`w-2 h-2 rounded-full ${
+                                    person.isAvailable ? "bg-green-500" : "bg-gray-400"
+                                  }`}
+                                />
+                                {person.name} {!person.isAvailable && "(Unavailable)"}
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -620,21 +607,12 @@ export function AddRepairJobDialog({
                 Cancel
               </Button>
               <Button
-                type="button"
-                variant="secondary"
-                onClick={(e) => handleSubmit(e, "draft")}
+                type="submit"
+                onClick={handleSubmit}
                 disabled={isSubmitting}
-                data-testid="button-save-draft"
+                data-testid="button-submit"
               >
-                Save Draft
-              </Button>
-              <Button
-                type="button"
-                onClick={(e) => handleSubmit(e, "assign")}
-                disabled={isSubmitting}
-                data-testid="button-save-assign"
-              >
-                {isSubmitting ? "Saving..." : "Save & Assign"}
+                {isSubmitting ? "Saving..." : "Create Repair Job"}
               </Button>
             </div>
           </form>
