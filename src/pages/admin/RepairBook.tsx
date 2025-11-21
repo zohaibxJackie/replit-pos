@@ -175,9 +175,7 @@ export default function RepairBook() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [repairPersonFilter, setRepairPersonFilter] = useState<string>("");
-  const [priorityFilter, setPriorityFilter] = useState<string>("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [viewJob, setViewJob] = useState<RepairJob | null>(null);
@@ -200,13 +198,14 @@ export default function RepairBook() {
         job.imei?.includes(searchQuery) ||
         job.defectSummary.toLowerCase().includes(searchLower);
 
-      const matchesStatus = !statusFilter || statusFilter === "all" || job.status === statusFilter;
-      const matchesRepairPerson = !repairPersonFilter || repairPersonFilter === "all" || job.repairPersonId === repairPersonFilter;
-      const matchesPriority = !priorityFilter || priorityFilter === "all" || job.priority === priorityFilter;
+      const matchesStatus = !filters.status || job.status === filters.status;
+      const matchesPriority = !filters.priority || job.priority === filters.priority;
+      const matchesRepairPerson = !filters.repairPerson || 
+        job.repairPersonName?.toLowerCase().includes(filters.repairPerson.toLowerCase());
 
       return matchesSearch && matchesStatus && matchesRepairPerson && matchesPriority;
     });
-  }, [repairJobs, searchQuery, statusFilter, repairPersonFilter, priorityFilter]);
+  }, [repairJobs, searchQuery, filters]);
 
   const paginatedJobs = useMemo(() => {
     const start = (page - 1) * limit;
@@ -351,11 +350,28 @@ export default function RepairBook() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRows(new Set(paginatedJobs.map(job => job.id)));
+      // Add all current page IDs to selection (merge, don't replace)
+      setSelectedRows(prev => {
+        const newSet = new Set(prev);
+        paginatedJobs.forEach(job => newSet.add(job.id));
+        return newSet;
+      });
     } else {
-      setSelectedRows(new Set());
+      // Remove all current page IDs from selection
+      setSelectedRows(prev => {
+        const newSet = new Set(prev);
+        paginatedJobs.forEach(job => newSet.delete(job.id));
+        return newSet;
+      });
     }
   };
+
+
+  // Check if all current page jobs are selected
+  const isAllCurrentPageSelected = useMemo(() => {
+    if (paginatedJobs.length === 0) return false;
+    return paginatedJobs.every(job => selectedRows.has(job.id));
+  }, [paginatedJobs, selectedRows]);
 
   const handleSelectRow = (jobId: string, checked: boolean) => {
     setSelectedRows(prev => {
@@ -369,11 +385,127 @@ export default function RepairBook() {
     });
   };
 
+  // DataTable columns (without checkbox - we'll add it separately)
+  const columns = [
+    {
+      key: "ticketNumber",
+      label: "#",
+      filterType: "none" as const,
+      render: (val: string) => <span className="font-mono text-sm">{val}</span>,
+    },
+    {
+      key: "createdAt",
+      label: "Date & Time",
+      filterType: "none" as const,
+      render: (val: Date) => <span className="text-sm">{format(val, "dd/MM/yyyy HH:mm")}</span>,
+    },
+    {
+      key: "device",
+      label: "Brand/Model",
+      filterType: "none" as const,
+      render: (_: any, row: RepairJob) => (
+        <div className="text-sm">
+          <div>{row.deviceBrand}</div>
+          <div className="text-muted-foreground text-xs">{row.deviceModel}</div>
+        </div>
+      ),
+    },
+    {
+      key: "imei",
+      label: "IMEI/Serial",
+      filterType: "none" as const,
+      render: (val: string) => <span className="text-sm font-mono">{val || "N/A"}</span>,
+    },
+    {
+      key: "defectSummary",
+      label: "Defect",
+      filterType: "none" as const,
+      render: (_: any, row: RepairJob) => (
+        <div className="text-sm max-w-[200px]">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="truncate">{row.defectSummary}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="max-w-xs">
+                  <p className="font-semibold">{row.defectSummary}</p>
+                  <p className="text-xs mt-1">{row.problemDescription}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      ),
+    },
+    {
+      key: "customerName",
+      label: "Customer",
+      filterType: "none" as const,
+      render: (val: string) => <span className="text-sm">{val}</span>,
+    },
+    {
+      key: "customerPhone",
+      label: "Contact",
+      filterType: "none" as const,
+      render: (val: string) => <span className="text-sm font-mono">{val}</span>,
+    },
+    {
+      key: "customerDni",
+      label: "ID",
+      filterType: "none" as const,
+      render: (val: string) => <span className="text-sm">{val || "N/A"}</span>,
+    },
+    {
+      key: "priority",
+      label: "Priority",
+      filterType: "select" as const,
+      filterOptions: ["normal", "urgent"],
+      render: (val: string) => (
+        <Badge variant={val === "urgent" ? "destructive" : "secondary"}>
+          {val === "urgent" ? "URGENT" : "NORMAL"}
+        </Badge>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      filterType: "select" as const,
+      filterOptions: ["pending", "assigned", "in_progress", "waiting_parts", "completed", "delivered", "cancelled"],
+      render: (val: string) => (
+        <Badge variant={statusConfig[val]?.variant || "outline"}>
+          {statusConfig[val]?.label || val}
+        </Badge>
+      ),
+    },
+    {
+      key: "repairPersonName",
+      label: "Repair Person",
+      filterType: "text" as const,
+      render: (_: any, row: RepairJob) => (
+        <div className="text-sm">
+          {row.repairPersonName ? (
+            <div className="flex items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  row.isRepairPersonAvailable ? "bg-green-500" : "bg-gray-400"
+                }`}
+                title={row.isRepairPersonAvailable ? "Available" : "Unavailable"}
+              />
+              {row.repairPersonName}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">Unassigned</span>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div className="flex items-center gap-4 flex-1">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
@@ -393,7 +525,6 @@ export default function RepairBook() {
           Add Repair Job
         </Button>
       </div>
-
 
       {/* Bulk Actions */}
       {selectedRows.size > 0 && (
@@ -428,237 +559,157 @@ export default function RepairBook() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="border rounded-md">
-        <table className="w-full">
-          <thead className="bg-muted">
-            <tr>
-              <th className="p-3 text-left w-12">
-                <Checkbox
-                  checked={paginatedJobs.length > 0 && paginatedJobs.every(job => selectedRows.has(job.id))}
-                  onCheckedChange={handleSelectAll}
-                  data-testid="checkbox-select-all"
-                />
-              </th>
-              <th className="p-3 text-left">#</th>
-              <th className="p-3 text-left">Date & Time</th>
-              <th className="p-3 text-left">Brand/Model</th>
-              <th className="p-3 text-left">IMEI/Serial</th>
-              <th className="p-3 text-left">Defect</th>
-              <th className="p-3 text-left">Customer</th>
-              <th className="p-3 text-left">Contact</th>
-              <th className="p-3 text-left">ID</th>
-              <th className="p-3 text-left">
-                <div className="flex items-center gap-2">
-                  Priority
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 p-0"
-                        data-testid="filter-priority"
-                      >
-                        <Filter className={cn("w-3 h-3", priorityFilter && "text-primary")} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-48 p-3">
-                      <Select value={priorityFilter || "all"} onValueChange={(v) => setPriorityFilter(v === "all" ? "" : v)}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Priority</SelectItem>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="urgent">Urgent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </th>
-              <th className="p-3 text-left">
-                <div className="flex items-center gap-2">
-                  Status
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 p-0"
-                        data-testid="filter-status"
-                      >
-                        <Filter className={cn("w-3 h-3", statusFilter && "text-primary")} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-56 p-3">
-                      <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="assigned">Assigned</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="waiting_parts">Waiting Parts</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </th>
-              <th className="p-3 text-left">
-                <div className="flex items-center gap-2">
-                  Repair Person
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 p-0"
-                        data-testid="filter-person"
-                      >
-                        <Filter className={cn("w-3 h-3", repairPersonFilter && "text-primary")} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-48 p-3">
-                      <Select value={repairPersonFilter || "all"} onValueChange={(v) => setRepairPersonFilter(v === "all" ? "" : v)}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Technicians" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Technicians</SelectItem>
-                          {mockRepairPersons.map((person) => (
-                            <SelectItem key={person.id} value={person.id}>
-                              {person.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedJobs.length === 0 ? (
+      {/* DataTable with custom first column for checkboxes */}
+      <div className="border rounded-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-primary/5 to-accent/5 border-b-2 border-primary/20">
               <tr>
-                <td colSpan={13} className="p-8 text-center text-muted-foreground">
-                  No repair jobs found
-                </td>
-              </tr>
-            ) : (
-              paginatedJobs.map((job, index) => (
-                <tr key={job.id} className="border-t hover-elevate">
-                  <td className="p-3">
-                    <Checkbox
-                      checked={selectedRows.has(job.id)}
-                      onCheckedChange={(checked) => handleSelectRow(job.id, checked as boolean)}
-                      data-testid={`checkbox-row-${index}`}
-                    />
-                  </td>
-                  <td className="p-3 font-mono text-sm">{job.ticketNumber}</td>
-                  <td className="p-3 text-sm">
-                    {format(job.createdAt, "dd/MM/yyyy HH:mm")}
-                  </td>
-                  <td className="p-3 text-sm">
-                    <div>{job.deviceBrand}</div>
-                    <div className="text-muted-foreground text-xs">{job.deviceModel}</div>
-                  </td>
-                  <td className="p-3 text-sm font-mono">{job.imei || "N/A"}</td>
-                  <td className="p-3 text-sm max-w-[200px]">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="truncate">{job.defectSummary}</div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="max-w-xs">
-                            <p className="font-semibold">{job.defectSummary}</p>
-                            <p className="text-xs mt-1">{job.problemDescription}</p>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </td>
-                  <td className="p-3 text-sm">{job.customerName}</td>
-                  <td className="p-3 text-sm font-mono">{job.customerPhone}</td>
-                  <td className="p-3 text-sm">{job.customerDni || "N/A"}</td>
-                  <td className="p-3">
-                    <Badge variant={job.priority === "urgent" ? "destructive" : "secondary"}>
-                      {job.priority === "urgent" ? "URGENT" : "NORMAL"}
-                    </Badge>
-                  </td>
-                  <td className="p-3">
-                    <Badge variant={statusConfig[job.status]?.variant || "outline"}>
-                      {statusConfig[job.status]?.label || job.status}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-sm">
-                    {job.repairPersonName ? (
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            job.isRepairPersonAvailable ? "bg-green-500" : "bg-gray-400"
-                          }`}
-                          title={job.isRepairPersonAvailable ? "Available" : "Unavailable"}
-                        />
-                        {job.repairPersonName}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Unassigned</span>
-                    )}
-                  </td>
-                  <td className="p-3">
-                    <div className="flex justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-actions-${index}`}>
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setViewJob(job)} data-testid={`action-view-${index}`}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditJob(job)} data-testid={`action-edit-${index}`}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setAssignJob(job)} data-testid={`action-assign-${index}`}>
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Assign/Reassign
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleCall(job.customerPhone)} data-testid={`action-call-${index}`}>
-                            <Phone className="w-4 h-4 mr-2" />
-                            Call Customer
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleWhatsApp(job.customerPhone)} data-testid={`action-whatsapp-${index}`}>
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            WhatsApp
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handlePrint(job)} data-testid={`action-print-${index}`}>
-                            <Printer className="w-4 h-4 mr-2" />
-                            Print Ticket
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                <th className="p-3 text-left w-12">
+                  <Checkbox
+                    checked={isAllCurrentPageSelected}
+                    onCheckedChange={handleSelectAll}
+                    data-testid="checkbox-select-all"
+                  />
+                </th>
+                {columns.map((col) => (
+                  <th key={col.key} className="p-3 text-left font-semibold text-foreground whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <span>{col.label}</span>
+                      {col.filterType !== "none" && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 p-0 text-gray-500 hover:text-primary"
+                            >
+                              {col.filterType === "text" ? (
+                                <Search className="w-4 h-4" />
+                              ) : (
+                                <Filter className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-56 p-3 space-y-3">
+                            {col.filterType === "text" && (
+                              <Input
+                                placeholder={`Search ${col.label}`}
+                                value={filters[col.key] || ""}
+                                onChange={(e) => {
+                                  setFilters(prev => ({ ...prev, [col.key]: e.target.value }));
+                                  setPage(1);
+                                }}
+                                className="text-sm"
+                              />
+                            )}
+                            {col.filterType === "select" && col.filterOptions && (
+                              <Select
+                                value={filters[col.key] || "__all__"}
+                                onValueChange={(value) => {
+                                  setFilters(prev => ({ ...prev, [col.key]: value === "__all__" ? "" : value }));
+                                  setPage(1);
+                                }}
+                              >
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue placeholder="Filter" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">All</SelectItem>
+                                  {col.filterOptions.map((opt) => (
+                                    <SelectItem key={opt} value={opt}>
+                                      {opt}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            <div className="flex justify-between pt-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setFilters(prev => ({ ...prev, [col.key]: "" }));
+                                  setPage(1);
+                                }}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
                     </div>
+                  </th>
+                ))}
+                <th className="p-3 text-right font-semibold text-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedJobs.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length + 2} className="p-8 text-center text-muted-foreground">
+                    No repair jobs found
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                paginatedJobs.map((row, index) => (
+                  <tr key={row.id} className="border-t hover:bg-muted/30 transition-colors">
+                    <td className="p-3">
+                      <Checkbox
+                        checked={selectedRows.has(row.id)}
+                        onCheckedChange={(checked) => handleSelectRow(row.id, checked as boolean)}
+                        data-testid={`checkbox-row-${row.id}`}
+                      />
+                    </td>
+                    {columns.map((col) => (
+                      <td key={col.key} className="p-3">
+                        {col.render ? col.render(row[col.key as keyof RepairJob], row) : String(row[col.key as keyof RepairJob] ?? '')}
+                      </td>
+                    ))}
+                    <td className="p-3 text-right">
+                      <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" data-testid={`button-actions-${row.id}`}>
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setViewJob(row)} data-testid={`action-view-${row.id}`}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setEditJob(row)} data-testid={`action-edit-${row.id}`}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAssignJob(row)} data-testid={`action-assign-${row.id}`}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Assign/Reassign
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleCall(row.customerPhone)} data-testid={`action-call-${row.id}`}>
+                  <Phone className="w-4 h-4 mr-2" />
+                  Call Customer
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleWhatsApp(row.customerPhone)} data-testid={`action-whatsapp-${row.id}`}>
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handlePrint(row)} data-testid={`action-print-${row.id}`}>
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print Ticket
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}

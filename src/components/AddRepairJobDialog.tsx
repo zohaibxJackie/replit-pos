@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,7 +82,6 @@ export function AddRepairJobDialog({
   const { toast } = useToast();
 
   // Form state
-  const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -128,12 +127,8 @@ export function AddRepairJobDialog({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (customerMode === "new") {
-      if (!customerName.trim()) newErrors.customerName = "Customer name is required";
-      if (!customerPhone.trim()) newErrors.customerPhone = "Customer phone is required";
-    } else {
-      if (!selectedCustomerId) newErrors.selectedCustomerId = "Please select a customer";
-    }
+    if (!customerName.trim()) newErrors.customerName = "Customer name is required";
+    if (!customerPhone.trim()) newErrors.customerPhone = "Customer phone is required";
 
     if (!deviceBrand.trim()) newErrors.deviceBrand = "Device brand is required";
     if (!deviceModel.trim()) newErrors.deviceModel = "Device model is required";
@@ -173,10 +168,10 @@ export function AddRepairJobDialog({
 
     try {
       const data: AddRepairJobData = {
-        customerId: customerMode === "existing" ? selectedCustomerId : undefined,
-        customerName: customerMode === "new" ? customerName : selectedCustomer?.name || "",
-        customerPhone: customerMode === "new" ? customerPhone : selectedCustomer?.phone || "",
-        customerDni: customerMode === "new" ? customerDni : selectedCustomer?.dni,
+        customerId: selectedCustomerId || undefined,
+        customerName,
+        customerPhone,
+        customerDni: customerDni || undefined,
         deviceBrand,
         deviceModel,
         imei: imei || undefined,
@@ -209,7 +204,6 @@ export function AddRepairJobDialog({
 
   // Reset form
   const handleReset = () => {
-    setCustomerMode("existing");
     setSelectedCustomerId("");
     setCustomerName("");
     setCustomerPhone("");
@@ -244,129 +238,102 @@ export function AddRepairJobDialog({
             <div className="space-y-4 p-4 bg-muted rounded-md">
               <h3 className="font-semibold">Customer Information</h3>
               
-              {/* Customer Mode Toggle */}
-              <div className="flex gap-4">
-                <Button
-                  type="button"
-                  variant={customerMode === "existing" ? "default" : "outline"}
-                  onClick={() => setCustomerMode("existing")}
-                  data-testid="button-existing-customer"
-                >
-                  Existing Customer
-                </Button>
-                <Button
-                  type="button"
-                  variant={customerMode === "new" ? "default" : "outline"}
-                  onClick={() => setCustomerMode("new")}
-                  data-testid="button-new-customer"
-                >
-                  New Customer
-                </Button>
+              <div>
+                <Label htmlFor="customer">
+                  Select Customer <span className="text-muted-foreground text-xs">(Optional - or enter details below)</span>
+                </Label>
+                <Popover open={openCustomerCombo} onOpenChange={setOpenCustomerCombo}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCustomerCombo}
+                      className="w-full justify-between"
+                      data-testid="select-customer"
+                    >
+                      {selectedCustomerId
+                        ? customers.find((c) => c.id === selectedCustomerId)?.name
+                        : "Search for a customer..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search customers..." />
+                      <CommandList>
+                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandGroup>
+                          {customers.map((customer) => (
+                            <CommandItem
+                              key={customer.id}
+                              value={`${customer.name} ${customer.phone}`}
+                              onSelect={() => {
+                                handleCustomerSelect(customer.id);
+                                setOpenCustomerCombo(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedCustomerId === customer.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {customer.name} - {customer.phone}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              {customerMode === "existing" ? (
+              <div>
+                <Label htmlFor="customerName">
+                  Customer Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="customerName"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Enter customer name"
+                  data-testid="input-customer-name"
+                />
+                {errors.customerName && (
+                  <p className="text-destructive text-xs mt-1">{errors.customerName}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="customer">
-                    Select Customer <span className="text-destructive">*</span>
+                  <Label htmlFor="customerPhone">
+                    Phone <span className="text-destructive">*</span>
                   </Label>
-                  <Popover open={openCustomerCombo} onOpenChange={setOpenCustomerCombo}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openCustomerCombo}
-                        className="w-full justify-between"
-                        data-testid="select-customer"
-                      >
-                        {selectedCustomerId
-                          ? customers.find((c) => c.id === selectedCustomerId)?.name
-                          : "Search for a customer..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput placeholder="Search customers..." />
-                        <CommandList>
-                          <CommandEmpty>No customer found.</CommandEmpty>
-                          <CommandGroup>
-                            {customers.map((customer) => (
-                              <CommandItem
-                                key={customer.id}
-                                value={`${customer.name} ${customer.phone}`}
-                                onSelect={() => {
-                                  handleCustomerSelect(customer.id);
-                                  setOpenCustomerCombo(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedCustomerId === customer.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {customer.name} - {customer.phone}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {errors.selectedCustomerId && (
-                    <p className="text-destructive text-xs mt-1">{errors.selectedCustomerId}</p>
+                  <Input
+                    id="customerPhone"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Phone number"
+                    data-testid="input-customer-phone"
+                  />
+                  {errors.customerPhone && (
+                    <p className="text-destructive text-xs mt-1">{errors.customerPhone}</p>
                   )}
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <Label htmlFor="customerName">
-                      Customer Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="customerName"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Enter customer name"
-                      data-testid="input-customer-name"
-                    />
-                    {errors.customerName && (
-                      <p className="text-destructive text-xs mt-1">{errors.customerName}</p>
-                    )}
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="customerPhone">
-                        Phone <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="customerPhone"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="Phone number"
-                        data-testid="input-customer-phone"
-                      />
-                      {errors.customerPhone && (
-                        <p className="text-destructive text-xs mt-1">{errors.customerPhone}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="customerDni">
-                        ID (DNI/Passport) <span className="text-muted-foreground text-xs">(Optional)</span>
-                      </Label>
-                      <Input
-                        id="customerDni"
-                        value={customerDni}
-                        onChange={(e) => setCustomerDni(e.target.value)}
-                        placeholder="DNI or Passport number"
-                        data-testid="input-customer-dni"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+                <div>
+                  <Label htmlFor="customerDni">
+                    ID (DNI/Passport) <span className="text-muted-foreground text-xs">(Optional)</span>
+                  </Label>
+                  <Input
+                    id="customerDni"
+                    value={customerDni}
+                    onChange={(e) => setCustomerDni(e.target.value)}
+                    placeholder="DNI or Passport number"
+                    data-testid="input-customer-dni"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Device Information */}
