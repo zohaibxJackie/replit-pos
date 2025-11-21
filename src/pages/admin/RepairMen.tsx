@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import FormPopupModal from "@/components/ui/FormPopupModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, DollarSign, Phone, Mail, Wrench, User, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type RepairMan = {
   id: number;
@@ -31,6 +32,7 @@ export default function RepairMen() {
   useAuth("admin");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { toast } = useToast();
 
   useEffect(() => {
     setTitle(t("admin.repair_men.title") || "Repair Service Providers");
@@ -67,10 +69,22 @@ export default function RepairMen() {
       { name: "Battery Replacement", price: 70, estimatedTime: 30 },
       { name: "Speaker Repair", price: 90, estimatedTime: 40 },
     ],
+    4: [
+      { name: "Screen Replacement", price: 110, estimatedTime: 50 },
+      { name: "Battery Replacement", price: 85, estimatedTime: 35 },
+      { name: "Microphone Repair", price: 75, estimatedTime: 40 },
+      { name: "Power Button Repair", price: 65, estimatedTime: 45 },
+    ],
     5: [
       { name: "Full Phone Diagnostics", price: 50, estimatedTime: 30 },
       { name: "Motherboard Repair", price: 200, estimatedTime: 180 },
       { name: "Screen Replacement", price: 130, estimatedTime: 60 },
+    ],
+    6: [
+      { name: "Screen Replacement", price: 95, estimatedTime: 55 },
+      { name: "Battery Replacement", price: 75, estimatedTime: 30 },
+      { name: "Camera Lens Repair", price: 110, estimatedTime: 50 },
+      { name: "Back Glass Replacement", price: 85, estimatedTime: 45 },
     ],
   };
 
@@ -117,8 +131,22 @@ export default function RepairMen() {
   };
 
   const handleWhatsApp = (phone: string) => {
-    // Remove any non-digit characters from phone number
+    // Remove all non-digit characters from phone number
+    // This handles formats like +1-555-0101, (555) 0101, etc.
     const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Validate phone number length (international format)
+    if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "The phone number format is invalid. Please contact the provider via email instead.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Open WhatsApp chat with cleaned number
+    // WhatsApp will handle the final validation
     window.open(`https://wa.me/${cleanPhone}`, '_blank');
   };
 
@@ -171,10 +199,14 @@ export default function RepairMen() {
           const previewServices = services.slice(0, 3);
           
           return (
-            <Card key={repairMan.id} className="flex flex-col" data-testid={`repairman-card-${repairMan.id}`}>
+            <Card 
+              key={repairMan.id} 
+              className="flex flex-col cursor-pointer" 
+              onClick={() => viewProfile(repairMan)}
+              data-testid={`repairman-card-${repairMan.id}`}
+            >
               <CardHeader 
-                className="pb-3 cursor-pointer hover-elevate rounded-t-lg"
-                onClick={() => viewProfile(repairMan)}
+                className="pb-3 hover-elevate rounded-t-lg"
                 data-testid={`header-profile-${repairMan.id}`}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -238,14 +270,11 @@ export default function RepairMen() {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="pt-0 gap-2">
+              <CardFooter className="pt-0 gap-2" onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleContact(repairMan.email);
-                  }}
+                  onClick={() => handleContact(repairMan.email)}
                   data-testid={`button-contact-${repairMan.id}`}
                 >
                   <Mail className="w-4 h-4 mr-2" />
@@ -254,10 +283,7 @@ export default function RepairMen() {
                 <Button
                   variant="default"
                   className="flex-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleWhatsApp(repairMan.phone);
-                  }}
+                  onClick={() => handleWhatsApp(repairMan.phone)}
                   data-testid={`button-whatsapp-${repairMan.id}`}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
