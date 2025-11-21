@@ -560,6 +560,137 @@
         "title": "Manage Stock"
       }
     },
+    "reports": {
+      "common": {
+        "date_range": "Select Date Range",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply",
+        "download": "Download",
+        "records_per_page": "Records per page",
+        "stock_by_product": "Stock by Product",
+        "total_items": "Total Items",
+        "total_quantity": "Total Quantity",
+        "in_stock": "In Stock",
+        "low_stock": "Low Stock",
+        "total_value": "Total Value",
+        "sku": "SKU",
+        "product_name": "Product Name",
+        "category": "Category",
+        "quantity": "Quantity",
+        "min_stock": "Min Stock",
+        "buy_price": "Buy Price (€)",
+        "sale_price": "Sale Price (€)",
+        "status": "Status",
+        "date": "Date",
+        "revenue": "Revenue",
+        "profit": "Profit",
+        "sold": "Sold",
+        "price": "Price",
+        "stock": "Stock",
+        "invoice_number": "Invoice Number",
+        "customer": "Customer",
+        "amount": "Amount",
+        "tax": "Tax",
+        "total": "Total",
+        "payment_method": "Payment Method",
+        "contract_number": "Contract Number",
+        "start_date": "Start Date",
+        "end_date": "End Date",
+        "value": "Value",
+        "type": "Type",
+        "rank": "Rank",
+        "model": "Model",
+        "brand": "Brand",
+        "units_sold": "Units Sold",
+        "imei": "IMEI",
+        "purchase_date": "Purchase Date",
+        "sale_date": "Sale Date",
+        "purchase_price": "Purchase Price",
+        "supplier": "Supplier",
+        "current_stock": "Current Stock",
+        "reorder_point": "Reorder Point",
+        "last_restock_date": "Last Restock Date",
+        "gross_profit": "Gross Profit",
+        "net_profit": "Net Profit",
+        "expenses": "Expenses",
+        "cost": "Cost",
+        "profit_margin": "Profit Margin (%)",
+        "return_date": "Return Date",
+        "return_reason": "Return Reason",
+        "refund_amount": "Refund Amount",
+        "name": "Name"
+      },
+      "available_stock": {
+        "title": "Available Stock Report",
+        "chart_title": "Stock by Product"
+      },
+      "stock_sold": {
+        "title": "Stock Sold Report",
+        "chart_title": "Daily Sales Trends",
+        "quantity_sold": "Quantity Sold",
+        "daily_sales": "Daily Sales"
+      },
+      "generic_products": {
+        "title": "Generic Products Report",
+        "chart_title": "Products by Category"
+      },
+      "invoices": {
+        "title": "Invoices Report",
+        "chart_title": "Invoice Status Distribution",
+        "paid": "Paid",
+        "pending": "Pending",
+        "overdue": "Overdue"
+      },
+      "contracts": {
+        "title": "Contracts Report",
+        "chart_title": "Contract Status Distribution",
+        "active": "Active",
+        "pending": "Pending",
+        "expired": "Expired",
+        "cancelled": "Cancelled"
+      },
+      "top_mobile_sales": {
+        "title": "Top Mobile Sales Report",
+        "chart_title": "Top Performing Mobile Models"
+      },
+      "mobile_record": {
+        "title": "Mobile Record Report",
+        "chart_title": "Monthly Mobile Activity",
+        "purchased": "Purchased",
+        "sold": "Sold"
+      },
+      "mobile_low_stock": {
+        "title": "Mobile Low Stock Report",
+        "chart_title": "Low Stock Status",
+        "out_of_stock": "Out of Stock",
+        "critical": "Critical",
+        "low": "Low"
+      },
+      "generic_low_stock": {
+        "title": "Generic Products Low Stock Report",
+        "chart_title": "Low Stock Status"
+      },
+      "net_profit": {
+        "title": "Net Profit Report",
+        "chart_title": "Revenue, Cost & Profit Analysis",
+        "total_revenue": "Total Revenue",
+        "total_cost": "Total Cost",
+        "total_expenses": "Total Expenses",
+        "total_gross_profit": "Total Gross Profit",
+        "total_net_profit": "Total Net Profit"
+      },
+      "sale_return": {
+        "title": "Sale Return Report",
+        "chart_title": "Return Reasons Distribution",
+        "total_returns": "Total Returns",
+        "total_refunded": "Total Refunded"
+      },
+      "sales": {
+        "title": "Sales Report",
+        "chart_title": "Sales Overview"
+      }
+    },
     "repair_men": {
       "title": "Repair Man"
     },
