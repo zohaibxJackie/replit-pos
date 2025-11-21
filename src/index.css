@@ -419,4 +419,10 @@ div[data-slot="sidebar-content"] {
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Add cursor pointer to dropdown triggers */
+  button[role="combobox"],
+  [data-testid*="select-"] button {
+    cursor: pointer;
+  }
 }
