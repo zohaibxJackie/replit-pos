@@ -39,9 +39,9 @@ export default function GenericProductsReport() {
   const { setTitle } = useTitle();
 
   useEffect(() => {
-    setTitle("Generic Products Report");
-    return () => setTitle('Business Dashboard');
-  }, [setTitle]);
+    setTitle(t("admin.reports.generic_products.title"));
+    return () => setTitle(t("admin.header.dashboard_fallback"));
+  }, [setTitle, t]);
 
   const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(2025, 9, 1),
@@ -93,20 +93,20 @@ export default function GenericProductsReport() {
   }, [productsData]);
 
   const columns = [
-    { key: "sku", label: "SKU", filterType: "text" },
-    { key: "name", label: "Product Name", filterType: "text" },
-    { key: "category", label: "Category", filterType: "select", filterOptions: ["Accessories", "Audio", "Protection"] },
-    { key: "stock", label: "Stock", filterType: "none" },
-    { key: "sold", label: "Sold", filterType: "none" },
+    { key: "sku", label: t("admin.reports.common.sku"), filterType: "text" },
+    { key: "name", label: t("admin.reports.common.name"), filterType: "text" },
+    { key: "category", label: t("admin.reports.common.category"), filterType: "select", filterOptions: ["Accessories", "Audio", "Protection"] },
+    { key: "stock", label: t("admin.reports.common.stock"), filterType: "none" },
+    { key: "sold", label: t("admin.reports.common.sold"), filterType: "none" },
     { 
       key: "price", 
-      label: "Price (€)", 
+      label: t("admin.reports.common.price"), 
       filterType: "none",
       render: (value: number) => `€${value.toFixed(2)}`
     },
     { 
       key: "revenue", 
-      label: "Revenue (€)", 
+      label: t("admin.reports.common.revenue"), 
       filterType: "none",
       render: (value: number) => `€${value.toFixed(2)}`
     },
@@ -128,7 +128,15 @@ export default function GenericProductsReport() {
 
   const handleDownload = () => {
     const csv = [
-      ["SKU", "Product Name", "Category", "Stock", "Sold", "Price", "Revenue"].join(","),
+      [
+        t("admin.reports.common.sku"), 
+        t("admin.reports.common.name"), 
+        t("admin.reports.common.category"), 
+        t("admin.reports.common.stock"), 
+        t("admin.reports.common.sold"), 
+        t("admin.reports.common.price"), 
+        t("admin.reports.common.revenue")
+      ].join(","),
       ...filteredData.map((s) =>
         [s.sku, s.name, s.category, s.stock, s.sold, s.price, s.revenue].join(",")
       ),
@@ -156,16 +164,16 @@ export default function GenericProductsReport() {
                   {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
-                "Select Date Range"
+                t("admin.reports.common.date_range")
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="p-3 bg-white rounded-xl shadow-lg">
+          <PopoverContent className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium">From</label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <label className="text-sm font-medium">{t("admin.reports.common.from")}</label>
                 <Input
-                  className="!w-9/12 justify-center"
+                  className="!w-full sm:!w-9/12 justify-center"
                   type="date"
                   value={dateRange.from ? dateRange.from.toISOString().split("T")[0] : ""}
                   min={minDate.toISOString().split("T")[0]}
@@ -179,10 +187,10 @@ export default function GenericProductsReport() {
                   data-testid="input-date-from"
                 />
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium">To</label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <label className="text-sm font-medium">{t("admin.reports.common.to")}</label>
                 <Input
-                  className="!w-9/12 justify-center"
+                  className="!w-full sm:!w-9/12 justify-center"
                   type="date"
                   value={dateRange.to ? dateRange.to.toISOString().split("T")[0] : ""}
                   min={minDate.toISOString().split("T")[0]}
@@ -196,35 +204,35 @@ export default function GenericProductsReport() {
                   data-testid="input-date-to"
                 />
               </div>
-              <Button data-testid="button-apply-date">Apply</Button>
+              <Button data-testid="button-apply-date">{t("admin.reports.common.apply")}</Button>
             </div>
           </PopoverContent>
         </Popover>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <p className="text-sm font-medium text-gray-500">Total Products</p>
-          <p className="text-xl font-semibold text-gray-900">{summary.totalProducts}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <p className="text-sm font-medium text-gray-500">Total Stock</p>
-          <p className="text-xl font-semibold text-gray-900">{summary.totalStock}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <p className="text-sm font-medium text-gray-500">Total Sold</p>
-          <p className="text-xl font-semibold text-blue-600">{summary.totalSold}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-          <p className="text-xl font-semibold text-green-600">€{summary.totalRevenue.toFixed(2)}</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 text-center">
+          <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.common.total_items")}</p>
+          <p className="text-xl font-semibold">{summary.totalProducts}</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.common.stock")}</p>
+          <p className="text-xl font-semibold">{summary.totalStock}</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.common.sold")}</p>
+          <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{summary.totalSold}</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.common.revenue")}</p>
+          <p className="text-xl font-semibold text-green-600 dark:text-green-400">€{summary.totalRevenue.toFixed(2)}</p>
+        </Card>
       </div>
 
       {/* Pie Chart */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Sales by Category</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("admin.reports.generic_products.chart_title")}</h3>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
@@ -248,7 +256,7 @@ export default function GenericProductsReport() {
       </Card>
 
       {/* Table Controls */}
-      <div className="flex justify-end items-center gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mb-4">
         <Select
           value={String(recordsPerPage)}
           onValueChange={(value) => {
@@ -256,20 +264,20 @@ export default function GenericProductsReport() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-[150px]" data-testid="select-records-per-page">
-            <SelectValue placeholder="Records per page" />
+          <SelectTrigger className="w-full sm:w-[150px]" data-testid="select-records-per-page">
+            <SelectValue placeholder={t("admin.reports.common.records_per_page")} />
           </SelectTrigger>
           <SelectContent>
             {[10, 25, 50, 100].map((n) => (
               <SelectItem key={n} value={String(n)}>
-                Show {n}
+                {t("admin.common.show")} {n}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Button onClick={handleDownload} variant="default" data-testid="button-download">
-          <Download className="w-4 h-4" /> Download
+        <Button onClick={handleDownload} variant="default" data-testid="button-download" className="w-full sm:w-auto">
+          <Download className="w-4 h-4" /> {t("admin.reports.common.download")}
         </Button>
       </div>
 
