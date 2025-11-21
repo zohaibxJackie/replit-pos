@@ -83,9 +83,6 @@ export function AddRepairJobDialog({
 
   // Form state
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerDni, setCustomerDni] = useState("");
   const [deviceBrand, setDeviceBrand] = useState("");
   const [deviceModel, setDeviceModel] = useState("");
   const [imei, setImei] = useState("");
@@ -106,17 +103,6 @@ export function AddRepairJobDialog({
     [customers, selectedCustomerId]
   );
 
-  // Auto-fill customer details when existing customer is selected
-  const handleCustomerSelect = useCallback((customerId: string) => {
-    setSelectedCustomerId(customerId);
-    const customer = customers.find((c) => c.id === customerId);
-    if (customer) {
-      setCustomerName(customer.name);
-      setCustomerPhone(customer.phone);
-      setCustomerDni(customer.dni || "");
-    }
-  }, [customers]);
-
   // Handle IMEI scan
   const handleIMEIScan = useCallback((scannedCode: string) => {
     setImei(scannedCode);
@@ -127,8 +113,7 @@ export function AddRepairJobDialog({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!customerName.trim()) newErrors.customerName = "Customer name is required";
-    if (!customerPhone.trim()) newErrors.customerPhone = "Customer phone is required";
+    if (!selectedCustomerId) newErrors.customer = "Please select a customer";
 
     if (!deviceBrand.trim()) newErrors.deviceBrand = "Device brand is required";
     if (!deviceModel.trim()) newErrors.deviceModel = "Device model is required";
@@ -167,11 +152,15 @@ export function AddRepairJobDialog({
     setIsSubmitting(true);
 
     try {
+      if (!selectedCustomer) {
+        throw new Error("Please select a customer");
+      }
+
       const data: AddRepairJobData = {
-        customerId: selectedCustomerId || undefined,
-        customerName,
-        customerPhone,
-        customerDni: customerDni || undefined,
+        customerId: selectedCustomerId,
+        customerName: selectedCustomer.name,
+        customerPhone: selectedCustomer.phone,
+        customerDni: selectedCustomer.dni || undefined,
         deviceBrand,
         deviceModel,
         imei: imei || undefined,
@@ -205,9 +194,6 @@ export function AddRepairJobDialog({
   // Reset form
   const handleReset = () => {
     setSelectedCustomerId("");
-    setCustomerName("");
-    setCustomerPhone("");
-    setCustomerDni("");
     setDeviceBrand("");
     setDeviceModel("");
     setImei("");
@@ -240,7 +226,7 @@ export function AddRepairJobDialog({
               
               <div>
                 <Label htmlFor="customer">
-                  Select Customer <span className="text-muted-foreground text-xs">(Optional - or enter details below)</span>
+                  Select Customer <span className="text-destructive">*</span>
                 </Label>
                 <Popover open={openCustomerCombo} onOpenChange={setOpenCustomerCombo}>
                   <PopoverTrigger asChild>
@@ -268,7 +254,7 @@ export function AddRepairJobDialog({
                               key={customer.id}
                               value={`${customer.name} ${customer.phone}`}
                               onSelect={() => {
-                                handleCustomerSelect(customer.id);
+                                setSelectedCustomerId(customer.id);
                                 setOpenCustomerCombo(false);
                               }}
                             >
@@ -286,54 +272,26 @@ export function AddRepairJobDialog({
                     </Command>
                   </PopoverContent>
                 </Popover>
-              </div>
-
-              <div>
-                <Label htmlFor="customerName">
-                  Customer Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="customerName"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Enter customer name"
-                  data-testid="input-customer-name"
-                />
-                {errors.customerName && (
-                  <p className="text-destructive text-xs mt-1">{errors.customerName}</p>
+                {errors.customer && (
+                  <p className="text-destructive text-xs mt-1">{errors.customer}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="customerPhone">
-                    Phone <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="customerPhone"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Phone number"
-                    data-testid="input-customer-phone"
-                  />
-                  {errors.customerPhone && (
-                    <p className="text-destructive text-xs mt-1">{errors.customerPhone}</p>
+              {selectedCustomer && (
+                <div className="p-3 bg-background rounded-md border space-y-1">
+                  <p className="text-sm">
+                    <span className="font-medium">Name:</span> {selectedCustomer.name}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Phone:</span> {selectedCustomer.phone}
+                  </p>
+                  {selectedCustomer.dni && (
+                    <p className="text-sm">
+                      <span className="font-medium">ID:</span> {selectedCustomer.dni}
+                    </p>
                   )}
                 </div>
-
-                <div>
-                  <Label htmlFor="customerDni">
-                    ID (DNI/Passport) <span className="text-muted-foreground text-xs">(Optional)</span>
-                  </Label>
-                  <Input
-                    id="customerDni"
-                    value={customerDni}
-                    onChange={(e) => setCustomerDni(e.target.value)}
-                    placeholder="DNI or Passport number"
-                    data-testid="input-customer-dni"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Device Information */}
