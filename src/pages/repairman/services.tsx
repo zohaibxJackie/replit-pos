@@ -24,7 +24,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 
 export default function RepairmanServices() {
-  useAuth('repair_man');
+  useAuth("repair_man");
   const { setTitle } = useTitle();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -45,7 +45,8 @@ export default function RepairmanServices() {
       model: "iPhone 13 Pro",
       imei: "353456789012345",
       issue: "Screen replacement",
-      description: "Screen cracked after drop. Touch functionality partially working.",
+      description:
+        "Screen cracked after drop. Touch functionality partially working.",
       priority: "urgent",
       status: "in_progress",
       dueDate: "2024-01-15",
@@ -160,7 +161,8 @@ export default function RepairmanServices() {
       job.device.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || job.status === statusFilter;
-    const matchesPriority = priorityFilter === "all" || job.priority === priorityFilter;
+    const matchesPriority =
+      priorityFilter === "all" || job.priority === priorityFilter;
 
     return matchesSearch && matchesStatus && matchesPriority;
   });
@@ -175,13 +177,11 @@ export default function RepairmanServices() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">My Services</h1>
-        <p className="text-muted-foreground">Manage your assigned repair jobs</p>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-5">
-        <Card className="cursor-pointer hover-elevate" data-testid="card-filter-all">
+        <Card
+          className="cursor-pointer hover-elevate"
+          data-testid="card-filter-all"
+        >
           <CardContent className="pt-6">
             <div className="text-center space-y-1">
               <p className="text-2xl font-bold">{statusCounts.all}</p>
@@ -189,34 +189,54 @@ export default function RepairmanServices() {
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover-elevate" data-testid="card-filter-pending">
+        <Card
+          className="cursor-pointer hover-elevate"
+          data-testid="card-filter-pending"
+        >
           <CardContent className="pt-6">
             <div className="text-center space-y-1">
-              <p className="text-2xl font-bold text-amber-500">{statusCounts.pending}</p>
+              <p className="text-2xl font-bold text-amber-500">
+                {statusCounts.pending}
+              </p>
               <p className="text-sm text-muted-foreground">Pending</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover-elevate" data-testid="card-filter-in-progress">
+        <Card
+          className="cursor-pointer hover-elevate"
+          data-testid="card-filter-in-progress"
+        >
           <CardContent className="pt-6">
             <div className="text-center space-y-1">
-              <p className="text-2xl font-bold text-blue-500">{statusCounts.in_progress}</p>
+              <p className="text-2xl font-bold text-blue-500">
+                {statusCounts.in_progress}
+              </p>
               <p className="text-sm text-muted-foreground">In Progress</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover-elevate" data-testid="card-filter-waiting">
+        <Card
+          className="cursor-pointer hover-elevate"
+          data-testid="card-filter-waiting"
+        >
           <CardContent className="pt-6">
             <div className="text-center space-y-1">
-              <p className="text-2xl font-bold text-orange-500">{statusCounts.waiting_parts}</p>
+              <p className="text-2xl font-bold text-orange-500">
+                {statusCounts.waiting_parts}
+              </p>
               <p className="text-sm text-muted-foreground">Waiting Parts</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover-elevate" data-testid="card-filter-completed">
+        <Card
+          className="cursor-pointer hover-elevate"
+          data-testid="card-filter-completed"
+        >
           <CardContent className="pt-6">
             <div className="text-center space-y-1">
-              <p className="text-2xl font-bold text-green-500">{statusCounts.completed}</p>
+              <p className="text-2xl font-bold text-green-500">
+                {statusCounts.completed}
+              </p>
               <p className="text-sm text-muted-foreground">Completed</p>
             </div>
           </CardContent>
@@ -257,7 +277,10 @@ export default function RepairmanServices() {
               </SelectContent>
             </Select>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[180px]" data-testid="select-priority">
+              <SelectTrigger
+                className="w-[180px]"
+                data-testid="select-priority"
+              >
                 <SelectValue placeholder="Filter by priority" />
               </SelectTrigger>
               <SelectContent>
@@ -285,7 +308,10 @@ export default function RepairmanServices() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-lg" data-testid={`text-ticket-${job.id}`}>
+                      <span
+                        className="font-bold text-lg"
+                        data-testid={`text-ticket-${job.id}`}
+                      >
                         {job.ticketNumber}
                       </span>
                       <Badge
@@ -300,14 +326,21 @@ export default function RepairmanServices() {
                         className={getStatusColor(job.status)}
                         data-testid={`badge-status-${job.id}`}
                       >
-                        {job.status.replace('_', ' ')}
+                        {job.status.replace("_", " ")}
                       </Badge>
                     </div>
 
                     <div className="grid gap-2 md:grid-cols-2">
                       <div>
-                        <p className="text-sm font-semibold mb-1">Customer Information</p>
-                        <p className="text-sm" data-testid={`text-customer-${job.id}`}>{job.customer}</p>
+                        <p className="text-sm font-semibold mb-1">
+                          Customer Information
+                        </p>
+                        <p
+                          className="text-sm"
+                          data-testid={`text-customer-${job.id}`}
+                        >
+                          {job.customer}
+                        </p>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <Phone className="h-3 w-3" />
                           {job.phone}
@@ -315,19 +348,25 @@ export default function RepairmanServices() {
                       </div>
 
                       <div>
-                        <p className="text-sm font-semibold mb-1">Device Information</p>
+                        <p className="text-sm font-semibold mb-1">
+                          Device Information
+                        </p>
                         <p className="text-sm flex items-center gap-1">
                           <Smartphone className="h-3 w-3" />
                           {job.device}
                         </p>
-                        <p className="text-sm text-muted-foreground">IMEI: {job.imei}</p>
+                        <p className="text-sm text-muted-foreground">
+                          IMEI: {job.imei}
+                        </p>
                       </div>
                     </div>
 
                     <div>
                       <p className="text-sm font-semibold mb-1">Issue</p>
                       <p className="text-sm">{job.issue}</p>
-                      <p className="text-sm text-muted-foreground">{job.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {job.description}
+                      </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -339,7 +378,9 @@ export default function RepairmanServices() {
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">Est:</span>
-                        <span className="font-medium">${job.estimatedCost}</span>
+                        <span className="font-medium">
+                          ${job.estimatedCost}
+                        </span>
                       </span>
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />

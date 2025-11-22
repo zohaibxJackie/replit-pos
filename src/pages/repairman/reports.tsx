@@ -23,7 +23,7 @@ import {
 import { useState, useEffect } from "react";
 
 export default function RepairmanReports() {
-  useAuth('repair_man');
+  useAuth("repair_man");
   const { setTitle } = useTitle();
   const [timeRange, setTimeRange] = useState("this_week");
 
@@ -120,8 +120,18 @@ export default function RepairmanReports() {
   ];
 
   const categoryBreakdown = [
-    { category: "Screen Repairs", count: 18, percentage: 42, earnings: "$1,350" },
-    { category: "Battery Replacements", count: 12, percentage: 29, earnings: "$780" },
+    {
+      category: "Screen Repairs",
+      count: 18,
+      percentage: 42,
+      earnings: "$1,350",
+    },
+    {
+      category: "Battery Replacements",
+      count: 12,
+      percentage: 29,
+      earnings: "$780",
+    },
     { category: "Charging Ports", count: 7, percentage: 17, earnings: "$420" },
     { category: "Water Damage", count: 3, percentage: 7, earnings: "$480" },
     { category: "Other", count: 2, percentage: 5, earnings: "$210" },
@@ -133,15 +143,13 @@ export default function RepairmanReports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Performance Reports</h1>
-          <p className="text-muted-foreground">Track your work performance and earnings</p>
-        </div>
-
+      <div className="flex flex-wrap items-center justify-end gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]" data-testid="select-time-range">
+            <SelectTrigger
+              className="w-[180px]"
+              data-testid="select-time-range"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -165,7 +173,9 @@ export default function RepairmanReports() {
           return (
             <Card key={index} data-testid={`card-stat-${index}`}>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
                 <div className={`p-2 rounded-md ${stat.bgColor}`}>
                   <Icon className={`h-4 w-4 ${stat.color}`} />
                 </div>
@@ -173,7 +183,8 @@ export default function RepairmanReports() {
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  <span className={stat.color}>{stat.change}</span> from last period
+                  <span className={stat.color}>{stat.change}</span> from last
+                  period
                 </p>
               </CardContent>
             </Card>
@@ -192,14 +203,24 @@ export default function RepairmanReports() {
           <CardContent>
             <div className="space-y-3">
               {completedJobs.map((job, index) => (
-                <Card key={index} className="p-4" data-testid={`card-job-${index}`}>
+                <Card
+                  key={index}
+                  className="p-4"
+                  data-testid={`card-job-${index}`}
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-sm" data-testid={`text-ticket-${index}`}>
+                        <span
+                          className="font-semibold text-sm"
+                          data-testid={`text-ticket-${index}`}
+                        >
                           {job.ticketNumber}
                         </span>
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                        <Badge
+                          variant="outline"
+                          className="bg-green-500/10 text-green-500 border-green-500/20"
+                        >
                           Completed
                         </Badge>
                         <div className="flex items-center gap-1">
@@ -207,7 +228,9 @@ export default function RepairmanReports() {
                             <Award
                               key={i}
                               className={`h-3 w-3 ${
-                                i < job.rating ? "text-yellow-500 fill-yellow-500" : "text-gray-300"
+                                i < job.rating
+                                  ? "text-yellow-500 fill-yellow-500"
+                                  : "text-gray-300"
                               }`}
                             />
                           ))}
@@ -254,7 +277,9 @@ export default function RepairmanReports() {
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{category.category}</span>
-                    <span className="text-muted-foreground">{category.count} jobs</span>
+                    <span className="text-muted-foreground">
+                      {category.count} jobs
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
@@ -269,7 +294,9 @@ export default function RepairmanReports() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Earnings</span>
-                    <span className="font-semibold text-foreground">{category.earnings}</span>
+                    <span className="font-semibold text-foreground">
+                      {category.earnings}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -290,7 +317,9 @@ export default function RepairmanReports() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">Master Technician</p>
-                  <p className="text-xs text-muted-foreground">100+ jobs completed</p>
+                  <p className="text-xs text-muted-foreground">
+                    100+ jobs completed
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-md">
@@ -299,7 +328,9 @@ export default function RepairmanReports() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">Quick Response</p>
-                  <p className="text-xs text-muted-foreground">95% on-time completion</p>
+                  <p className="text-xs text-muted-foreground">
+                    95% on-time completion
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
@@ -308,7 +339,9 @@ export default function RepairmanReports() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">5-Star Rating</p>
-                  <p className="text-xs text-muted-foreground">Average 4.8/5 rating</p>
+                  <p className="text-xs text-muted-foreground">
+                    Average 4.8/5 rating
+                  </p>
                 </div>
               </div>
             </CardContent>

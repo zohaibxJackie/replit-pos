@@ -19,7 +19,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 
 export default function RepairmanDashboard() {
-  useAuth('repair_man');
+  useAuth("repair_man");
   const { setTitle } = useTitle();
   const [isAvailable, setIsAvailable] = useState(true);
 
@@ -125,12 +125,7 @@ export default function RepairmanDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your repair queue</p>
-        </div>
-
+      <div className="flex flex-wrap items-center justify-end gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <Label htmlFor="availability" className="text-sm font-medium">
@@ -145,7 +140,7 @@ export default function RepairmanDashboard() {
             <Badge
               variant={isAvailable ? "default" : "secondary"}
               className={isAvailable ? "bg-green-500" : ""}
-              data-testid={`badge-status-${isAvailable ? 'available' : 'unavailable'}`}
+              data-testid={`badge-status-${isAvailable ? "available" : "unavailable"}`}
             >
               {isAvailable ? "Available" : "Unavailable"}
             </Badge>
@@ -169,7 +164,8 @@ export default function RepairmanDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  <span className={stat.color}>{stat.trend}</span> {stat.trendLabel}
+                  <span className={stat.color}>{stat.trend}</span>{" "}
+                  {stat.trendLabel}
                 </p>
               </CardContent>
             </Card>
@@ -188,11 +184,18 @@ export default function RepairmanDashboard() {
           <CardContent>
             <div className="space-y-3">
               {recentJobs.map((job) => (
-                <Card key={job.id} className="p-4" data-testid={`card-job-${job.id}`}>
+                <Card
+                  key={job.id}
+                  className="p-4"
+                  data-testid={`card-job-${job.id}`}
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-sm" data-testid={`text-ticket-${job.id}`}>
+                        <span
+                          className="font-semibold text-sm"
+                          data-testid={`text-ticket-${job.id}`}
+                        >
                           {job.ticketNumber}
                         </span>
                         <Badge
@@ -207,11 +210,14 @@ export default function RepairmanDashboard() {
                           className={getStatusColor(job.status)}
                           data-testid={`badge-status-${job.id}`}
                         >
-                          {job.status.replace('_', ' ')}
+                          {job.status.replace("_", " ")}
                         </Badge>
                       </div>
                       <div>
-                        <p className="text-sm font-medium" data-testid={`text-customer-${job.id}`}>
+                        <p
+                          className="text-sm font-medium"
+                          data-testid={`text-customer-${job.id}`}
+                        >
                           {job.customer}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -239,7 +245,11 @@ export default function RepairmanDashboard() {
               ))}
             </div>
             <Link href="/repair-man/services">
-              <Button variant="outline" className="w-full mt-4" data-testid="button-view-all-jobs">
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                data-testid="button-view-all-jobs"
+              >
                 View All Jobs
               </Button>
             </Link>
@@ -255,19 +265,31 @@ export default function RepairmanDashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             <Link href="/repair-man/services">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-my-services">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                data-testid="button-my-services"
+              >
                 <Wrench className="h-4 w-4 mr-2" />
                 My Services
               </Button>
             </Link>
             <Link href="/repair-man/reports">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-reports">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                data-testid="button-reports"
+              >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 View Reports
               </Button>
             </Link>
             <Link href="/repair-man/parts-inventory">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-parts">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                data-testid="button-parts"
+              >
                 <Package className="h-4 w-4 mr-2" />
                 Parts Inventory
               </Button>
@@ -287,7 +309,9 @@ export default function RepairmanDashboard() {
           <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
             <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">2 urgent jobs require immediate attention</p>
+              <p className="text-sm font-medium">
+                2 urgent jobs require immediate attention
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 TK-001234 and TK-001236 are marked as urgent priority
               </p>

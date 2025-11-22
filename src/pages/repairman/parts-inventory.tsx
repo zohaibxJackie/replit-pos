@@ -15,7 +15,7 @@ import {
 import { useState, useEffect } from "react";
 
 export default function RepairmanPartsInventory() {
-  useAuth('repair_man');
+  useAuth("repair_man");
   const { setTitle } = useTitle();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -81,7 +81,7 @@ export default function RepairmanPartsInventory() {
     },
     {
       id: "6",
-      name: "iPad Pro 11\" Digitizer",
+      name: 'iPad Pro 11" Digitizer',
       partNumber: "APL-IPADP11-DIG",
       category: "Screens",
       quantity: 2,
@@ -92,10 +92,11 @@ export default function RepairmanPartsInventory() {
     },
   ];
 
-  const filteredParts = parts.filter((part) =>
-    part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    part.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    part.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredParts = parts.filter(
+    (part) =>
+      part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      part.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      part.category.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const getStatusColor = (status: string) => {
@@ -160,18 +161,15 @@ export default function RepairmanPartsInventory() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Parts Inventory</h1>
-        <p className="text-muted-foreground">Track and manage your repair parts stock</p>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} data-testid={`card-stat-${index}`}>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
                 <div className={`p-2 rounded-md ${stat.bgColor}`}>
                   <Icon className={`h-4 w-4 ${stat.color}`} />
                 </div>
@@ -249,7 +247,10 @@ export default function RepairmanPartsInventory() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-lg" data-testid={`text-part-name-${part.id}`}>
+                      <h3
+                        className="font-semibold text-lg"
+                        data-testid={`text-part-name-${part.id}`}
+                      >
                         {part.name}
                       </h3>
                       <Badge
@@ -264,18 +265,28 @@ export default function RepairmanPartsInventory() {
 
                     <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Part Number</p>
-                        <p className="text-sm font-medium font-mono">{part.partNumber}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Part Number
+                        </p>
+                        <p className="text-sm font-medium font-mono">
+                          {part.partNumber}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Quantity</p>
+                        <p className="text-sm text-muted-foreground">
+                          Quantity
+                        </p>
                         <p className="text-sm font-medium">
                           {part.quantity} / {part.minQuantity} min
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Used This Month</p>
-                        <p className="text-sm font-medium">{part.usedThisMonth}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Used This Month
+                        </p>
+                        <p className="text-sm font-medium">
+                          {part.usedThisMonth}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Cost</p>
@@ -296,7 +307,11 @@ export default function RepairmanPartsInventory() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" data-testid={`button-request-${part.id}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid={`button-request-${part.id}`}
+                    >
                       <Plus className="h-4 w-4 mr-1" />
                       Request
                     </Button>
