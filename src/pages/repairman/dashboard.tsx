@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useTitle } from "@/context/TitleContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,12 +15,17 @@ import {
   Calendar,
   Package,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 
 export default function RepairmanDashboard() {
   useAuth('repair_man');
+  const { setTitle } = useTitle();
   const [isAvailable, setIsAvailable] = useState(true);
+
+  useEffect(() => {
+    setTitle("Dashboard");
+  }, [setTitle]);
 
   const stats = [
     {
@@ -258,12 +264,6 @@ export default function RepairmanDashboard() {
               <Button variant="outline" className="w-full justify-start" data-testid="button-reports">
                 <TrendingUp className="h-4 w-4 mr-2" />
                 View Reports
-              </Button>
-            </Link>
-            <Link href="/repair-man/calendar">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-calendar">
-                <Calendar className="h-4 w-4 mr-2" />
-                Calendar View
               </Button>
             </Link>
             <Link href="/repair-man/parts-inventory">

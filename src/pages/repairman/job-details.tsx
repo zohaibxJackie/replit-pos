@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useTitle } from "@/context/TitleContext";
 import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,19 +22,23 @@ import {
   DollarSign,
   User,
   MessageSquare,
-  Camera,
   CheckCircle2,
   Clock,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function RepairmanJobDetails() {
   useAuth('repair_man');
+  const { setTitle } = useTitle();
   const params = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const jobId = params.id;
+
+  useEffect(() => {
+    setTitle("Job Details");
+  }, [setTitle]);
 
   const [status, setStatus] = useState("in_progress");
   const [notes, setNotes] = useState("");
@@ -59,10 +64,6 @@ export default function RepairmanJobDetails() {
     totalPaid: "50.00",
     createdAt: "2024-01-10",
     assignedAt: "2024-01-10 14:30",
-    photos: [
-      "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&h=300&fit=crop",
-      "https://images.unsplash.com/photo-1592286927505-2fd1d49f7ec4?w=400&h=300&fit=crop",
-    ],
   };
 
   const timeline = [
@@ -237,29 +238,6 @@ export default function RepairmanJobDetails() {
                 <Label className="text-muted-foreground">Detailed Description</Label>
                 <p className="text-sm">{job.description}</p>
               </div>
-              {job.photos && job.photos.length > 0 && (
-                <div>
-                  <Label className="text-muted-foreground mb-2 block">Photos</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {job.photos.map((photo, index) => (
-                      <div key={index} className="aspect-video rounded-md overflow-hidden border">
-                        <img
-                          src={photo}
-                          alt={`Device photo ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                    <Button
-                      variant="outline"
-                      className="aspect-video"
-                      data-testid="button-add-photo"
-                    >
-                      <Camera className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 

@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useTitle } from "@/context/TitleContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,17 @@ import {
   Phone,
   Smartphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 
 export default function RepairmanServices() {
   useAuth('repair_man');
+  const { setTitle } = useTitle();
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    setTitle("My Services");
+  }, [setTitle]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 

@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useTitle } from "@/context/TitleContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,16 @@ import {
   Plus,
   MinusCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function RepairmanPartsInventory() {
   useAuth('repair_man');
+  const { setTitle } = useTitle();
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    setTitle("Parts Inventory");
+  }, [setTitle]);
 
   const parts = [
     {

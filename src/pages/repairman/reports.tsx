@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useTitle } from "@/context/TitleContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,11 +20,16 @@ import {
   Calendar,
   Download,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function RepairmanReports() {
   useAuth('repair_man');
+  const { setTitle } = useTitle();
   const [timeRange, setTimeRange] = useState("this_week");
+
+  useEffect(() => {
+    setTitle("Reports");
+  }, [setTitle]);
 
   const performanceStats = [
     {

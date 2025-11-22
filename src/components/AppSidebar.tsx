@@ -158,7 +158,6 @@ const menuItems: Record<string, MenuItem[]> = {
     { key: 'Dashboard', url: '/repair-man/dashboard', icon: LayoutDashboard },
     { key: 'My Services', url: '/repair-man/services', icon: Wrench },
     { key: 'Reports', url: '/repair-man/reports', icon: TrendingUp },
-    { key: 'Calendar', url: '/repair-man/calendar', icon: Calendar },
     { key: 'Parts Inventory', url: '/repair-man/parts-inventory', icon: Package },
   ],
   wholesaler: [

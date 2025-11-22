@@ -61,7 +61,6 @@ import RepairManDashboard from "@/pages/repairman/dashboard";
 import RepairManServices from "@/pages/repairman/services";
 import RepairManJobDetails from "@/pages/repairman/job-details";
 import RepairManReports from "@/pages/repairman/reports";
-import RepairManCalendar from "@/pages/repairman/calendar";
 import RepairManPartsInventory from "@/pages/repairman/parts-inventory";
 import WholesalerDashboard from "@/pages/wholesaler/Dashboard";
 import RepairMen from "@/pages/admin/RepairMen";
@@ -265,9 +264,6 @@ function Router() {
       </Route>
       <Route path="/repair-man/reports">
         <ProtectedLayout><RepairManReports /></ProtectedLayout>
-      </Route>
-      <Route path="/repair-man/calendar">
-        <ProtectedLayout><RepairManCalendar /></ProtectedLayout>
       </Route>
       <Route path="/repair-man/parts-inventory">
         <ProtectedLayout><RepairManPartsInventory /></ProtectedLayout>
