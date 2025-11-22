@@ -164,12 +164,10 @@ const menuItems: Record<string, MenuItem[]> = {
   wholesaler: [
     { key: 'Dashboard', url: '/wholesaler/dashboard', icon: LayoutDashboard },
     { key: 'Products', url: '/wholesaler/products', icon: Package },
-    { key: 'Sales Orders', url: '/wholesaler/sales-orders', icon: ShoppingCart },
+    { key: 'Orders', url: '/wholesaler/orders', icon: ShoppingCart },
     { key: 'Customers', url: '/wholesaler/customers', icon: Users },
-    { key: 'Suppliers', url: '/wholesaler/suppliers', icon: Building2 },
     { key: 'Invoices', url: '/wholesaler/invoices', icon: FileText },
     { key: 'Reports', url: '/wholesaler/reports', icon: BarChart3 },
-    { key: 'Purchase Orders', url: '/wholesaler/purchase-orders', icon: Calendar },
   ],
 };
 

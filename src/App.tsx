@@ -64,9 +64,8 @@ import RepairManReports from "@/pages/repairman/reports";
 import RepairManPartsInventory from "@/pages/repairman/parts-inventory";
 import WholesalerDashboard from "@/pages/wholesaler/Dashboard";
 import WholesalerProducts from "@/pages/wholesaler/products";
-import WholesalerSalesOrders from "@/pages/wholesaler/sales-orders";
+import WholesalerOrders from "@/pages/wholesaler/Orders";
 import WholesalerCustomers from "@/pages/wholesaler/customers";
-import WholesalerSuppliers from "@/pages/wholesaler/suppliers";
 import WholesalerInvoices from "@/pages/wholesaler/invoices";
 import WholesalerReports from "@/pages/wholesaler/reports";
 import RepairMen from "@/pages/admin/RepairMen";
@@ -74,7 +73,6 @@ import Wholesalers from "@/pages/admin/Wholesalers";
 import WholesalersMarketplace from "@/pages/admin/WholesalersMarketplace";
 import AdminPurchaseOrders from "@/pages/admin/PurchaseOrders";
 import Tax from "./pages/admin/sub pages/Tax";
-import WholesalerPurchaseOrders from "@/pages/wholesaler/PurchaseOrders";
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -282,23 +280,17 @@ function Router() {
       <Route path="/wholesaler/products">
         <ProtectedLayout><WholesalerProducts /></ProtectedLayout>
       </Route>
-      <Route path="/wholesaler/sales-orders">
-        <ProtectedLayout><WholesalerSalesOrders /></ProtectedLayout>
+      <Route path="/wholesaler/orders">
+        <ProtectedLayout><WholesalerOrders /></ProtectedLayout>
       </Route>
       <Route path="/wholesaler/customers">
         <ProtectedLayout><WholesalerCustomers /></ProtectedLayout>
-      </Route>
-      <Route path="/wholesaler/suppliers">
-        <ProtectedLayout><WholesalerSuppliers /></ProtectedLayout>
       </Route>
       <Route path="/wholesaler/invoices">
         <ProtectedLayout><WholesalerInvoices /></ProtectedLayout>
       </Route>
       <Route path="/wholesaler/reports">
         <ProtectedLayout><WholesalerReports /></ProtectedLayout>
-      </Route>
-      <Route path="/wholesaler/purchase-orders">
-        <ProtectedLayout><WholesalerPurchaseOrders /></ProtectedLayout>
       </Route>
 
       <Route path="/">

@@ -37,7 +37,6 @@ export default function WholesalerCustomers() {
       totalOrders: 45,
       totalSpent: "$52,450.00",
       lastOrder: "2024-01-20",
-      status: "active",
       tier: "gold",
     },
     {
@@ -49,7 +48,6 @@ export default function WholesalerCustomers() {
       totalOrders: 32,
       totalSpent: "$38,920.00",
       lastOrder: "2024-01-19",
-      status: "active",
       tier: "silver",
     },
     {
@@ -61,7 +59,6 @@ export default function WholesalerCustomers() {
       totalOrders: 28,
       totalSpent: "$29,800.00",
       lastOrder: "2024-01-18",
-      status: "active",
       tier: "bronze",
     },
     {
@@ -73,7 +70,6 @@ export default function WholesalerCustomers() {
       totalOrders: 65,
       totalSpent: "$78,500.00",
       lastOrder: "2024-01-17",
-      status: "active",
       tier: "gold",
     },
     {
@@ -85,7 +81,6 @@ export default function WholesalerCustomers() {
       totalOrders: 12,
       totalSpent: "$15,200.00",
       lastOrder: "2023-12-10",
-      status: "inactive",
       tier: "bronze",
     },
   ];
@@ -110,12 +105,6 @@ export default function WholesalerCustomers() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return status === "active"
-      ? "bg-green-500/10 text-green-500 border-green-500/20"
-      : "bg-gray-500/10 text-gray-500 border-gray-500/20";
-  };
-
   const stats = [
     {
       title: "Total Customers",
@@ -125,11 +114,11 @@ export default function WholesalerCustomers() {
       bgColor: "bg-blue-500/10",
     },
     {
-      title: "Active Customers",
-      value: customers.filter((c) => c.status === "active").length.toString(),
+      title: "Gold Tier",
+      value: customers.filter((c) => c.tier === "gold").length.toString(),
       icon: TrendingUp,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
+      color: "text-yellow-500",
+      bgColor: "bg-yellow-500/10",
     },
     {
       title: "Total Orders",
@@ -236,13 +225,6 @@ export default function WholesalerCustomers() {
                       >
                         {customer.tier.charAt(0).toUpperCase() +
                           customer.tier.slice(1)}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(customer.status)}
-                      >
-                        {customer.status.charAt(0).toUpperCase() +
-                          customer.status.slice(1)}
                       </Badge>
                     </div>
 

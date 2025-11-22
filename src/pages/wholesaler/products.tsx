@@ -12,9 +12,10 @@ import {
   Edit,
   DollarSign,
   TrendingUp,
-  BarChart3,
+  Smartphone,
+  Cable,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,180 +34,406 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Mock data for brands (these would come from backend)
+const mockBrands = [
+  { id: "apple", name: "Apple" },
+  { id: "samsung", name: "Samsung" },
+  { id: "xiaomi", name: "Xiaomi" },
+  { id: "oppo", name: "OPPO" },
+  { id: "vivo", name: "Vivo" },
+  { id: "realme", name: "Realme" },
+  { id: "oneplus", name: "OnePlus" },
+  { id: "huawei", name: "Huawei" },
+  { id: "google", name: "Google" },
+  { id: "sony", name: "Sony" },
+  { id: "anker", name: "Anker" },
+  { id: "baseus", name: "Baseus" },
+  { id: "ugreen", name: "UGREEN" },
+];
+
+// Mock data for mobile models by brand (these would come from backend)
+const mockMobileModels: Record<string, string[]> = {
+  apple: [
+    "iPhone 15 Pro Max 256GB",
+    "iPhone 15 Pro Max 512GB",
+    "iPhone 15 Pro 128GB",
+    "iPhone 15 Pro 256GB",
+    "iPhone 15 Plus 128GB",
+    "iPhone 15 128GB",
+    "iPhone 14 Pro Max 256GB",
+    "iPhone 14 Pro 256GB",
+    "iPhone 13 128GB",
+  ],
+  samsung: [
+    "Galaxy S24 Ultra 256GB",
+    "Galaxy S24 Ultra 512GB",
+    "Galaxy S24 Plus 256GB",
+    "Galaxy S24 128GB",
+    "Galaxy S23 Ultra 256GB",
+    "Galaxy Z Fold 5 256GB",
+    "Galaxy Z Flip 5 256GB",
+    "Galaxy A54 128GB",
+  ],
+  xiaomi: [
+    "Xiaomi 14 Pro 512GB",
+    "Xiaomi 14 256GB",
+    "Xiaomi 13 Pro 256GB",
+    "Redmi Note 13 Pro 256GB",
+    "Redmi Note 13 128GB",
+    "POCO X6 Pro 256GB",
+  ],
+  oppo: [
+    "Find X6 Pro 256GB",
+    "Find X5 Pro 256GB",
+    "Reno 11 Pro 256GB",
+    "Reno 10 Pro 256GB",
+  ],
+  vivo: [
+    "X100 Pro 256GB",
+    "X90 Pro 256GB",
+    "V29 Pro 256GB",
+  ],
+  realme: [
+    "GT 5 Pro 256GB",
+    "GT Neo 6 256GB",
+    "11 Pro Plus 256GB",
+  ],
+  oneplus: [
+    "OnePlus 12 256GB",
+    "OnePlus 11 256GB",
+    "OnePlus Nord 3 256GB",
+  ],
+  huawei: [
+    "Mate 60 Pro 512GB",
+    "P60 Pro 256GB",
+  ],
+  google: [
+    "Pixel 8 Pro 256GB",
+    "Pixel 8 128GB",
+    "Pixel 7 Pro 256GB",
+  ],
+  sony: [
+    "Xperia 1 V 256GB",
+    "Xperia 5 V 128GB",
+  ],
+};
+
+// Searchable Select Component
+function SearchableSelect({
+  items,
+  placeholder,
+  value,
+  onChange,
+  labelKey = "name",
+  testId,
+}: {
+  items: { id: string; [k: string]: any }[];
+  placeholder?: string;
+  value?: string;
+  onChange: (v: string) => void;
+  labelKey?: string;
+  testId?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(
+    () =>
+      items.filter((it) =>
+        String(it[labelKey] ?? "")
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      ),
+    [items, query, labelKey]
+  );
+
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger data-testid={testId}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        <div className="p-2">
+          <Input
+            placeholder={`Search ${placeholder ?? ""}`}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoComplete="off"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        <div className="max-h-48 overflow-auto">
+          {filtered.length === 0 ? (
+            <div className="p-2 text-sm text-muted-foreground text-center">
+              No results found
+            </div>
+          ) : (
+            filtered.map((it) => (
+              <SelectItem key={it.id} value={it.id}>
+                {it[labelKey]}
+              </SelectItem>
+            ))
+          )}
+        </div>
+      </SelectContent>
+    </Select>
+  );
+}
+
+// Autocomplete for Mobile Models
+function ModelAutocomplete({
+  brandId,
+  value,
+  onChange,
+}: {
+  brandId?: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [inputValue, setInputValue] = useState(value);
+
+  useEffect(() => {
+    setInputValue(value);
+  }, [value, brandId]);
+
+  const models = useMemo(() => {
+    if (!brandId) return [];
+    return mockMobileModels[brandId] || [];
+  }, [brandId]);
+
+  const filteredModels = useMemo(() => {
+    if (!inputValue.trim()) return models;
+    return models.filter((model) =>
+      model.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  }, [models, inputValue]);
+
+  const handleInputChange = (val: string) => {
+    setInputValue(val);
+    onChange(val);
+    setShowSuggestions(val.length > 0 && filteredModels.length > 0);
+  };
+
+  const handleSelectModel = (model: string) => {
+    setInputValue(model);
+    onChange(model);
+    setShowSuggestions(false);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        value={inputValue}
+        onChange={(e) => handleInputChange(e.target.value)}
+        onFocus={() =>
+          setShowSuggestions(inputValue.length > 0 && filteredModels.length > 0)
+        }
+        placeholder={brandId ? "Type to search model..." : "Select brand first"}
+        disabled={!brandId}
+        data-testid="input-model-autocomplete"
+      />
+      {showSuggestions && (
+        <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+          {filteredModels.map((model, idx) => (
+            <button
+              key={idx}
+              type="button"
+              className="w-full px-3 py-2 text-left text-sm hover-elevate active-elevate-2"
+              onClick={() => handleSelectModel(model)}
+              data-testid={`suggestion-model-${idx}`}
+            >
+              {model}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type Product = {
+  id: string;
+  category: "mobile" | "accessory";
+  brand: string;
+  brandName: string;
+  name: string;
+  sku: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  stock: number;
+  minStock: number;
+  description?: string;
+};
 
 export default function WholesalerProducts() {
   useAuth("wholesaler");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "mobile" | "accessory">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    sku: "",
-    category: "",
-    unitPrice: "",
-    wholesalePrice: "",
-    stock: "",
-    minStock: "",
-    description: "",
-  });
+  const [selectedCategory, setSelectedCategory] = useState<"mobile" | "accessory">("mobile");
+  
+  // Form state
+  const [brand, setBrand] = useState("");
+  const [modelName, setModelName] = useState("");
+  const [accessoryName, setAccessoryName] = useState("");
+  const [sku, setSku] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [sellingPrice, setSellingPrice] = useState("");
+  const [stock, setStock] = useState("");
+  const [minStock, setMinStock] = useState("");
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
     setTitle("Products");
   }, [setTitle]);
 
-  const products = [
+  const [products] = useState<Product[]>([
     {
       id: "1",
-      name: "Premium Wireless Mouse",
-      sku: "WM-PRO-001",
-      category: "Electronics",
-      unitPrice: "$45.00",
-      wholesalePrice: "$32.00",
-      stock: 150,
-      minStock: 30,
-      monthlySales: 85,
-      status: "in_stock",
-      description: "High-quality wireless mouse with ergonomic design",
+      category: "mobile",
+      brand: "apple",
+      brandName: "Apple",
+      name: "iPhone 15 Pro Max 256GB",
+      sku: "APL-I15PM-256",
+      purchasePrice: 450000,
+      sellingPrice: 520000,
+      stock: 5,
+      minStock: 3,
+      description: "Brand new sealed iPhone 15 Pro Max",
     },
     {
       id: "2",
-      name: "Mechanical Keyboard RGB",
-      sku: "KB-RGB-002",
-      category: "Electronics",
-      unitPrice: "$120.00",
-      wholesalePrice: "$85.00",
-      stock: 25,
-      minStock: 20,
-      monthlySales: 42,
-      status: "low_stock",
-      description: "Professional mechanical keyboard with RGB lighting",
+      category: "mobile",
+      brand: "samsung",
+      brandName: "Samsung",
+      name: "Galaxy S24 Ultra 256GB",
+      sku: "SAM-S24U-256",
+      purchasePrice: 380000,
+      sellingPrice: 450000,
+      stock: 8,
+      minStock: 5,
     },
     {
       id: "3",
-      name: "USB-C Hub 7-in-1",
-      sku: "HUB-7P-003",
-      category: "Accessories",
-      unitPrice: "$65.00",
-      wholesalePrice: "$45.00",
-      stock: 200,
-      minStock: 50,
-      monthlySales: 120,
-      status: "in_stock",
-      description: "Versatile 7-port USB-C hub for laptops",
+      category: "accessory",
+      brand: "anker",
+      brandName: "Anker",
+      name: "PowerBank 20000mAh Fast Charging",
+      sku: "ANK-PB-20K",
+      purchasePrice: 5000,
+      sellingPrice: 7500,
+      stock: 50,
+      minStock: 20,
     },
     {
       id: "4",
-      name: "Laptop Stand Aluminum",
-      sku: "LS-ALU-004",
-      category: "Accessories",
-      unitPrice: "$35.00",
-      wholesalePrice: "$22.00",
-      stock: 0,
-      minStock: 15,
-      monthlySales: 65,
-      status: "out_of_stock",
-      description: "Adjustable aluminum laptop stand",
+      category: "accessory",
+      brand: "baseus",
+      brandName: "Baseus",
+      name: "USB-C to Lightning Cable 2m",
+      sku: "BAS-USBC-LT",
+      purchasePrice: 1200,
+      sellingPrice: 2000,
+      stock: 100,
+      minStock: 50,
     },
-    {
-      id: "5",
-      name: "Wireless Earbuds Pro",
-      sku: "WE-PRO-005",
-      category: "Audio",
-      unitPrice: "$95.00",
-      wholesalePrice: "$68.00",
-      stock: 75,
-      minStock: 25,
-      monthlySales: 95,
-      status: "in_stock",
-      description: "Premium wireless earbuds with noise cancellation",
-    },
-  ];
+  ]);
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.brandName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        categoryFilter === "all" || product.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchTerm, categoryFilter]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "in_stock":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "low_stock":
-        return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-      case "out_of_stock":
-        return "bg-red-500/10 text-red-500 border-red-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-500 border-gray-500/20";
-    }
+  const stats = useMemo(() => {
+    const mobileProducts = products.filter((p) => p.category === "mobile");
+    const accessoryProducts = products.filter((p) => p.category === "accessory");
+    const lowStockProducts = products.filter((p) => p.stock < p.minStock);
+    const totalValue = products.reduce((sum, p) => sum + p.stock * p.purchasePrice, 0);
+
+    return [
+      {
+        title: "Mobile Products",
+        value: mobileProducts.length.toString(),
+        icon: Smartphone,
+        color: "text-blue-500",
+        bgColor: "bg-blue-500/10",
+      },
+      {
+        title: "Accessories",
+        value: accessoryProducts.length.toString(),
+        icon: Cable,
+        color: "text-green-500",
+        bgColor: "bg-green-500/10",
+      },
+      {
+        title: "Low Stock Alerts",
+        value: lowStockProducts.length.toString(),
+        icon: AlertTriangle,
+        color: "text-amber-500",
+        bgColor: "bg-amber-500/10",
+      },
+      {
+        title: "Inventory Value",
+        value: `Rs. ${(totalValue / 1000).toFixed(0)}K`,
+        icon: DollarSign,
+        color: "text-purple-500",
+        bgColor: "bg-purple-500/10",
+      },
+    ];
+  }, [products]);
+
+  const resetForm = () => {
+    setBrand("");
+    setModelName("");
+    setAccessoryName("");
+    setSku("");
+    setPurchasePrice("");
+    setSellingPrice("");
+    setStock("");
+    setMinStock("");
+    setDescription("");
   };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "in_stock":
-        return "In Stock";
-      case "low_stock":
-        return "Low Stock";
-      case "out_of_stock":
-        return "Out of Stock";
-      default:
-        return status;
-    }
-  };
-
-  const lowStockProducts = products.filter((p) => p.stock < p.minStock);
-  const outOfStockProducts = products.filter((p) => p.stock === 0);
-  const totalValue = products.reduce(
-    (sum, p) =>
-      sum + p.stock * parseFloat(p.wholesalePrice.replace("$", "")),
-    0,
-  );
-
-  const stats = [
-    {
-      title: "Total Products",
-      value: products.length.toString(),
-      icon: Package,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-    },
-    {
-      title: "Inventory Value",
-      value: `$${totalValue.toLocaleString()}`,
-      icon: DollarSign,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
-    },
-    {
-      title: "Low Stock Alerts",
-      value: lowStockProducts.length.toString(),
-      icon: AlertTriangle,
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10",
-    },
-    {
-      title: "Monthly Sales",
-      value: products.reduce((sum, p) => sum + p.monthlySales, 0).toString(),
-      icon: TrendingUp,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
-    },
-  ];
 
   const handleAddProduct = () => {
-    if (
-      !formData.name ||
-      !formData.sku ||
-      !formData.category ||
-      !formData.unitPrice ||
-      !formData.wholesalePrice ||
-      !formData.stock ||
-      !formData.minStock
-    ) {
+    // Validation
+    if (!brand) {
+      toast({
+        title: "Error",
+        description: "Please select a brand",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedCategory === "mobile" && !modelName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please select or enter a mobile model",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedCategory === "accessory" && !accessoryName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter accessory name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!sku || !purchasePrice || !sellingPrice || !stock || !minStock) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -215,58 +442,39 @@ export default function WholesalerProducts() {
       return;
     }
 
+    const productName = selectedCategory === "mobile" ? modelName : accessoryName;
+    
     toast({
       title: "Product Added",
-      description: `${formData.name} has been added to inventory`,
+      description: `${productName} has been added successfully`,
     });
 
-    setFormData({
-      name: "",
-      sku: "",
-      category: "",
-      unitPrice: "",
-      wholesalePrice: "",
-      stock: "",
-      minStock: "",
-      description: "",
-    });
+    resetForm();
     setIsAddDialogOpen(false);
   };
 
-  const handleEditProduct = () => {
-    if (
-      !formData.name ||
-      !formData.sku ||
-      !formData.category ||
-      !formData.unitPrice ||
-      !formData.wholesalePrice ||
-      !formData.stock ||
-      !formData.minStock
-    ) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
+  const handleCategoryChange = (category: "mobile" | "accessory") => {
+    setSelectedCategory(category);
+    // Reset category-specific fields
+    setModelName("");
+    setAccessoryName("");
+  };
+
+  const handleBrandChange = (newBrand: string) => {
+    setBrand(newBrand);
+    // Reset model when brand changes (for mobile category)
+    if (selectedCategory === "mobile") {
+      setModelName("");
     }
-
-    toast({
-      title: "Product Updated",
-      description: `${formData.name} has been updated`,
-    });
-
-    setIsEditDialogOpen(false);
-    setEditingProduct(null);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Products Inventory</h2>
+          <h2 className="text-2xl font-bold">Product Listings</h2>
           <p className="text-sm text-muted-foreground">
-            Manage your wholesale products and track stock levels
+            Manage your mobile and accessory inventory visible to shops and sales persons
           </p>
         </div>
         <Button
@@ -299,55 +507,43 @@ export default function WholesalerProducts() {
         })}
       </div>
 
-      {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
-        <Card className="border-amber-500/50" data-testid="card-alerts">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-500">
-              <AlertTriangle className="h-5 w-5" />
-              Stock Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {outOfStockProducts.length > 0 && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md">
-                  <p className="text-sm font-medium text-red-500">
-                    {outOfStockProducts.length} product(s) out of stock
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {outOfStockProducts.map((p) => p.name).join(", ")}
-                  </p>
-                </div>
-              )}
-              {lowStockProducts.length > 0 && (
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
-                  <p className="text-sm font-medium text-amber-500">
-                    {lowStockProducts.length} product(s) running low
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {lowStockProducts.map((p) => p.name).join(", ")}
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card data-testid="card-search">
-        <CardContent className="pt-6">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by product name, SKU, or category..."
+              placeholder="Search by product name, SKU, or brand..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
               data-testid="input-search"
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={categoryFilter === "all" ? "default" : "outline"}
+            onClick={() => setCategoryFilter("all")}
+            data-testid="filter-all"
+          >
+            All
+          </Button>
+          <Button
+            variant={categoryFilter === "mobile" ? "default" : "outline"}
+            onClick={() => setCategoryFilter("mobile")}
+            data-testid="filter-mobile"
+          >
+            Mobile
+          </Button>
+          <Button
+            variant={categoryFilter === "accessory" ? "default" : "outline"}
+            onClick={() => setCategoryFilter("accessory")}
+            data-testid="filter-accessory"
+          >
+            Accessories
+          </Button>
+        </div>
+      </div>
 
       <div className="space-y-4">
         {filteredProducts.length === 0 ? (
@@ -364,25 +560,22 @@ export default function WholesalerProducts() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3
-                        className="font-semibold text-lg"
-                        data-testid={`text-product-name-${product.id}`}
-                      >
-                        {product.name}
-                      </h3>
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(product.status)}
-                        data-testid={`badge-status-${product.id}`}
-                      >
-                        {getStatusText(product.status)}
+                      <Badge variant="secondary">
+                        {product.category === "mobile" ? <Smartphone className="w-3 h-3 mr-1" /> : <Cable className="w-3 h-3 mr-1" />}
+                        {product.category === "mobile" ? "Mobile" : "Accessory"}
                       </Badge>
-                      <Badge variant="outline">{product.category}</Badge>
+                      <Badge variant="outline">{product.brandName}</Badge>
+                      <h3 className="font-semibold text-lg">{product.name}</h3>
+                      {product.stock < product.minStock && (
+                        <Badge variant="destructive">Low Stock</Badge>
+                      )}
                     </div>
 
-                    <p className="text-sm text-muted-foreground">
-                      {product.description}
-                    </p>
+                    {product.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {product.description}
+                      </p>
+                    )}
 
                     <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-5">
                       <div>
@@ -393,34 +586,30 @@ export default function WholesalerProducts() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          Unit Price
+                          Purchase Price
                         </p>
                         <p className="text-sm font-medium">
-                          {product.unitPrice}
+                          Rs. {product.purchasePrice.toLocaleString()}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          Wholesale Price
+                          Selling Price
                         </p>
-                        <p className="text-sm font-medium">
-                          {product.wholesalePrice}
+                        <p className="text-sm font-medium text-green-600">
+                          Rs. {product.sellingPrice.toLocaleString()}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">
-                          Stock
-                        </p>
+                        <p className="text-sm text-muted-foreground">Stock</p>
                         <p className="text-sm font-medium">
                           {product.stock} / {product.minStock} min
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">
-                          Monthly Sales
-                        </p>
-                        <p className="text-sm font-medium">
-                          {product.monthlySales}
+                        <p className="text-sm text-muted-foreground">Profit Margin</p>
+                        <p className="text-sm font-medium text-green-600">
+                          Rs. {(product.sellingPrice - product.purchasePrice).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -430,8 +619,8 @@ export default function WholesalerProducts() {
                         <AlertTriangle className="h-4 w-4" />
                         <span>
                           {product.stock === 0
-                            ? "Out of stock - reorder immediately"
-                            : `Stock below minimum (${product.minStock - product.stock} needed)`}
+                            ? "Out of stock - restock immediately"
+                            : `Only ${product.stock} left (${product.minStock - product.stock} below minimum)`}
                         </span>
                       </div>
                     )}
@@ -441,20 +630,6 @@ export default function WholesalerProducts() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setEditingProduct(product);
-                        setFormData({
-                          name: product.name,
-                          sku: product.sku,
-                          category: product.category,
-                          unitPrice: product.unitPrice.replace("$", ""),
-                          wholesalePrice: product.wholesalePrice.replace("$", ""),
-                          stock: product.stock.toString(),
-                          minStock: product.minStock.toString(),
-                          description: product.description,
-                        });
-                        setIsEditDialogOpen(true);
-                      }}
                       data-testid={`button-edit-${product.id}`}
                     >
                       <Edit className="h-4 w-4 mr-1" />
@@ -469,98 +644,121 @@ export default function WholesalerProducts() {
       </div>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="dialog-add-product">
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl" data-testid="dialog-add-product">
           <DialogHeader>
             <DialogTitle>Add New Product</DialogTitle>
             <DialogDescription>
-              Add a new product to your wholesale inventory
+              Add a mobile or accessory product to your inventory
             </DialogDescription>
           </DialogHeader>
+          
+          <Tabs value={selectedCategory} onValueChange={(v) => handleCategoryChange(v as "mobile" | "accessory")}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="mobile" data-testid="tab-mobile">
+                <Smartphone className="w-4 h-4 mr-2" />
+                Mobile
+              </TabsTrigger>
+              <TabsTrigger value="accessory" data-testid="tab-accessory">
+                <Cable className="w-4 h-4 mr-2" />
+                Accessory
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="mobile" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="mobile-brand">Brand *</Label>
+                <SearchableSelect
+                  items={mockBrands}
+                  placeholder="Select brand"
+                  value={brand}
+                  onChange={handleBrandChange}
+                  testId="select-mobile-brand"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mobile-model">Model Name *</Label>
+                <ModelAutocomplete
+                  brandId={brand}
+                  value={modelName}
+                  onChange={setModelName}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Type to search from available models for the selected brand
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="accessory" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="accessory-brand">Brand *</Label>
+                <SearchableSelect
+                  items={mockBrands}
+                  placeholder="Select brand"
+                  value={brand}
+                  onChange={setBrand}
+                  testId="select-accessory-brand"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="accessory-name">Product Name *</Label>
+                <Input
+                  id="accessory-name"
+                  value={accessoryName}
+                  onChange={(e) => setAccessoryName(e.target.value)}
+                  placeholder="e.g., PowerBank 20000mAh Fast Charging"
+                  data-testid="input-accessory-name"
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="e.g., Premium Wireless Mouse"
-                data-testid="input-product-name"
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="sku">SKU *</Label>
               <Input
                 id="sku"
-                value={formData.sku}
-                onChange={(e) =>
-                  setFormData({ ...formData, sku: e.target.value })
-                }
-                placeholder="e.g., WM-PRO-001"
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                placeholder="e.g., APL-I15PM-256"
                 data-testid="input-sku"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
-                }
-              >
-                <SelectTrigger data-testid="select-category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Electronics">Electronics</SelectItem>
-                  <SelectItem value="Accessories">Accessories</SelectItem>
-                  <SelectItem value="Audio">Audio</SelectItem>
-                  <SelectItem value="Computing">Computing</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="unitPrice">Unit Price ($) *</Label>
+                <Label htmlFor="purchasePrice">Purchase Price (Rs.) *</Label>
                 <Input
-                  id="unitPrice"
+                  id="purchasePrice"
                   type="number"
-                  step="0.01"
-                  value={formData.unitPrice}
-                  onChange={(e) =>
-                    setFormData({ ...formData, unitPrice: e.target.value })
-                  }
-                  placeholder="0.00"
-                  data-testid="input-unit-price"
+                  value={purchasePrice}
+                  onChange={(e) => setPurchasePrice(e.target.value)}
+                  placeholder="0"
+                  data-testid="input-purchase-price"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="wholesalePrice">Wholesale Price ($) *</Label>
+                <Label htmlFor="sellingPrice">Selling Price (Rs.) *</Label>
                 <Input
-                  id="wholesalePrice"
+                  id="sellingPrice"
                   type="number"
-                  step="0.01"
-                  value={formData.wholesalePrice}
-                  onChange={(e) =>
-                    setFormData({ ...formData, wholesalePrice: e.target.value })
-                  }
-                  placeholder="0.00"
-                  data-testid="input-wholesale-price"
+                  value={sellingPrice}
+                  onChange={(e) => setSellingPrice(e.target.value)}
+                  placeholder="0"
+                  data-testid="input-selling-price"
                 />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="stock">Stock Quantity *</Label>
                 <Input
                   id="stock"
                   type="number"
-                  value={formData.stock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, stock: e.target.value })
-                  }
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
                   placeholder="0"
                   data-testid="input-stock"
                 />
@@ -570,170 +768,40 @@ export default function WholesalerProducts() {
                 <Input
                   id="minStock"
                   type="number"
-                  value={formData.minStock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, minStock: e.target.value })
-                  }
+                  value={minStock}
+                  onChange={(e) => setMinStock(e.target.value)}
                   placeholder="0"
                   data-testid="input-min-stock"
                 />
               </div>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description (Optional)</Label>
               <Textarea
                 id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Product description..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Additional product details..."
                 data-testid="input-description"
+                rows={3}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsAddDialogOpen(false)}
-              data-testid="button-cancel-add"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleAddProduct} data-testid="button-save-product">
-              Add Product
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="dialog-edit-product">
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>
-              Update product information and stock levels
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Product Name *</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                data-testid="input-edit-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-sku">SKU *</Label>
-              <Input
-                id="edit-sku"
-                value={formData.sku}
-                onChange={(e) =>
-                  setFormData({ ...formData, sku: e.target.value })
-                }
-                data-testid="input-edit-sku"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
-                }
-              >
-                <SelectTrigger data-testid="select-edit-category">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Electronics">Electronics</SelectItem>
-                  <SelectItem value="Accessories">Accessories</SelectItem>
-                  <SelectItem value="Audio">Audio</SelectItem>
-                  <SelectItem value="Computing">Computing</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-unitPrice">Unit Price ($) *</Label>
-                <Input
-                  id="edit-unitPrice"
-                  type="number"
-                  step="0.01"
-                  value={formData.unitPrice}
-                  onChange={(e) =>
-                    setFormData({ ...formData, unitPrice: e.target.value })
-                  }
-                  data-testid="input-edit-unit-price"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-wholesalePrice">Wholesale Price ($) *</Label>
-                <Input
-                  id="edit-wholesalePrice"
-                  type="number"
-                  step="0.01"
-                  value={formData.wholesalePrice}
-                  onChange={(e) =>
-                    setFormData({ ...formData, wholesalePrice: e.target.value })
-                  }
-                  data-testid="input-edit-wholesale-price"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-stock">Stock Quantity *</Label>
-                <Input
-                  id="edit-stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, stock: e.target.value })
-                  }
-                  data-testid="input-edit-stock"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-minStock">Min Stock Level *</Label>
-                <Input
-                  id="edit-minStock"
-                  type="number"
-                  value={formData.minStock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, minStock: e.target.value })
-                  }
-                  data-testid="input-edit-min-stock"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                data-testid="input-edit-description"
-              />
-            </div>
-          </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-              data-testid="button-cancel-edit"
+              onClick={() => {
+                setIsAddDialogOpen(false);
+                resetForm();
+              }}
+              data-testid="button-cancel"
             >
               Cancel
             </Button>
-            <Button onClick={handleEditProduct} data-testid="button-update-product">
-              Update Product
+            <Button onClick={handleAddProduct} data-testid="button-save">
+              Add Product
             </Button>
           </DialogFooter>
         </DialogContent>
