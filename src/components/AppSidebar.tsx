@@ -36,6 +36,8 @@ import {
   ChevronRight,
   Wrench,
   Building2,
+  Calendar,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -154,7 +156,10 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   repair_man: [
     { key: 'Dashboard', url: '/repair-man/dashboard', icon: LayoutDashboard },
-    { key: 'My Services', url: '/repair-man/dashboard', icon: Wrench },
+    { key: 'My Services', url: '/repair-man/services', icon: Wrench },
+    { key: 'Reports', url: '/repair-man/reports', icon: TrendingUp },
+    { key: 'Calendar', url: '/repair-man/calendar', icon: Calendar },
+    { key: 'Parts Inventory', url: '/repair-man/parts-inventory', icon: Package },
   ],
   wholesaler: [
     { key: 'Dashboard', url: '/wholesaler/dashboard', icon: LayoutDashboard },

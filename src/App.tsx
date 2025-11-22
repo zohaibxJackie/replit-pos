@@ -57,7 +57,12 @@ import POSProducts from "@/pages/pos/Products";
 import ManageReasons from "./pages/admin/sub pages/ManageReasons";
 import ManageStock from "./pages/admin/sub pages/ManageStock";
 
-import RepairManDashboard from "@/pages/repairman/Dashboard";
+import RepairManDashboard from "@/pages/repairman/dashboard";
+import RepairManServices from "@/pages/repairman/services";
+import RepairManJobDetails from "@/pages/repairman/job-details";
+import RepairManReports from "@/pages/repairman/reports";
+import RepairManCalendar from "@/pages/repairman/calendar";
+import RepairManPartsInventory from "@/pages/repairman/parts-inventory";
 import WholesalerDashboard from "@/pages/wholesaler/Dashboard";
 import RepairMen from "@/pages/admin/RepairMen";
 import Wholesalers from "@/pages/admin/Wholesalers";
@@ -251,6 +256,21 @@ function Router() {
       {/* Repair Man routes */}
       <Route path="/repair-man/dashboard">
         <ProtectedLayout><RepairManDashboard /></ProtectedLayout>
+      </Route>
+      <Route path="/repair-man/services">
+        <ProtectedLayout><RepairManServices /></ProtectedLayout>
+      </Route>
+      <Route path="/repair-man/job/:id">
+        <ProtectedLayout><RepairManJobDetails /></ProtectedLayout>
+      </Route>
+      <Route path="/repair-man/reports">
+        <ProtectedLayout><RepairManReports /></ProtectedLayout>
+      </Route>
+      <Route path="/repair-man/calendar">
+        <ProtectedLayout><RepairManCalendar /></ProtectedLayout>
+      </Route>
+      <Route path="/repair-man/parts-inventory">
+        <ProtectedLayout><RepairManPartsInventory /></ProtectedLayout>
       </Route>
 
       {/* Wholesaler routes */}
