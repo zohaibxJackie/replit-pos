@@ -219,115 +219,106 @@ export default function WholesalerInvoices() {
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {filteredInvoices.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No invoices found</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredInvoices.map((invoice) => (
-            <Card key={invoice.id} data-testid={`card-invoice-${invoice.id}`}>
-              <CardContent className="pt-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0 space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3
-                        className="font-semibold text-lg"
-                        data-testid={`text-invoice-number-${invoice.id}`}
-                      >
-                        {invoice.invoiceNumber}
-                      </h3>
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(invoice.status)}
-                        data-testid={`badge-status-${invoice.id}`}
-                      >
-                        {invoice.status.charAt(0).toUpperCase() +
-                          invoice.status.slice(1)}
-                      </Badge>
-                    </div>
-
-                    <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-6">
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Customer
-                        </p>
-                        <p className="text-sm font-medium">
-                          {invoice.customer}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Issue Date
-                        </p>
-                        <p className="text-sm font-medium">
-                          {invoice.issueDate}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Due Date
-                        </p>
-                        <p className="text-sm font-medium">{invoice.dueDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Amount</p>
-                        <p className="text-sm font-medium">{invoice.amount}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Paid</p>
-                        <p className="text-sm font-medium">{invoice.paid}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Balance</p>
-                        <p className="text-sm font-medium">{invoice.balance}</p>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground">
-                      Order: {invoice.orderNumber}
-                    </p>
+      {filteredInvoices.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 text-center text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No invoices found</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredInvoices.map((invoice) => (
+            <Card key={invoice.id} data-testid={`card-invoice-${invoice.id}`} className="flex flex-col">
+              <CardHeader className="flex-shrink-0">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-base" data-testid={`text-invoice-number-${invoice.id}`}>
+                    {invoice.invoiceNumber}
+                  </CardTitle>
+                  <Badge
+                    variant="outline"
+                    className={getStatusColor(invoice.status)}
+                    data-testid={`badge-status-${invoice.id}`}
+                  >
+                    {invoice.status.charAt(0).toUpperCase() +
+                      invoice.status.slice(1)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3 flex-1">
+                <div>
+                  <p className="text-xs text-muted-foreground">Customer</p>
+                  <p className="text-sm font-semibold">{invoice.customer}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Issue Date</p>
+                    <p className="font-medium">{invoice.issueDate}</p>
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "View Invoice",
-                          description: `Viewing ${invoice.invoiceNumber}`,
-                        })
-                      }
-                      data-testid={`button-view-${invoice.id}`}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "Download Invoice",
-                          description: `Downloading ${invoice.invoiceNumber}`,
-                        })
-                      }
-                      data-testid={`button-download-${invoice.id}`}
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      Download
-                    </Button>
+                  <div>
+                    <p className="text-muted-foreground">Due Date</p>
+                    <p className="font-medium">{invoice.dueDate}</p>
                   </div>
                 </div>
+
+                <div className="pt-2 border-t space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Amount:</span>
+                    <span className="font-medium">{invoice.amount}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Paid:</span>
+                    <span className="font-medium text-green-600">{invoice.paid}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span>Balance:</span>
+                    <span className={invoice.balance === "$0.00" ? "text-green-600" : "text-amber-600"}>
+                      {invoice.balance}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground pt-2 border-t">
+                  Order: {invoice.orderNumber}
+                </p>
+              </CardContent>
+              <CardContent className="flex gap-2 pt-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() =>
+                    toast({
+                      title: "View Invoice",
+                      description: `Viewing ${invoice.invoiceNumber}`,
+                    })
+                  }
+                  data-testid={`button-view-${invoice.id}`}
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  View
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() =>
+                    toast({
+                      title: "Download Invoice",
+                      description: `Downloading ${invoice.invoiceNumber}`,
+                    })
+                  }
+                  data-testid={`button-download-${invoice.id}`}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Download
+                </Button>
               </CardContent>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

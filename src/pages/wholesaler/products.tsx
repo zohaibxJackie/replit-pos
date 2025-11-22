@@ -35,6 +35,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DataTable from "@/components/DataTable";
+import { TablePagination } from "@/components/ui/tablepagination";
+import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 
 // Mock data for brands (these would come from backend)
 const mockBrands = [
@@ -257,6 +260,11 @@ export default function WholesalerProducts() {
     "mobile" | "accessory"
   >("mobile");
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [filters, setFilters] = useState<Record<string, string>>({});
+
   // Form state
   const [brand, setBrand] = useState("");
   const [modelName, setModelName] = useState("");
@@ -324,7 +332,8 @@ export default function WholesalerProducts() {
     },
   ]);
 
-  const filteredProducts = useMemo(() => {
+  // First level: filter by search term and category (manual filters)
+  const searchAndCategoryFiltered = useMemo(() => {
     return products.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -332,9 +341,31 @@ export default function WholesalerProducts() {
         product.brandName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
         categoryFilter === "all" || product.category === categoryFilter;
+
       return matchesSearch && matchesCategory;
     });
   }, [products, searchTerm, categoryFilter]);
+
+  // Second level: apply DataTable column filters
+  const fullyFiltered = useMemo(() => {
+    return searchAndCategoryFiltered.filter((product) => {
+      let matchesFilters = true;
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value.trim()) {
+          const productValue = String(product[key as keyof Product] || '').toLowerCase();
+          matchesFilters = matchesFilters && productValue.includes(value.toLowerCase());
+        }
+      });
+      return matchesFilters;
+    });
+  }, [searchAndCategoryFiltered, filters]);
+
+  // Third level: paginate
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    return fullyFiltered.slice(startIndex, endIndex);
+  }, [fullyFiltered, page, limit]);
 
   const stats = useMemo(() => {
     const mobileProducts = products.filter((p) => p.category === "mobile");
@@ -456,6 +487,80 @@ export default function WholesalerProducts() {
     }
   };
 
+  // DataTable columns
+  const columns = [
+    {
+      key: "category",
+      label: "Category",
+      filterType: "select" as const,
+      filterOptions: ["mobile", "accessory"],
+      render: (value: string) => (
+        <Badge variant="secondary">
+          {value === "mobile" ? (
+            <><Smartphone className="w-3 h-3 mr-1" />Mobile</>
+          ) : (
+            <><Cable className="w-3 h-3 mr-1" />Accessory</>
+          )}
+        </Badge>
+      ),
+    },
+    {
+      key: "brandName",
+      label: "Brand",
+      filterType: "text" as const,
+    },
+    {
+      key: "name",
+      label: "Product Name",
+      filterType: "text" as const,
+    },
+    {
+      key: "sku",
+      label: "SKU",
+      filterType: "text" as const,
+      render: (value: string) => (
+        <span className="font-mono text-sm">{value}</span>
+      ),
+    },
+    {
+      key: "purchasePrice",
+      label: "Purchase Price",
+      filterType: "none" as const,
+      render: (value: number) => `Rs. ${value.toLocaleString()}`,
+    },
+    {
+      key: "sellingPrice",
+      label: "Selling Price",
+      filterType: "none" as const,
+      render: (value: number) => (
+        <span className="text-green-600 font-medium">Rs. {value.toLocaleString()}</span>
+      ),
+    },
+    {
+      key: "stock",
+      label: "Stock",
+      filterType: "none" as const,
+      render: (value: number, row: Product) => (
+        <div className="flex items-center gap-2">
+          <span>{value} / {row.minStock} min</span>
+          {value < row.minStock && (
+            <Badge variant="destructive" className="text-xs">Low</Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "profitMargin",
+      label: "Profit Margin",
+      filterType: "none" as const,
+      render: (_: any, row: Product) => (
+        <span className="text-green-600 font-medium">
+          Rs. {(row.sellingPrice - row.purchasePrice).toLocaleString()}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -517,7 +622,11 @@ export default function WholesalerProducts() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <TablePageSizeSelector limit={limit} onChange={(val) => {
+          setLimit(val);
+          setPage(1);
+        }} />
         <Button
           onClick={() => setIsAddDialogOpen(true)}
           data-testid="button-add-product"
@@ -527,112 +636,32 @@ export default function WholesalerProducts() {
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {filteredProducts.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No products found matching your search</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredProducts.map((product) => (
-            <Card key={product.id} data-testid={`card-product-${product.id}`}>
-              <CardContent className="pt-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0 space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary">
-                        {product.category === "mobile" ? (
-                          <Smartphone className="w-3 h-3 mr-1" />
-                        ) : (
-                          <Cable className="w-3 h-3 mr-1" />
-                        )}
-                        {product.category === "mobile" ? "Mobile" : "Accessory"}
-                      </Badge>
-                      <Badge variant="outline">{product.brandName}</Badge>
-                      <h3 className="font-semibold text-lg">{product.name}</h3>
-                      {product.stock < product.minStock && (
-                        <Badge variant="destructive">Low Stock</Badge>
-                      )}
-                    </div>
-
-                    {product.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {product.description}
-                      </p>
-                    )}
-
-                    <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-5">
-                      <div>
-                        <p className="text-sm text-muted-foreground">SKU</p>
-                        <p className="text-sm font-medium font-mono">
-                          {product.sku}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Purchase Price
-                        </p>
-                        <p className="text-sm font-medium">
-                          Rs. {product.purchasePrice.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Selling Price
-                        </p>
-                        <p className="text-sm font-medium text-green-600">
-                          Rs. {product.sellingPrice.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Stock</p>
-                        <p className="text-sm font-medium">
-                          {product.stock} / {product.minStock} min
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Profit Margin
-                        </p>
-                        <p className="text-sm font-medium text-green-600">
-                          Rs.{" "}
-                          {(
-                            product.sellingPrice - product.purchasePrice
-                          ).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    {product.stock < product.minStock && (
-                      <div className="flex items-center gap-2 text-amber-500 text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span>
-                          {product.stock === 0
-                            ? "Out of stock - restock immediately"
-                            : `Only ${product.stock} left (${product.minStock - product.stock} below minimum)`}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      data-testid={`button-edit-${product.id}`}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+      <DataTable
+        columns={columns}
+        data={paginatedProducts}
+        showActions
+        renderActions={(row) => (
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid={`button-edit-${row.id}`}
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
         )}
-      </div>
+        onFilterChange={(newFilters) => {
+          setFilters(newFilters);
+          setPage(1);
+        }}
+      />
+
+      <TablePagination
+        page={page}
+        limit={limit}
+        total={fullyFiltered.length}
+        onPageChange={setPage}
+      />
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent
@@ -713,7 +742,7 @@ export default function WholesalerProducts() {
             </TabsContent>
           </Tabs>
 
-          <div className="grid gap-4 py-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="sku">SKU *</Label>
               <Input
@@ -733,10 +762,11 @@ export default function WholesalerProducts() {
                   type="number"
                   value={purchasePrice}
                   onChange={(e) => setPurchasePrice(e.target.value)}
-                  placeholder="0"
+                  placeholder="450000"
                   data-testid="input-purchase-price"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="sellingPrice">Selling Price (Rs.) *</Label>
                 <Input
@@ -744,7 +774,7 @@ export default function WholesalerProducts() {
                   type="number"
                   value={sellingPrice}
                   onChange={(e) => setSellingPrice(e.target.value)}
-                  placeholder="0"
+                  placeholder="520000"
                   data-testid="input-selling-price"
                 />
               </div>
@@ -758,18 +788,19 @@ export default function WholesalerProducts() {
                   type="number"
                   value={stock}
                   onChange={(e) => setStock(e.target.value)}
-                  placeholder="0"
+                  placeholder="5"
                   data-testid="input-stock"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="minStock">Min Stock Level *</Label>
+                <Label htmlFor="minStock">Minimum Stock *</Label>
                 <Input
                   id="minStock"
                   type="number"
                   value={minStock}
                   onChange={(e) => setMinStock(e.target.value)}
-                  placeholder="0"
+                  placeholder="3"
                   data-testid="input-min-stock"
                 />
               </div>
@@ -781,9 +812,9 @@ export default function WholesalerProducts() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Additional product details..."
-                data-testid="input-description"
+                placeholder="Enter product description..."
                 rows={3}
+                data-testid="textarea-description"
               />
             </div>
           </div>
@@ -791,15 +822,12 @@ export default function WholesalerProducts() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setIsAddDialogOpen(false);
-                resetForm();
-              }}
+              onClick={() => setIsAddDialogOpen(false)}
               data-testid="button-cancel"
             >
               Cancel
             </Button>
-            <Button onClick={handleAddProduct} data-testid="button-save">
+            <Button onClick={handleAddProduct} data-testid="button-submit">
               Add Product
             </Button>
           </DialogFooter>

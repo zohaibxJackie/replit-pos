@@ -308,11 +308,11 @@ export default function WholesalerOrders() {
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredOrders.map((order) => (
           <Card
             key={order.id}
-            className={`${
+            className={`flex flex-col ${
               order.status === "pending"
                 ? "bg-amber-50/50 dark:bg-amber-950/10"
                 : order.status === "approved"
@@ -324,93 +324,90 @@ export default function WholesalerOrders() {
             data-testid={`order-card-${order.id}`}
           >
             <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
-                    {order.orderNumber}
-                    {getStatusBadge(order.status)}
-                    {getOrderTypeBadge(order.orderType)}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 mt-2">
-                    {order.orderType === "purchase_order" ? (
-                      <>
-                        <Store className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-semibold text-base">
-                          {order.shopName}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-semibold text-base">
-                          {order.salesPersonName}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {order.createdAt.toLocaleDateString("en-US", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-base">{order.orderNumber}</CardTitle>
+                  {getStatusBadge(order.status)}
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-2xl font-bold text-primary">
+                <div>{getOrderTypeBadge(order.orderType)}</div>
+                <div className="flex items-center gap-2">
+                  {order.orderType === "purchase_order" ? (
+                    <>
+                      <Store className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-semibold text-sm">
+                        {order.shopName}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-semibold text-sm">
+                        {order.salesPersonName}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {order.createdAt.toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </p>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">Total Amount</p>
+                  <p className="text-xl font-bold text-primary">
                     Rs. {order.total.toLocaleString()}
                   </p>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+            <CardContent className="space-y-4 flex-1">
+              <div className="space-y-2 p-3 bg-muted rounded-lg text-sm">
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Contact Person
                   </p>
-                  <p className="font-semibold">{order.contactPerson}</p>
+                  <p className="font-semibold text-sm">{order.contactPerson}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-semibold">{order.phone}</p>
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="font-semibold text-sm">{order.phone}</p>
                 </div>
                 {order.email && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-semibold text-sm break-all">
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="font-semibold text-xs break-all">
                       {order.email}
                     </p>
                   </div>
                 )}
                 {order.address && (
-                  <div className="sm:col-span-2 lg:col-span-3">
-                    <p className="text-sm text-muted-foreground">Address</p>
-                    <p className="font-semibold">{order.address}</p>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Address</p>
+                    <p className="font-semibold text-xs">{order.address}</p>
                   </div>
                 )}
               </div>
 
               <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <Package className="w-4 h-4" />
-                  Order Items
+                  Items ({order.items.length})
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {order.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex justify-between items-center p-3 border rounded-lg"
+                      className="flex justify-between items-start p-2 border rounded text-xs gap-2"
                     >
-                      <div className="flex-1">
-                        <p className="font-medium">{item.productName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Quantity: {item.quantity} × Rs.{" "}
-                          {item.price.toLocaleString()}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.productName}</p>
+                        <p className="text-muted-foreground">
+                          {item.quantity} × Rs. {item.price.toLocaleString()}
                         </p>
                       </div>
-                      <p className="font-bold text-lg">
+                      <p className="font-bold whitespace-nowrap">
                         Rs. {item.total.toLocaleString()}
                       </p>
                     </div>
@@ -419,14 +416,14 @@ export default function WholesalerOrders() {
               </div>
 
               {order.notes && (
-                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
+                <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded">
+                  <div className="flex items-start gap-1">
+                    <MessageSquare className="w-3 h-3 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-amber-900 dark:text-amber-100 text-xs">
                         Order Notes
                       </p>
-                      <p className="text-sm text-amber-800 dark:text-amber-200">
+                      <p className="text-xs text-amber-800 dark:text-amber-200 line-clamp-2">
                         {order.notes}
                       </p>
                     </div>
@@ -435,14 +432,14 @@ export default function WholesalerOrders() {
               )}
 
               {order.wholesalerResponse && (
-                <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <MessageSquare className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-green-900 dark:text-green-100 text-sm">
+                <div className="p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded">
+                  <div className="flex items-start gap-1">
+                    <MessageSquare className="w-3 h-3 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-green-900 dark:text-green-100 text-xs">
                         Your Response
                       </p>
-                      <p className="text-sm text-green-800 dark:text-green-200">
+                      <p className="text-xs text-green-800 dark:text-green-200 line-clamp-2">
                         {order.wholesalerResponse}
                       </p>
                     </div>
@@ -450,9 +447,10 @@ export default function WholesalerOrders() {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row gap-2">
+            <CardFooter className="flex flex-col gap-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() =>
                   openWhatsApp(
                     order.whatsapp,
@@ -460,11 +458,11 @@ export default function WholesalerOrders() {
                     order.orderNumber,
                   )
                 }
-                className="w-full sm:w-auto"
+                className="w-full"
                 data-testid={`button-whatsapp-${order.id}`}
               >
                 <svg
-                  className="w-4 h-4 mr-2"
+                  className="w-3 h-3 mr-1"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -473,22 +471,24 @@ export default function WholesalerOrders() {
                 Contact
               </Button>
               {order.status === "pending" && (
-                <div className="flex gap-2 flex-1">
+                <div className="flex gap-2 w-full">
                   <Button
                     variant="destructive"
+                    size="sm"
                     onClick={() => openResponseModal(order, "rejected")}
                     className="flex-1"
                     data-testid={`button-reject-${order.id}`}
                   >
-                    <X className="w-4 h-4 mr-2" />
+                    <X className="w-3 h-3 mr-1" />
                     Reject
                   </Button>
                   <Button
+                    size="sm"
                     onClick={() => openResponseModal(order, "approved")}
                     className="flex-1"
                     data-testid={`button-approve-${order.id}`}
                   >
-                    <Check className="w-4 h-4 mr-2" />
+                    <Check className="w-3 h-3 mr-1" />
                     Approve
                   </Button>
                 </div>

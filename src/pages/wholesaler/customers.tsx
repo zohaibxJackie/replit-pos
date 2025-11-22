@@ -14,20 +14,40 @@ import {
   Eye,
   Edit,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import DataTable from "@/components/DataTable";
+import { TablePagination } from "@/components/ui/tablepagination";
+import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
+
+type Customer = {
+  id: string;
+  name: string;
+  contact: string;
+  email: string;
+  phone: string;
+  totalOrders: number;
+  totalSpent: string;
+  lastOrder: string;
+  tier: "gold" | "silver" | "bronze";
+};
 
 export default function WholesalerCustomers() {
   useAuth("wholesaler");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [filters, setFilters] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setTitle("Customers");
   }, [setTitle]);
 
-  const customers = [
+  const customers: Customer[] = [
     {
       id: "1",
       name: "Tech Solutions Inc.",
@@ -85,12 +105,38 @@ export default function WholesalerCustomers() {
     },
   ];
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // First level: filter by search term
+  const searchFiltered = useMemo(() => {
+    return customers.filter((customer) => {
+      const matchesSearch =
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      return matchesSearch;
+    });
+  }, [customers, searchTerm]);
+
+  // Second level: apply DataTable column filters
+  const fullyFiltered = useMemo(() => {
+    return searchFiltered.filter((customer) => {
+      let matchesFilters = true;
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value.trim()) {
+          const customerValue = String(customer[key as keyof Customer] || '').toLowerCase();
+          matchesFilters = matchesFilters && customerValue.includes(value.toLowerCase());
+        }
+      });
+      return matchesFilters;
+    });
+  }, [searchFiltered, filters]);
+
+  // Third level: paginate
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    return fullyFiltered.slice(startIndex, endIndex);
+  }, [fullyFiltered, page, limit]);
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -136,6 +182,71 @@ export default function WholesalerCustomers() {
     },
   ];
 
+  // DataTable columns
+  const columns = [
+    {
+      key: "name",
+      label: "Company Name",
+      filterType: "text" as const,
+      render: (value: string) => (
+        <span className="font-semibold">{value}</span>
+      ),
+    },
+    {
+      key: "contact",
+      label: "Contact Person",
+      filterType: "text" as const,
+    },
+    {
+      key: "email",
+      label: "Email",
+      filterType: "text" as const,
+      render: (value: string) => (
+        <span className="text-sm">{value}</span>
+      ),
+    },
+    {
+      key: "phone",
+      label: "Phone",
+      filterType: "text" as const,
+    },
+    {
+      key: "tier",
+      label: "Tier",
+      filterType: "select" as const,
+      filterOptions: ["gold", "silver", "bronze"],
+      render: (value: string) => (
+        <Badge className={getTierColor(value)}>
+          {value.charAt(0).toUpperCase() + value.slice(1)}
+        </Badge>
+      ),
+    },
+    {
+      key: "totalOrders",
+      label: "Orders",
+      filterType: "none" as const,
+      render: (value: number) => (
+        <span className="font-medium">{value}</span>
+      ),
+    },
+    {
+      key: "totalSpent",
+      label: "Total Spent",
+      filterType: "none" as const,
+      render: (value: string) => (
+        <span className="font-bold text-green-600">{value}</span>
+      ),
+    },
+    {
+      key: "lastOrder",
+      label: "Last Order",
+      filterType: "none" as const,
+      render: (value: string) => (
+        <span className="text-sm text-muted-foreground">{value}</span>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -174,131 +285,41 @@ export default function WholesalerCustomers() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center justify-end gap-4">
-        <Button
-          onClick={() =>
-            toast({
-              title: "Add Customer",
-              description: "Customer creation feature coming soon",
-            })
-          }
-          data-testid="button-add-customer"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Customer
-        </Button>
+      <div className="flex justify-end">
+        <TablePageSizeSelector limit={limit} onChange={(val) => {
+          setLimit(val);
+          setPage(1);
+        }} />
       </div>
 
-      <div className="space-y-4">
-        {filteredCustomers.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No customers found</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredCustomers.map((customer) => (
-            <Card
-              key={customer.id}
-              data-testid={`card-customer-${customer.id}`}
-            >
-              <CardContent className="pt-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0 space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3
-                        className="font-semibold text-lg"
-                        data-testid={`text-customer-name-${customer.id}`}
-                      >
-                        {customer.name}
-                      </h3>
-                      <Badge
-                        variant="outline"
-                        className={getTierColor(customer.tier)}
-                        data-testid={`badge-tier-${customer.id}`}
-                      >
-                        {customer.tier.charAt(0).toUpperCase() +
-                          customer.tier.slice(1)}
-                      </Badge>
-                    </div>
-
-                    <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-5">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Contact</p>
-                        <p className="text-sm font-medium">
-                          {customer.contact}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
-                        <p className="text-sm font-medium">{customer.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Phone</p>
-                        <p className="text-sm font-medium">{customer.phone}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Total Orders
-                        </p>
-                        <p className="text-sm font-medium">
-                          {customer.totalOrders}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Total Spent
-                        </p>
-                        <p className="text-sm font-medium">
-                          {customer.totalSpent}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Last Order: {customer.lastOrder}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "View Customer",
-                          description: `Viewing ${customer.name}`,
-                        })
-                      }
-                      data-testid={`button-view-${customer.id}`}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "Edit Customer",
-                          description: `Editing ${customer.name}`,
-                        })
-                      }
-                      data-testid={`button-edit-${customer.id}`}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+      <DataTable
+        columns={columns}
+        data={paginatedCustomers}
+        showActions
+        renderActions={(row) => (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" data-testid={`button-view-${row.id}`}>
+              <Eye className="h-4 w-4 mr-1" />
+              View
+            </Button>
+            <Button variant="outline" size="sm" data-testid={`button-edit-${row.id}`}>
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+          </div>
         )}
-      </div>
+        onFilterChange={(newFilters) => {
+          setFilters(newFilters);
+          setPage(1);
+        }}
+      />
+
+      <TablePagination
+        page={page}
+        limit={limit}
+        total={fullyFiltered.length}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
