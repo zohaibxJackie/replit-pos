@@ -38,6 +38,7 @@ import {
   Building2,
   Calendar,
   TrendingUp,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -162,8 +163,13 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   wholesaler: [
     { key: 'Dashboard', url: '/wholesaler/dashboard', icon: LayoutDashboard },
-    { key: 'My Products', url: '/wholesaler/dashboard', icon: Package },
-    { key: 'Purchase Orders', url: '/wholesaler/purchase-orders', icon: ShoppingCart },
+    { key: 'Products', url: '/wholesaler/products', icon: Package },
+    { key: 'Sales Orders', url: '/wholesaler/sales-orders', icon: ShoppingCart },
+    { key: 'Customers', url: '/wholesaler/customers', icon: Users },
+    { key: 'Suppliers', url: '/wholesaler/suppliers', icon: Building2 },
+    { key: 'Invoices', url: '/wholesaler/invoices', icon: FileText },
+    { key: 'Reports', url: '/wholesaler/reports', icon: BarChart3 },
+    { key: 'Purchase Orders', url: '/wholesaler/purchase-orders', icon: Calendar },
   ],
 };
 
@@ -231,16 +237,29 @@ export function AppSidebar() {
                         }
                       `}
                     >
-                      <Link href={item.url} className="flex items-center gap-2 flex-1">
-                        <item.icon className="w-5 h-5" />
-                        <span className="font-medium">
-                          {user.role === 'admin'
-                            ? hasSubMenu
-                              ? t(`admin.sidebar.${item.key}.title`)
-                              : t(`admin.sidebar.${item.key}`)
-                            : item.key}
-                        </span>
-                      </Link>
+                      {item.url ? (
+                        <Link href={item.url} className="flex items-center gap-2 flex-1">
+                          <item.icon className="w-5 h-5" />
+                          <span className="font-medium">
+                            {user.role === 'admin'
+                              ? hasSubMenu
+                                ? t(`admin.sidebar.${item.key}.title`)
+                                : t(`admin.sidebar.${item.key}`)
+                              : item.key}
+                          </span>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-1">
+                          <item.icon className="w-5 h-5" />
+                          <span className="font-medium">
+                            {user.role === 'admin'
+                              ? hasSubMenu
+                                ? t(`admin.sidebar.${item.key}.title`)
+                                : t(`admin.sidebar.${item.key}`)
+                              : item.key}
+                          </span>
+                        </div>
+                      )}
                       {hasSubMenu && (
                         <span className="ml-2">
                           {isSubMenuOpen ? (

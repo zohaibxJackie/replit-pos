@@ -11,19 +11,44 @@ import {
   TrendingDown,
   Plus,
   MinusCircle,
+  Edit,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 export default function RepairmanPartsInventory() {
   useAuth("repair_man");
   const { setTitle } = useTitle();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    setTitle("Parts Inventory");
-  }, [setTitle]);
-
-  const parts = [
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPart, setEditingPart] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    partNumber: "",
+    category: "",
+    quantity: "",
+    minQuantity: "",
+    cost: "",
+  });
+  const [parts, setParts] = useState([
     {
       id: "1",
       name: "iPhone 13 Pro LCD Screen",
@@ -90,7 +115,11 @@ export default function RepairmanPartsInventory() {
       cost: "$95.00",
       status: "low_stock",
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    setTitle("Parts Inventory");
+  }, [setTitle]);
 
   const filteredParts = parts.filter(
     (part) =>
@@ -159,8 +188,196 @@ export default function RepairmanPartsInventory() {
     },
   ];
 
+  const handleAddPart = () => {
+    if (
+      !formData.name ||
+      !formData.partNumber ||
+      !formData.category ||
+      !formData.quantity ||
+      !formData.minQuantity ||
+      !formData.cost
+    ) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const quantity = parseInt(formData.quantity);
+    const minQuantity = parseInt(formData.minQuantity);
+    const cost = parseFloat(formData.cost);
+
+    if (isNaN(quantity) || quantity < 0) {
+      toast({
+        title: "Error",
+        description: "Quantity must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(minQuantity) || minQuantity < 0) {
+      toast({
+        title: "Error",
+        description: "Minimum quantity must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(cost) || cost < 0) {
+      toast({
+        title: "Error",
+        description: "Cost must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newPart = {
+      id: (parts.length + 1).toString(),
+      name: formData.name,
+      partNumber: formData.partNumber,
+      category: formData.category,
+      quantity: quantity,
+      minQuantity: minQuantity,
+      usedThisMonth: 0,
+      cost: `$${cost.toFixed(2)}`,
+      status:
+        quantity === 0
+          ? "out_of_stock"
+          : quantity < minQuantity
+            ? "low_stock"
+            : "in_stock",
+    };
+
+    setParts([...parts, newPart]);
+
+    toast({
+      title: "Part Added",
+      description: `${formData.name} has been added to inventory`,
+    });
+
+    setFormData({
+      name: "",
+      partNumber: "",
+      category: "",
+      quantity: "",
+      minQuantity: "",
+      cost: "",
+    });
+    setIsAddDialogOpen(false);
+  };
+
+  const handleEditPart = () => {
+    if (
+      !formData.name ||
+      !formData.partNumber ||
+      !formData.category ||
+      !formData.quantity ||
+      !formData.minQuantity ||
+      !formData.cost
+    ) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const quantity = parseInt(formData.quantity);
+    const minQuantity = parseInt(formData.minQuantity);
+    const cost = parseFloat(formData.cost);
+
+    if (isNaN(quantity) || quantity < 0) {
+      toast({
+        title: "Error",
+        description: "Quantity must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(minQuantity) || minQuantity < 0) {
+      toast({
+        title: "Error",
+        description: "Minimum quantity must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(cost) || cost < 0) {
+      toast({
+        title: "Error",
+        description: "Cost must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedParts = parts.map((part) =>
+      part.id === editingPart.id
+        ? {
+            ...part,
+            name: formData.name,
+            partNumber: formData.partNumber,
+            category: formData.category,
+            quantity: quantity,
+            minQuantity: minQuantity,
+            cost: `$${cost.toFixed(2)}`,
+            status:
+              quantity === 0
+                ? "out_of_stock"
+                : quantity < minQuantity
+                  ? "low_stock"
+                  : "in_stock",
+          }
+        : part
+    );
+
+    setParts(updatedParts);
+
+    toast({
+      title: "Part Updated",
+      description: `${formData.name} has been updated`,
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingPart(null);
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Parts Inventory</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage your repair parts and track inventory levels
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            setFormData({
+              name: "",
+              partNumber: "",
+              category: "",
+              quantity: "",
+              minQuantity: "",
+              cost: "",
+            });
+            setIsAddDialogOpen(true);
+          }}
+          data-testid="button-add-part"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Part
+        </Button>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -310,10 +527,22 @@ export default function RepairmanPartsInventory() {
                     <Button
                       variant="outline"
                       size="sm"
-                      data-testid={`button-request-${part.id}`}
+                      onClick={() => {
+                        setEditingPart(part);
+                        setFormData({
+                          name: part.name,
+                          partNumber: part.partNumber,
+                          category: part.category,
+                          quantity: part.quantity.toString(),
+                          minQuantity: part.minQuantity.toString(),
+                          cost: part.cost.replace("$", ""),
+                        });
+                        setIsEditDialogOpen(true);
+                      }}
+                      data-testid={`button-edit-${part.id}`}
                     >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Request
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
                     </Button>
                   </div>
                 </div>
@@ -322,6 +551,254 @@ export default function RepairmanPartsInventory() {
           ))
         )}
       </div>
+
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFormData({
+              name: "",
+              partNumber: "",
+              category: "",
+              quantity: "",
+              minQuantity: "",
+              cost: "",
+            });
+          }
+          setIsAddDialogOpen(open);
+        }}
+      >
+        <DialogContent data-testid="dialog-add-part">
+          <DialogHeader>
+            <DialogTitle>Add New Part</DialogTitle>
+            <DialogDescription>
+              Add a new part to your inventory
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Part Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="e.g., iPhone 13 Pro LCD Screen"
+                data-testid="input-part-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="partNumber">Part Number</Label>
+              <Input
+                id="partNumber"
+                value={formData.partNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, partNumber: e.target.value })
+                }
+                placeholder="e.g., APL-IP13P-LCD"
+                data-testid="input-part-number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, category: value })
+                }
+              >
+                <SelectTrigger data-testid="select-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Screens">Screens</SelectItem>
+                  <SelectItem value="Batteries">Batteries</SelectItem>
+                  <SelectItem value="Charging Ports">Charging Ports</SelectItem>
+                  <SelectItem value="Cameras">Cameras</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, quantity: e.target.value })
+                  }
+                  placeholder="0"
+                  data-testid="input-quantity"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="minQuantity">Min Quantity</Label>
+                <Input
+                  id="minQuantity"
+                  type="number"
+                  value={formData.minQuantity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, minQuantity: e.target.value })
+                  }
+                  placeholder="0"
+                  data-testid="input-min-quantity"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cost">Cost ($)</Label>
+              <Input
+                id="cost"
+                type="number"
+                step="0.01"
+                value={formData.cost}
+                onChange={(e) =>
+                  setFormData({ ...formData, cost: e.target.value })
+                }
+                placeholder="0.00"
+                data-testid="input-cost"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(false)}
+              data-testid="button-cancel-add"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddPart} data-testid="button-save-part">
+              Add Part
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingPart(null);
+            setFormData({
+              name: "",
+              partNumber: "",
+              category: "",
+              quantity: "",
+              minQuantity: "",
+              cost: "",
+            });
+          }
+          setIsEditDialogOpen(open);
+        }}
+      >
+        <DialogContent data-testid="dialog-edit-part">
+          <DialogHeader>
+            <DialogTitle>Edit Part</DialogTitle>
+            <DialogDescription>
+              Update part information and inventory levels
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Part Name</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                data-testid="input-edit-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-partNumber">Part Number</Label>
+              <Input
+                id="edit-partNumber"
+                value={formData.partNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, partNumber: e.target.value })
+                }
+                data-testid="input-edit-part-number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Category</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, category: value })
+                }
+              >
+                <SelectTrigger data-testid="select-edit-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Screens">Screens</SelectItem>
+                  <SelectItem value="Batteries">Batteries</SelectItem>
+                  <SelectItem value="Charging Ports">Charging Ports</SelectItem>
+                  <SelectItem value="Cameras">Cameras</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-quantity">Quantity</Label>
+                <Input
+                  id="edit-quantity"
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, quantity: e.target.value })
+                  }
+                  data-testid="input-edit-quantity"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-minQuantity">Min Quantity</Label>
+                <Input
+                  id="edit-minQuantity"
+                  type="number"
+                  value={formData.minQuantity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, minQuantity: e.target.value })
+                  }
+                  data-testid="input-edit-min-quantity"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-cost">Cost ($)</Label>
+              <Input
+                id="edit-cost"
+                type="number"
+                step="0.01"
+                value={formData.cost}
+                onChange={(e) =>
+                  setFormData({ ...formData, cost: e.target.value })
+                }
+                data-testid="input-edit-cost"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              data-testid="button-cancel-edit"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEditPart} data-testid="button-update-part">
+              Update Part
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
