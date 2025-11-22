@@ -163,16 +163,38 @@ export default function WholesalerReports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Reports & Analytics</h2>
-          <p className="text-sm text-muted-foreground">
-            Track performance and analyze business metrics
-          </p>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index} data-testid={`card-stat-${index}`}>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
+                <div className={`p-2 rounded-md ${stat.bgColor}`}>
+                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <span className={stat.color}>{stat.change}</span> from last
+                  period
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-4">
         <div className="flex gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]" data-testid="select-time-range">
+            <SelectTrigger
+              className="w-[180px]"
+              data-testid="select-time-range"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -197,31 +219,6 @@ export default function WholesalerReports() {
             Export
           </Button>
         </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index} data-testid={`card-stat-${index}`}>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-md ${stat.bgColor}`}>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className={stat.color}>{stat.change}</span> from last
-                  period
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -321,17 +318,23 @@ export default function WholesalerReports() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <p className="text-sm text-muted-foreground">Average Order Value</p>
+              <p className="text-sm text-muted-foreground">
+                Average Order Value
+              </p>
               <p className="text-2xl font-bold">$1,180</p>
               <p className="text-xs text-green-500">+8.3% from last month</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Order Fulfillment Rate</p>
+              <p className="text-sm text-muted-foreground">
+                Order Fulfillment Rate
+              </p>
               <p className="text-2xl font-bold">97.5%</p>
               <p className="text-xs text-green-500">+2.1% from last month</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Customer Retention</p>
+              <p className="text-sm text-muted-foreground">
+                Customer Retention
+              </p>
               <p className="text-2xl font-bold">89%</p>
               <p className="text-xs text-green-500">+4.5% from last month</p>
             </div>

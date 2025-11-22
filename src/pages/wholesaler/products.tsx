@@ -90,34 +90,12 @@ const mockMobileModels: Record<string, string[]> = {
     "Reno 11 Pro 256GB",
     "Reno 10 Pro 256GB",
   ],
-  vivo: [
-    "X100 Pro 256GB",
-    "X90 Pro 256GB",
-    "V29 Pro 256GB",
-  ],
-  realme: [
-    "GT 5 Pro 256GB",
-    "GT Neo 6 256GB",
-    "11 Pro Plus 256GB",
-  ],
-  oneplus: [
-    "OnePlus 12 256GB",
-    "OnePlus 11 256GB",
-    "OnePlus Nord 3 256GB",
-  ],
-  huawei: [
-    "Mate 60 Pro 512GB",
-    "P60 Pro 256GB",
-  ],
-  google: [
-    "Pixel 8 Pro 256GB",
-    "Pixel 8 128GB",
-    "Pixel 7 Pro 256GB",
-  ],
-  sony: [
-    "Xperia 1 V 256GB",
-    "Xperia 5 V 128GB",
-  ],
+  vivo: ["X100 Pro 256GB", "X90 Pro 256GB", "V29 Pro 256GB"],
+  realme: ["GT 5 Pro 256GB", "GT Neo 6 256GB", "11 Pro Plus 256GB"],
+  oneplus: ["OnePlus 12 256GB", "OnePlus 11 256GB", "OnePlus Nord 3 256GB"],
+  huawei: ["Mate 60 Pro 512GB", "P60 Pro 256GB"],
+  google: ["Pixel 8 Pro 256GB", "Pixel 8 128GB", "Pixel 7 Pro 256GB"],
+  sony: ["Xperia 1 V 256GB", "Xperia 5 V 128GB"],
 };
 
 // Searchable Select Component
@@ -142,9 +120,9 @@ function SearchableSelect({
       items.filter((it) =>
         String(it[labelKey] ?? "")
           .toLowerCase()
-          .includes(query.toLowerCase())
+          .includes(query.toLowerCase()),
       ),
-    [items, query, labelKey]
+    [items, query, labelKey],
   );
 
   return (
@@ -205,7 +183,7 @@ function ModelAutocomplete({
   const filteredModels = useMemo(() => {
     if (!inputValue.trim()) return models;
     return models.filter((model) =>
-      model.toLowerCase().includes(inputValue.toLowerCase())
+      model.toLowerCase().includes(inputValue.toLowerCase()),
     );
   }, [models, inputValue]);
 
@@ -271,10 +249,14 @@ export default function WholesalerProducts() {
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "mobile" | "accessory">("all");
+  const [categoryFilter, setCategoryFilter] = useState<
+    "all" | "mobile" | "accessory"
+  >("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<"mobile" | "accessory">("mobile");
-  
+  const [selectedCategory, setSelectedCategory] = useState<
+    "mobile" | "accessory"
+  >("mobile");
+
   // Form state
   const [brand, setBrand] = useState("");
   const [modelName, setModelName] = useState("");
@@ -356,9 +338,14 @@ export default function WholesalerProducts() {
 
   const stats = useMemo(() => {
     const mobileProducts = products.filter((p) => p.category === "mobile");
-    const accessoryProducts = products.filter((p) => p.category === "accessory");
+    const accessoryProducts = products.filter(
+      (p) => p.category === "accessory",
+    );
     const lowStockProducts = products.filter((p) => p.stock < p.minStock);
-    const totalValue = products.reduce((sum, p) => sum + p.stock * p.purchasePrice, 0);
+    const totalValue = products.reduce(
+      (sum, p) => sum + p.stock * p.purchasePrice,
+      0,
+    );
 
     return [
       {
@@ -442,8 +429,9 @@ export default function WholesalerProducts() {
       return;
     }
 
-    const productName = selectedCategory === "mobile" ? modelName : accessoryName;
-    
+    const productName =
+      selectedCategory === "mobile" ? modelName : accessoryName;
+
     toast({
       title: "Product Added",
       description: `${productName} has been added successfully`,
@@ -470,22 +458,6 @@ export default function WholesalerProducts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Product Listings</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your mobile and accessory inventory visible to shops and sales persons
-          </p>
-        </div>
-        <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          data-testid="button-add-product"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product
-        </Button>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -545,6 +517,16 @@ export default function WholesalerProducts() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          data-testid="button-add-product"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Product
+        </Button>
+      </div>
+
       <div className="space-y-4">
         {filteredProducts.length === 0 ? (
           <Card>
@@ -561,7 +543,11 @@ export default function WholesalerProducts() {
                   <div className="flex-1 min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">
-                        {product.category === "mobile" ? <Smartphone className="w-3 h-3 mr-1" /> : <Cable className="w-3 h-3 mr-1" />}
+                        {product.category === "mobile" ? (
+                          <Smartphone className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Cable className="w-3 h-3 mr-1" />
+                        )}
                         {product.category === "mobile" ? "Mobile" : "Accessory"}
                       </Badge>
                       <Badge variant="outline">{product.brandName}</Badge>
@@ -607,9 +593,14 @@ export default function WholesalerProducts() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Profit Margin</p>
+                        <p className="text-sm text-muted-foreground">
+                          Profit Margin
+                        </p>
                         <p className="text-sm font-medium text-green-600">
-                          Rs. {(product.sellingPrice - product.purchasePrice).toLocaleString()}
+                          Rs.{" "}
+                          {(
+                            product.sellingPrice - product.purchasePrice
+                          ).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -644,15 +635,23 @@ export default function WholesalerProducts() {
       </div>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl" data-testid="dialog-add-product">
+        <DialogContent
+          className="max-h-[90vh] overflow-y-auto max-w-2xl"
+          data-testid="dialog-add-product"
+        >
           <DialogHeader>
             <DialogTitle>Add New Product</DialogTitle>
             <DialogDescription>
               Add a mobile or accessory product to your inventory
             </DialogDescription>
           </DialogHeader>
-          
-          <Tabs value={selectedCategory} onValueChange={(v) => handleCategoryChange(v as "mobile" | "accessory")}>
+
+          <Tabs
+            value={selectedCategory}
+            onValueChange={(v) =>
+              handleCategoryChange(v as "mobile" | "accessory")
+            }
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="mobile" data-testid="tab-mobile">
                 <Smartphone className="w-4 h-4 mr-2" />

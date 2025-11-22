@@ -122,9 +122,7 @@ export default function WholesalerCustomers() {
     },
     {
       title: "Total Orders",
-      value: customers
-        .reduce((sum, c) => sum + c.totalOrders, 0)
-        .toString(),
+      value: customers.reduce((sum, c) => sum + c.totalOrders, 0).toString(),
       icon: ShoppingCart,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
@@ -140,27 +138,6 @@ export default function WholesalerCustomers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Customers</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your wholesale customer relationships
-          </p>
-        </div>
-        <Button
-          onClick={() =>
-            toast({
-              title: "Add Customer",
-              description: "Customer creation feature coming soon",
-            })
-          }
-          data-testid="button-add-customer"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Customer
-        </Button>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -197,6 +174,21 @@ export default function WholesalerCustomers() {
         </CardContent>
       </Card>
 
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        <Button
+          onClick={() =>
+            toast({
+              title: "Add Customer",
+              description: "Customer creation feature coming soon",
+            })
+          }
+          data-testid="button-add-customer"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Customer
+        </Button>
+      </div>
+
       <div className="space-y-4">
         {filteredCustomers.length === 0 ? (
           <Card>
@@ -207,7 +199,10 @@ export default function WholesalerCustomers() {
           </Card>
         ) : (
           filteredCustomers.map((customer) => (
-            <Card key={customer.id} data-testid={`card-customer-${customer.id}`}>
+            <Card
+              key={customer.id}
+              data-testid={`card-customer-${customer.id}`}
+            >
               <CardContent className="pt-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-3">
@@ -231,7 +226,9 @@ export default function WholesalerCustomers() {
                     <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-5">
                       <div>
                         <p className="text-sm text-muted-foreground">Contact</p>
-                        <p className="text-sm font-medium">{customer.contact}</p>
+                        <p className="text-sm font-medium">
+                          {customer.contact}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Email</p>

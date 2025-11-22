@@ -2,16 +2,40 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTitle } from "@/context/TitleContext";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import FormPopupModal from "@/components/ui/FormPopupModal";
-import { Plus, Edit, Trash2, Package, DollarSign, TrendingUp, Tag, ShoppingCart, Store, Eye } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Package,
+  DollarSign,
+  TrendingUp,
+  Tag,
+  ShoppingCart,
+  Store,
+  Eye,
+} from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Product = {
   id: number;
@@ -53,37 +77,79 @@ export default function WholesalerDashboard() {
   }, [setTitle]);
 
   const [products, setProducts] = useState<Product[]>([
-    { id: 1, name: "iPhone 15 Pro Cases (Bulk)", description: "Premium silicone cases, pack of 50 units", category: "Accessories", price: 12000, stock: 500, discount: 10, minOrderQuantity: 1, unit: "pack", isActive: true },
-    { id: 2, name: "Samsung Fast Chargers (Bulk)", description: "Fast charging adapters, pack of 100 units", category: "Chargers", price: 18000, stock: 1000, minOrderQuantity: 1, unit: "pack", isActive: true },
-    { id: 3, name: "USB-C Cables (Bulk)", description: "High quality cables, pack of 200 units", category: "Cables", price: 24000, stock: 2000, discount: 15, minOrderQuantity: 1, unit: "pack", isActive: true },
-    { id: 4, name: "Screen Protectors (Bulk)", description: "Tempered glass, pack of 500 units", category: "Accessories", price: 30000, stock: 5000, minOrderQuantity: 1, unit: "pack", isActive: true },
+    {
+      id: 1,
+      name: "iPhone 15 Pro Cases (Bulk)",
+      description: "Premium silicone cases, pack of 50 units",
+      category: "Accessories",
+      price: 12000,
+      stock: 500,
+      discount: 10,
+      minOrderQuantity: 1,
+      unit: "pack",
+      isActive: true,
+    },
+    {
+      id: 2,
+      name: "Samsung Fast Chargers (Bulk)",
+      description: "Fast charging adapters, pack of 100 units",
+      category: "Chargers",
+      price: 18000,
+      stock: 1000,
+      minOrderQuantity: 1,
+      unit: "pack",
+      isActive: true,
+    },
+    {
+      id: 3,
+      name: "USB-C Cables (Bulk)",
+      description: "High quality cables, pack of 200 units",
+      category: "Cables",
+      price: 24000,
+      stock: 2000,
+      discount: 15,
+      minOrderQuantity: 1,
+      unit: "pack",
+      isActive: true,
+    },
+    {
+      id: 4,
+      name: "Screen Protectors (Bulk)",
+      description: "Tempered glass, pack of 500 units",
+      category: "Accessories",
+      price: 30000,
+      stock: 5000,
+      minOrderQuantity: 1,
+      unit: "pack",
+      isActive: true,
+    },
   ]);
 
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([
-    { 
-      id: 1, 
-      orderNumber: "PO-2025-001", 
-      shopName: "Tech Mobile Shop", 
+    {
+      id: 1,
+      orderNumber: "PO-2025-001",
+      shopName: "Tech Mobile Shop",
       shopPhone: "+92-300-1234567",
       shopWhatsapp: "+92-300-1234567",
-      contactPerson: "Ahmed Khan", 
-      items: [{ productName: "iPhone Cases", quantity: 2, price: 12000 }], 
-      total: 24000, 
+      contactPerson: "Ahmed Khan",
+      items: [{ productName: "iPhone Cases", quantity: 2, price: 12000 }],
+      total: 24000,
       status: "pending",
       notes: "Need urgent delivery",
-      createdAt: new Date("2025-01-10")
+      createdAt: new Date("2025-01-10"),
     },
-    { 
-      id: 2, 
-      orderNumber: "PO-2025-002", 
-      shopName: "Mobile World", 
+    {
+      id: 2,
+      orderNumber: "PO-2025-002",
+      shopName: "Mobile World",
       shopPhone: "+92-321-7654321",
       shopWhatsapp: "+92-321-7654321",
-      contactPerson: "Sara Ahmed", 
-      items: [{ productName: "USB-C Cables", quantity: 3, price: 24000 }], 
-      total: 72000, 
+      contactPerson: "Sara Ahmed",
+      items: [{ productName: "USB-C Cables", quantity: 3, price: 24000 }],
+      total: 72000,
       status: "pending",
-      createdAt: new Date("2025-01-11")
+      createdAt: new Date("2025-01-11"),
     },
   ]);
 
@@ -104,15 +170,20 @@ export default function WholesalerDashboard() {
   });
 
   const categories = useMemo(() => {
-    const cats = Array.from(new Set(products.map(p => p.category)));
+    const cats = Array.from(new Set(products.map((p) => p.category)));
     return ["all", ...cats];
   }, [products]);
 
   const stats = useMemo(() => {
-    const activeProducts = products.filter(p => p.isActive);
+    const activeProducts = products.filter((p) => p.isActive);
     const totalStock = activeProducts.reduce((sum, p) => sum + p.stock, 0);
-    const totalValue = activeProducts.reduce((sum, p) => sum + (p.price * p.stock), 0);
-    const pendingOrders = purchaseOrders.filter(po => po.status === "pending").length;
+    const totalValue = activeProducts.reduce(
+      (sum, p) => sum + p.price * p.stock,
+      0,
+    );
+    const pendingOrders = purchaseOrders.filter(
+      (po) => po.status === "pending",
+    ).length;
     return {
       totalProducts: activeProducts.length,
       totalStock,
@@ -123,33 +194,34 @@ export default function WholesalerDashboard() {
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
-    
+
     if (categoryFilter !== "all") {
-      filtered = filtered.filter(p => p.category === categoryFilter);
+      filtered = filtered.filter((p) => p.category === categoryFilter);
     }
-    
+
     return filtered;
   }, [products, searchQuery, categoryFilter]);
 
   const openAdd = () => {
     setEditing(null);
-    setFormData({ 
-      name: "", 
-      description: "", 
-      category: "", 
-      price: "", 
-      stock: "", 
-      discount: "", 
-      minOrderQuantity: "1", 
+    setFormData({
+      name: "",
+      description: "",
+      category: "",
+      price: "",
+      stock: "",
+      discount: "",
+      minOrderQuantity: "1",
       unit: "pack",
-      isActive: true 
+      isActive: true,
     });
     setIsModalOpen(true);
   };
@@ -179,8 +251,16 @@ export default function WholesalerDashboard() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.price || !formData.stock || !formData.category) {
-      toast({ title: "Please fill all required fields", variant: "destructive" });
+    if (
+      !formData.name.trim() ||
+      !formData.price ||
+      !formData.stock ||
+      !formData.category
+    ) {
+      toast({
+        title: "Please fill all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -193,11 +273,13 @@ export default function WholesalerDashboard() {
                 ...formData,
                 price: parseFloat(formData.price),
                 stock: parseInt(formData.stock),
-                discount: formData.discount ? parseFloat(formData.discount) : undefined,
+                discount: formData.discount
+                  ? parseFloat(formData.discount)
+                  : undefined,
                 minOrderQuantity: parseInt(formData.minOrderQuantity),
               }
-            : p
-        )
+            : p,
+        ),
       );
       toast({ title: "Product updated successfully" });
     } else {
@@ -220,34 +302,33 @@ export default function WholesalerDashboard() {
     setIsModalOpen(false);
   };
 
-  const handleOrderAction = (orderId: number, action: "approved" | "rejected") => {
-    setPurchaseOrders(purchaseOrders.map(po => 
-      po.id === orderId ? { ...po, status: action } : po
-    ));
-    toast({ 
+  const handleOrderAction = (
+    orderId: number,
+    action: "approved" | "rejected",
+  ) => {
+    setPurchaseOrders(
+      purchaseOrders.map((po) =>
+        po.id === orderId ? { ...po, status: action } : po,
+      ),
+    );
+    toast({
       title: action === "approved" ? "Order Approved" : "Order Rejected",
-      description: `Purchase order has been ${action}` 
+      description: `Purchase order has been ${action}`,
     });
   };
 
   const openWhatsApp = (number: string, shopName: string) => {
-    const message = encodeURIComponent(`Hello! I'm from ${user?.businessName || user?.username}. Regarding your order from our wholesale business.`);
-    window.open(`https://wa.me/${number.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+    const message = encodeURIComponent(
+      `Hello! I'm from ${user?.businessName || user?.username}. Regarding your order from our wholesale business.`,
+    );
+    window.open(
+      `https://wa.me/${number.replace(/[^0-9]/g, "")}?text=${message}`,
+      "_blank",
+    );
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Welcome, {user?.businessName || user?.username}!</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your wholesale products and orders</p>
-        </div>
-        <Button onClick={openAdd} data-testid="button-add-product" className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Product
-        </Button>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Active Products"
@@ -275,98 +356,25 @@ export default function WholesalerDashboard() {
         />
       </div>
 
-      {purchaseOrders.filter(po => po.status === "pending").length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5" />
-              Pending Purchase Orders
-            </CardTitle>
-            <CardDescription>New orders from shop owners awaiting your response</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {purchaseOrders.filter(po => po.status === "pending").map((order) => (
-                <Card key={order.id} className="bg-primary/5">
-                  <CardHeader className="pb-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <CardTitle className="text-lg">{order.orderNumber}</CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Store className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-semibold">{order.shopName}</span>
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="w-fit">Rs. {order.total.toLocaleString()}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Contact Person</p>
-                        <p className="font-medium">{order.contactPerson}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Phone</p>
-                        <p className="font-medium">{order.shopPhone}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold">Items:</p>
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-sm">
-                          <span>{item.productName} × {item.quantity}</span>
-                          <span className="font-medium">Rs. {(item.price * item.quantity).toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {order.notes && (
-                      <div className="mt-3 p-3 bg-muted rounded-md">
-                        <p className="text-sm"><span className="font-semibold">Notes:</span> {order.notes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter className="flex flex-col sm:flex-row gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => openWhatsApp(order.shopWhatsapp, order.shopName)}
-                      className="w-full sm:w-auto"
-                      data-testid={`button-whatsapp-${order.id}`}
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                      </svg>
-                      WhatsApp
-                    </Button>
-                    <div className="flex gap-2 flex-1">
-                      <Button 
-                        variant="destructive" 
-                        onClick={() => handleOrderAction(order.id, "rejected")}
-                        className="flex-1"
-                        data-testid={`button-reject-${order.id}`}
-                      >
-                        Reject
-                      </Button>
-                      <Button 
-                        onClick={() => handleOrderAction(order.id, "approved")}
-                        className="flex-1"
-                        data-testid={`button-approve-${order.id}`}
-                      >
-                        Approve
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
-          <CardTitle>My Products & Offers</CardTitle>
-          <CardDescription>Manage your wholesale product catalog</CardDescription>
+          <CardTitle>
+            <div className="flex justify-between flex-col md:flex-row">
+              <h2>My Products & Offers</h2>
+              <Button
+                onClick={openAdd}
+                data-testid="button-add-product"
+                className="w-full sm:w-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
+          </CardTitle>
+
+          <CardDescription>
+            Manage your wholesale product catalog
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
@@ -378,11 +386,14 @@ export default function WholesalerDashboard() {
               data-testid="input-search"
             />
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-48" data-testid="select-category">
+              <SelectTrigger
+                className="w-full sm:w-48"
+                data-testid="select-category"
+              >
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(cat => (
+                {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat === "all" ? "All Categories" : cat}
                   </SelectItem>
@@ -393,7 +404,11 @@ export default function WholesalerDashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="flex flex-col" data-testid={`product-card-${product.id}`}>
+              <Card
+                key={product.id}
+                className="flex flex-col"
+                data-testid={`product-card-${product.id}`}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <Badge variant="outline" className="text-xs">
@@ -406,7 +421,9 @@ export default function WholesalerDashboard() {
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-base line-clamp-2">{product.name}</CardTitle>
+                  <CardTitle className="text-base line-clamp-2">
+                    {product.name}
+                  </CardTitle>
                   <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                     {product.description}
                   </p>
@@ -417,7 +434,9 @@ export default function WholesalerDashboard() {
                       <span className="text-2xl font-bold text-primary">
                         Rs. {product.price.toLocaleString()}
                       </span>
-                      <span className="text-xs text-muted-foreground">/ {product.unit}</span>
+                      <span className="text-xs text-muted-foreground">
+                        / {product.unit}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Package className="w-3 h-3" />
@@ -425,17 +444,22 @@ export default function WholesalerDashboard() {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <ShoppingCart className="w-3 h-3" />
-                      <span>Min Order: {product.minOrderQuantity} {product.unit}(s)</span>
+                      <span>
+                        Min Order: {product.minOrderQuantity} {product.unit}(s)
+                      </span>
                     </div>
-                    <Badge variant={product.isActive ? "default" : "secondary"} className="text-xs">
+                    <Badge
+                      variant={product.isActive ? "default" : "secondary"}
+                      className="text-xs"
+                    >
                       {product.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </CardContent>
                 <CardFooter className="pt-0 flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => openEdit(product)}
                     className="flex-1"
                     data-testid={`button-edit-${product.id}`}
@@ -443,9 +467,9 @@ export default function WholesalerDashboard() {
                     <Edit className="w-3 h-3 mr-1" />
                     Edit
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => handleDelete(product)}
                     data-testid={`button-delete-${product.id}`}
                   >
@@ -465,25 +489,38 @@ export default function WholesalerDashboard() {
         </CardContent>
       </Card>
 
-      <FormPopupModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <FormPopupModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-xl font-semibold">{editing ? "Edit Product" : "Add New Product"}</h2>
+          <h2 className="text-xl font-semibold">
+            {editing ? "Edit Product" : "Add New Product"}
+          </h2>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Product Name *</label>
+            <label className="block text-sm font-medium mb-2">
+              Product Name *
+            </label>
             <Input
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               placeholder="e.g., iPhone Cases (Bulk)"
               data-testid="input-product-name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
+            <label className="block text-sm font-medium mb-2">
+              Description
+            </label>
             <Textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Brief description of the product"
               rows={3}
               data-testid="input-product-description"
@@ -492,10 +529,14 @@ export default function WholesalerDashboard() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Category *</label>
+              <label className="block text-sm font-medium mb-2">
+                Category *
+              </label>
               <Input
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
                 placeholder="e.g., Accessories"
                 data-testid="input-product-category"
               />
@@ -504,7 +545,9 @@ export default function WholesalerDashboard() {
               <label className="block text-sm font-medium mb-2">Unit</label>
               <Input
                 value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, unit: e.target.value })
+                }
                 placeholder="e.g., pack, box"
                 data-testid="input-product-unit"
               />
@@ -513,12 +556,16 @@ export default function WholesalerDashboard() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Price (Rs.) *</label>
+              <label className="block text-sm font-medium mb-2">
+                Price (Rs.) *
+              </label>
               <Input
                 type="number"
                 step="1"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: e.target.value })
+                }
                 placeholder="0"
                 data-testid="input-product-price"
               />
@@ -528,7 +575,9 @@ export default function WholesalerDashboard() {
               <Input
                 type="number"
                 value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, stock: e.target.value })
+                }
                 placeholder="0"
                 data-testid="input-product-stock"
               />
@@ -537,22 +586,30 @@ export default function WholesalerDashboard() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Discount (%)</label>
+              <label className="block text-sm font-medium mb-2">
+                Discount (%)
+              </label>
               <Input
                 type="number"
                 step="0.1"
                 value={formData.discount}
-                onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, discount: e.target.value })
+                }
                 placeholder="0"
                 data-testid="input-product-discount"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Min Order Qty *</label>
+              <label className="block text-sm font-medium mb-2">
+                Min Order Qty *
+              </label>
               <Input
                 type="number"
                 value={formData.minOrderQuantity}
-                onChange={(e) => setFormData({ ...formData, minOrderQuantity: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, minOrderQuantity: e.target.value })
+                }
                 placeholder="1"
                 data-testid="input-product-min-order"
               />
@@ -563,15 +620,24 @@ export default function WholesalerDashboard() {
             <input
               type="checkbox"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isActive: e.target.checked })
+              }
               className="h-4 w-4"
               data-testid="checkbox-product-active"
             />
-            <label className="text-sm">Product is active and visible to shop owners</label>
+            <label className="text-sm">
+              Product is active and visible to shop owners
+            </label>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} data-testid="button-cancel">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsModalOpen(false)}
+              data-testid="button-cancel"
+            >
               Cancel
             </Button>
             <Button type="submit" data-testid="button-submit-product">

@@ -9,7 +9,6 @@ import {
   Plus,
   FileText,
   DollarSign,
-  Clock,
   CheckCircle,
   AlertCircle,
   Eye,
@@ -150,27 +149,6 @@ export default function WholesalerInvoices() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Invoices</h2>
-          <p className="text-sm text-muted-foreground">
-            Track payments and manage invoicing
-          </p>
-        </div>
-        <Button
-          onClick={() =>
-            toast({
-              title: "Create Invoice",
-              description: "Invoice creation feature coming soon",
-            })
-          }
-          data-testid="button-create-invoice"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Invoice
-        </Button>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -226,6 +204,21 @@ export default function WholesalerInvoices() {
         </CardContent>
       </Card>
 
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        <Button
+          onClick={() =>
+            toast({
+              title: "Create Invoice",
+              description: "Invoice creation feature coming soon",
+            })
+          }
+          data-testid="button-create-invoice"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create Invoice
+        </Button>
+      </div>
+
       <div className="space-y-4">
         {filteredInvoices.length === 0 ? (
           <Card>
@@ -259,7 +252,9 @@ export default function WholesalerInvoices() {
 
                     <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-6">
                       <div>
-                        <p className="text-sm text-muted-foreground">Customer</p>
+                        <p className="text-sm text-muted-foreground">
+                          Customer
+                        </p>
                         <p className="text-sm font-medium">
                           {invoice.customer}
                         </p>
@@ -273,7 +268,9 @@ export default function WholesalerInvoices() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Due Date</p>
+                        <p className="text-sm text-muted-foreground">
+                          Due Date
+                        </p>
                         <p className="text-sm font-medium">{invoice.dueDate}</p>
                       </div>
                       <div>
@@ -286,9 +283,7 @@ export default function WholesalerInvoices() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Balance</p>
-                        <p className="text-sm font-medium">
-                          {invoice.balance}
-                        </p>
+                        <p className="text-sm font-medium">{invoice.balance}</p>
                       </div>
                     </div>
 
