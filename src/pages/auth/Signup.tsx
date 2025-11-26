@@ -11,7 +11,7 @@ import { UserPlus, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Signup() {
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,12 +47,12 @@ export default function Signup() {
     
     signupMutation.mutate(
       { 
-        username, 
+        name, 
         email, 
         password, 
         role,
         phone,
-        businessName: businessName || undefined,
+        businessName: businessName || name,
       },
       {
         onSuccess: (data) => {
@@ -93,7 +93,7 @@ export default function Signup() {
     );
   };
 
-  const showBusinessNameField = role === 'wholesaler' || role === 'repair_man';
+  const showBusinessNameField = role === 'wholesaler' || role === 'repair_man' || role === 'admin';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 relative overflow-hidden">
@@ -116,17 +116,17 @@ export default function Signup() {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username" className="text-sm font-semibold">{t('auth.signup.username_label')}</Label>
+            <Label htmlFor="name" className="text-sm font-semibold">{t('auth.signup.name_label') || 'Full Name'}</Label>
             <Input
-              id="username"
+              id="name"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder={t('auth.signup.username_placeholder')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('auth.signup.name_placeholder') || 'Enter your full name'}
               required
               disabled={signupMutation.isPending}
               className="h-12 rounded-xl border-2 focus-visible:ring-purple-500"
-              data-testid="input-signup-username"
+              data-testid="input-signup-name"
             />
           </div>
 
@@ -152,12 +152,14 @@ export default function Signup() {
                 <SelectValue placeholder={t('auth.signup.role_placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin" data-testid="option-role-admin">{t('auth.signup.roles.admin')}</SelectItem>
-                <SelectItem value="sales_person" data-testid="option-role-sales">{t('auth.signup.roles.sales_person')}</SelectItem>
+                <SelectItem value="admin" data-testid="option-role-admin">{t('auth.signup.roles.admin') || 'Shop Owner (Admin)'}</SelectItem>
                 <SelectItem value="repair_man" data-testid="option-role-repair">{t('auth.signup.roles.repair_man')}</SelectItem>
                 <SelectItem value="wholesaler" data-testid="option-role-wholesaler">{t('auth.signup.roles.wholesaler')}</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('auth.signup.sales_person_note') || 'Sales persons can only be added by shop owners (admins) from the dashboard.'}
+            </p>
           </div>
 
           <div className="space-y-2">

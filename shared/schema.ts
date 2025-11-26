@@ -14,6 +14,17 @@ export const users = pgTable("users", {
   phone: text("phone"),
   whatsapp: text("whatsapp"),
   address: text("address"),
+  refreshToken: text("refresh_token"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  modifiedAt: timestamp("modified_at").defaultNow(),
+});
+
+export const loginHistory = pgTable("login_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  ipAddress: text("ip_address"),
+  deviceInfo: text("device_info"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -267,8 +278,10 @@ export const insertDealRequestSchema = createInsertSchema(dealRequests).omit({ i
 export const insertRepairPersonSchema = createInsertSchema(repairPersons).omit({ id: true, createdAt: true });
 export const insertRepairJobSchema = createInsertSchema(repairJobs).omit({ id: true, createdAt: true, updatedAt: true, totalPaid: true });
 export const insertRepairPaymentSchema = createInsertSchema(repairPayments).omit({ id: true, createdAt: true });
+export const insertLoginHistorySchema = createInsertSchema(loginHistory).omit({ id: true, createdAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertLoginHistory = z.infer<typeof insertLoginHistorySchema>;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
@@ -300,3 +313,4 @@ export type DealRequest = typeof dealRequests.$inferSelect;
 export type RepairPerson = typeof repairPersons.$inferSelect;
 export type RepairJob = typeof repairJobs.$inferSelect;
 export type RepairPayment = typeof repairPayments.$inferSelect;
+export type LoginHistory = typeof loginHistory.$inferSelect;

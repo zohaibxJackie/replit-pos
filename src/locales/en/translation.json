@@ -3,6 +3,8 @@
     "login": {
       "title": "POS System",
       "subtitle": "Sign in to access your dashboard",
+      "email_label": "Email",
+      "email_placeholder": "Enter your email",
       "username_label": "Username",
       "username_placeholder": "Enter your username",
       "password_label": "Password",
@@ -14,11 +16,13 @@
       "success_title": "Login successful",
       "success_description": "Welcome back, {{username}}!",
       "error_title": "Login failed",
-      "error_description": "Invalid username or password"
+      "error_description": "Invalid email or password"
     },
     "signup": {
       "title": "Create Account",
       "subtitle": "Register to get started",
+      "name_label": "Full Name",
+      "name_placeholder": "Enter your full name",
       "username_label": "Username",
       "username_placeholder": "Choose a username",
       "email_label": "Email",
@@ -26,7 +30,7 @@
       "role_label": "Account Type",
       "role_placeholder": "Select your role",
       "roles": {
-        "admin": "Shop Admin",
+        "admin": "Shop Owner (Admin)",
         "sales_person": "Sales Person",
         "repair_man": "Repair Technician",
         "wholesaler": "Wholesaler"
@@ -48,7 +52,8 @@
       "error_title": "Registration failed",
       "error_description": "Unable to create account. Please try again.",
       "password_mismatch": "Passwords do not match",
-      "role_required": "Please select an account type"
+      "role_required": "Please select an account type",
+      "sales_person_note": "Sales persons can only be added by shop owners (admins) from the dashboard."
     },
     "demo_accounts": {
       "title": "Demo Accounts",

@@ -11,7 +11,7 @@ import { LogIn, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Login() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -25,7 +25,7 @@ export default function Login() {
     e.preventDefault();
     
     loginMutation.mutate(
-      { username, password },
+      { email, password },
       {
         onSuccess: (data) => {
           if (data.success && data.user) {
@@ -86,17 +86,17 @@ export default function Login() {
         
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="username" className="text-sm font-semibold">{t('auth.login.username_label')}</Label>
+            <Label htmlFor="email" className="text-sm font-semibold">{t('auth.login.email_label') || 'Email'}</Label>
             <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder={t('auth.login.username_placeholder')}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('auth.login.email_placeholder') || 'Enter your email'}
               required
               disabled={loginMutation.isPending}
               className="h-12 rounded-xl border-2 focus-visible:ring-purple-500"
-              data-testid="input-username"
+              data-testid="input-email"
             />
           </div>
           
@@ -147,25 +147,25 @@ export default function Login() {
         <div className="mt-8 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
           <p className="text-center text-sm font-semibold text-foreground mb-3">{t('auth.demo_accounts.title')}</p>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-2">
               <span className="text-muted-foreground">{t('auth.demo_accounts.super_admin')}:</span>
-              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">superadmin / admin123</code>
+              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">superadmin@pos.com / admin123</code>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-2">
               <span className="text-muted-foreground">{t('auth.demo_accounts.admin')}:</span>
-              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">admin / admin123</code>
+              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">admin@pos.com / admin123</code>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-2">
               <span className="text-muted-foreground">{t('auth.demo_accounts.sales')}:</span>
-              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">sales / sales123</code>
+              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">sales@pos.com / sales123</code>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-2">
               <span className="text-muted-foreground">{t('auth.demo_accounts.repair_man')}:</span>
-              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">repairman / repair123</code>
+              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">repairman@pos.com / repair123</code>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-2">
               <span className="text-muted-foreground">{t('auth.demo_accounts.wholesaler')}:</span>
-              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">wholesaler / wholesale123</code>
+              <code className="px-2 py-1 bg-white rounded-lg text-xs font-mono">wholesaler@pos.com / wholesale123</code>
             </div>
           </div>
         </div>

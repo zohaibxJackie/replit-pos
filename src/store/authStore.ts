@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export interface User {
   id: string;
+  name: string;
   username: string;
   email: string;
   role: 'super_admin' | 'admin' | 'sales_person' | 'repair_man' | 'wholesaler';
@@ -12,6 +13,7 @@ export interface User {
   phone?: string;
   whatsapp?: string;
   address?: string;
+  active?: boolean;
 }
 
 export interface AuthResponse {

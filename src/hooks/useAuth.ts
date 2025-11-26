@@ -1,21 +1,21 @@
 import { useMutation } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import { useAuthStore, AuthResponse, User } from '@/store/authStore';
 import { useLocation } from 'wouter';
 import { useEffect } from 'react';
+import api from '@/lib/api';
 
 interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 interface SignupCredentials {
-  username: string;
+  name: string;
   email: string;
   password: string;
   role: string;
   phone: string;
-  businessName?: string;
+  businessName: string;
 }
 
 export function useAuth(requiredRoles?: string | string[]) {
@@ -57,7 +57,8 @@ export function useLogin() {
   return useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<AuthResponse> => {
       setIsLoading(true);
-      return apiRequest<AuthResponse>('POST', '/api/auth/login', credentials);
+      const response = await api.auth.login(credentials) as AuthResponse;
+      return response;
     },
     onSuccess: (data) => {
       if (data.success && data.user && data.token) {
@@ -76,7 +77,8 @@ export function useSignup() {
   return useMutation({
     mutationFn: async (credentials: SignupCredentials): Promise<AuthResponse> => {
       setIsLoading(true);
-      return apiRequest<AuthResponse>('POST', 'http://localhost:3000/api/auth/register', credentials);
+      const response = await api.auth.register(credentials) as AuthResponse;
+      return response;
     },
     onSuccess: (data) => {
       if (data.success && data.user && data.token) {
@@ -94,13 +96,22 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async (): Promise<{ success: boolean; message: string }> => {
-      return apiRequest('POST', '/api/auth/logout');
+      const response = await api.auth.logout() as { success: boolean; message: string };
+      return response;
     },
     onSuccess: () => {
       logout();
     },
     onError: () => {
       logout();
+    },
+  });
+}
+
+export function useAddStaff() {
+  return useMutation({
+    mutationFn: async (data: { name: string; email: string; phone: string; password: string; role: string; shopId?: string }) => {
+      return api.users.addStaff(data);
     },
   });
 }
