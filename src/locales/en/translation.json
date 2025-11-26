@@ -1,4 +1,64 @@
 {
+  "auth": {
+    "login": {
+      "title": "POS System",
+      "subtitle": "Sign in to access your dashboard",
+      "username_label": "Username",
+      "username_placeholder": "Enter your username",
+      "password_label": "Password",
+      "password_placeholder": "Enter your password",
+      "sign_in_button": "Sign In",
+      "signing_in": "Signing in...",
+      "no_account": "Don't have an account?",
+      "sign_up_link": "Sign up",
+      "success_title": "Login successful",
+      "success_description": "Welcome back, {{username}}!",
+      "error_title": "Login failed",
+      "error_description": "Invalid username or password"
+    },
+    "signup": {
+      "title": "Create Account",
+      "subtitle": "Register to get started",
+      "username_label": "Username",
+      "username_placeholder": "Choose a username",
+      "email_label": "Email",
+      "email_placeholder": "Enter your email",
+      "role_label": "Account Type",
+      "role_placeholder": "Select your role",
+      "roles": {
+        "admin": "Shop Admin",
+        "sales_person": "Sales Person",
+        "repair_man": "Repair Technician",
+        "wholesaler": "Wholesaler"
+      },
+      "phone_label": "Phone (Optional)",
+      "phone_placeholder": "Enter your phone number",
+      "business_name_label": "Business Name",
+      "business_name_placeholder": "Enter your business name",
+      "password_label": "Password",
+      "password_placeholder": "Create a password",
+      "confirm_password_label": "Confirm Password",
+      "confirm_password_placeholder": "Confirm your password",
+      "sign_up_button": "Create Account",
+      "creating_account": "Creating account...",
+      "have_account": "Already have an account?",
+      "sign_in_link": "Sign in",
+      "success_title": "Account created",
+      "success_description": "Your account has been created successfully!",
+      "error_title": "Registration failed",
+      "error_description": "Unable to create account. Please try again.",
+      "password_mismatch": "Passwords do not match",
+      "role_required": "Please select an account type"
+    },
+    "demo_accounts": {
+      "title": "Demo Accounts",
+      "super_admin": "Super Admin",
+      "admin": "Admin",
+      "sales": "Sales",
+      "repair_man": "Repair Man",
+      "wholesaler": "Wholesaler"
+    }
+  },
   "admin": {
     "titles": {
       "super_admin": "System Administration",

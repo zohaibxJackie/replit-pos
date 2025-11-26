@@ -1,4 +1,64 @@
 {
+  "auth": {
+    "login": {
+      "title": "POS سسٹم",
+      "subtitle": "اپنے ڈیش بورڈ تک رسائی کے لیے سائن ان کریں",
+      "username_label": "صارف نام",
+      "username_placeholder": "اپنا صارف نام درج کریں",
+      "password_label": "پاس ورڈ",
+      "password_placeholder": "اپنا پاس ورڈ درج کریں",
+      "sign_in_button": "سائن ان",
+      "signing_in": "سائن ان ہو رہا ہے...",
+      "no_account": "اکاؤنٹ نہیں ہے؟",
+      "sign_up_link": "سائن اپ کریں",
+      "success_title": "لاگ ان کامیاب",
+      "success_description": "خوش آمدید، {{username}}!",
+      "error_title": "لاگ ان ناکام",
+      "error_description": "غلط صارف نام یا پاس ورڈ"
+    },
+    "signup": {
+      "title": "اکاؤنٹ بنائیں",
+      "subtitle": "شروع کرنے کے لیے رجسٹر کریں",
+      "username_label": "صارف نام",
+      "username_placeholder": "صارف نام منتخب کریں",
+      "email_label": "ای میل",
+      "email_placeholder": "اپنا ای میل درج کریں",
+      "role_label": "اکاؤنٹ کی قسم",
+      "role_placeholder": "اپنا کردار منتخب کریں",
+      "roles": {
+        "admin": "شاپ ایڈمن",
+        "sales_person": "سیلز پرسن",
+        "repair_man": "مرمت ٹیکنیشن",
+        "wholesaler": "ہول سیلر"
+      },
+      "phone_label": "فون (اختیاری)",
+      "phone_placeholder": "اپنا فون نمبر درج کریں",
+      "business_name_label": "کاروبار کا نام",
+      "business_name_placeholder": "اپنے کاروبار کا نام درج کریں",
+      "password_label": "پاس ورڈ",
+      "password_placeholder": "پاس ورڈ بنائیں",
+      "confirm_password_label": "پاس ورڈ کی تصدیق",
+      "confirm_password_placeholder": "اپنے پاس ورڈ کی تصدیق کریں",
+      "sign_up_button": "اکاؤنٹ بنائیں",
+      "creating_account": "اکاؤنٹ بنایا جا رہا ہے...",
+      "have_account": "پہلے سے اکاؤنٹ ہے؟",
+      "sign_in_link": "سائن ان کریں",
+      "success_title": "اکاؤنٹ بنایا گیا",
+      "success_description": "آپ کا اکاؤنٹ کامیابی سے بنا دیا گیا ہے!",
+      "error_title": "رجسٹریشن ناکام",
+      "error_description": "اکاؤنٹ بنانے میں ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
+      "password_mismatch": "پاس ورڈ مماثل نہیں ہیں",
+      "role_required": "براہ کرم اکاؤنٹ کی قسم منتخب کریں"
+    },
+    "demo_accounts": {
+      "title": "ڈیمو اکاؤنٹس",
+      "super_admin": "سپر ایڈمن",
+      "admin": "ایڈمن",
+      "sales": "سیلز",
+      "repair_man": "مرمت کار",
+      "wholesaler": "ہول سیلر"
+    }
+  },
   "admin": {
     "titles": {
       "super_admin": "سسٹم ایڈمنسٹریشن",

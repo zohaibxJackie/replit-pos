@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/auth/Login";
+import Signup from "@/pages/auth/Signup";
 
 import { TitleProvider } from '@/context/TitleContext';
 
@@ -106,6 +107,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
       
       {!isAuthenticated && (
         <Route path="/">

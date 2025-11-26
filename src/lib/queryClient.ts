@@ -1,4 +1,9 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import i18n from "@/config/i18n";
+
+function getLanguageHeader(): string {
+  return i18n.language || "en";
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -7,14 +12,46 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
+export async function apiRequest<T = unknown>(
+  method: string,
+  url: string,
+  data?: unknown | undefined,
+): Promise<T> {
+  const headers: HeadersInit = {
+    "Accept-Language": getLanguageHeader(),
+  };
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
+  });
+
+  await throwIfResNotOk(res);
+  return await res.json();
+}
+
+export async function apiRequestRaw(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: HeadersInit = {
+    "Accept-Language": getLanguageHeader(),
+  };
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -31,6 +68,9 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
+      headers: {
+        "Accept-Language": getLanguageHeader(),
+      },
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
