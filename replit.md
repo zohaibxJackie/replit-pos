@@ -135,7 +135,41 @@ shared/
 
 ## Recent Changes (Latest Session)
 
-### POS Layout Improvements (November 12, 2025 - Latest)
+### Backend Integration for Authentication (November 26, 2025 - Latest)
+Complete implementation of language-aware API client and authentication system:
+
+#### Language-Aware API Client
+1. **Accept-Language Header**
+   - All API requests now include `Accept-Language` header based on i18next language
+   - Backend can return responses in the correct language (English, Urdu)
+   - Works with apiRequest, apiRequestRaw, and TanStack Query's default queryFn
+
+#### Authentication Hooks (`src/hooks/useAuth.ts`)
+1. **useLogin** - TanStack Query mutation for login
+2. **useSignup** - TanStack Query mutation for registration  
+3. **useLogout** - TanStack Query mutation for logout
+4. **useAuth** - Role-based route protection (consolidated from previous file)
+   - All mutations use onSettled for proper loading state cleanup
+
+#### Login & Signup Pages
+1. **Login Page** (`src/pages/auth/Login.tsx`)
+   - TanStack Query mutations for API calls
+   - Loading states with isPending
+   - Error handling with toast notifications
+   - Multi-language support (English/Urdu)
+
+2. **Signup Page** (`src/pages/auth/Signup.tsx`)
+   - Role selection (Shop Admin, Sales Person, Repair Technician, Wholesaler)
+   - Conditional business name field for wholesalers/repair technicians
+   - Password confirmation validation
+   - Complete translations for English and Urdu
+
+#### Auth Store Updates (`src/store/authStore.ts`)
+- Added AuthResponse type for API responses
+- Added User type export for type safety
+- Added setIsLoading method for loading state management
+
+### POS Layout Improvements (November 12, 2025)
 Enhanced the POS page layout for better usability and screen real estate optimization:
 
 #### Layout Changes
