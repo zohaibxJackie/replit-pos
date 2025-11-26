@@ -3,6 +3,8 @@
     "login": {
       "title": "POS سسٹم",
       "subtitle": "اپنے ڈیش بورڈ تک رسائی کے لیے سائن ان کریں",
+      "email_label": "ای میل",
+      "email_placeholder": "اپنا ای میل درج کریں",
       "username_label": "صارف نام",
       "username_placeholder": "اپنا صارف نام درج کریں",
       "password_label": "پاس ورڈ",
@@ -12,13 +14,15 @@
       "no_account": "اکاؤنٹ نہیں ہے؟",
       "sign_up_link": "سائن اپ کریں",
       "success_title": "لاگ ان کامیاب",
-      "success_description": "خوش آمدید، {{username}}!",
+      "success_description": "خوش آمدید، {{name}}!",
       "error_title": "لاگ ان ناکام",
-      "error_description": "غلط صارف نام یا پاس ورڈ"
+      "error_description": "غلط ای میل یا پاس ورڈ"
     },
     "signup": {
       "title": "اکاؤنٹ بنائیں",
       "subtitle": "شروع کرنے کے لیے رجسٹر کریں",
+      "name_label": "پورا نام",
+      "name_placeholder": "اپنا پورا نام درج کریں",
       "username_label": "صارف نام",
       "username_placeholder": "صارف نام منتخب کریں",
       "email_label": "ای میل",
@@ -26,12 +30,12 @@
       "role_label": "اکاؤنٹ کی قسم",
       "role_placeholder": "اپنا کردار منتخب کریں",
       "roles": {
-        "admin": "شاپ ایڈمن",
+        "admin": "شاپ مالک (ایڈمن)",
         "sales_person": "سیلز پرسن",
         "repair_man": "مرمت ٹیکنیشن",
         "wholesaler": "ہول سیلر"
       },
-      "phone_label": "فون (اختیاری)",
+      "phone_label": "فون",
       "phone_placeholder": "اپنا فون نمبر درج کریں",
       "business_name_label": "کاروبار کا نام",
       "business_name_placeholder": "اپنے کاروبار کا نام درج کریں",
@@ -48,7 +52,8 @@
       "error_title": "رجسٹریشن ناکام",
       "error_description": "اکاؤنٹ بنانے میں ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
       "password_mismatch": "پاس ورڈ مماثل نہیں ہیں",
-      "role_required": "براہ کرم اکاؤنٹ کی قسم منتخب کریں"
+      "role_required": "براہ کرم اکاؤنٹ کی قسم منتخب کریں",
+      "sales_person_note": "سیلز پرسن صرف شاپ مالک (ایڈمن) ڈیش بورڈ سے شامل کیے جا سکتے ہیں۔"
     },
     "demo_accounts": {
       "title": "ڈیمو اکاؤنٹس",

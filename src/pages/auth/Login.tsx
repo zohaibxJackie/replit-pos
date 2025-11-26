@@ -31,7 +31,7 @@ export default function Login() {
           if (data.success && data.user) {
             toast({
               title: t('auth.login.success_title'),
-              description: t('auth.login.success_description', { username: data.user.username }),
+              description: t('auth.login.success_description', { name: data.user.name }),
             });
             
             const userRole = data.user.role;

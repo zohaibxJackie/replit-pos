@@ -14,7 +14,7 @@
       "no_account": "Don't have an account?",
       "sign_up_link": "Sign up",
       "success_title": "Login successful",
-      "success_description": "Welcome back, {{username}}!",
+      "success_description": "Welcome back, {{name}}!",
       "error_title": "Login failed",
       "error_description": "Invalid email or password"
     },
