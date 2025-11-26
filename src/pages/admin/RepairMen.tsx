@@ -134,7 +134,7 @@ export default function RepairMen() {
     // Remove all non-digit characters from phone number
     // This handles formats like +1-555-0101, (555) 0101, etc.
     const cleanPhone = phone.replace(/\D/g, '');
-    
+
     // Validate phone number length (international format)
     if (cleanPhone.length < 10 || cleanPhone.length > 15) {
       toast({
@@ -144,7 +144,7 @@ export default function RepairMen() {
       });
       return;
     }
-    
+
     // Open WhatsApp chat with cleaned number
     // WhatsApp will handle the final validation
     window.open(`https://wa.me/${cleanPhone}`, '_blank');
@@ -197,7 +197,7 @@ export default function RepairMen() {
         {filteredRepairMen.map((repairMan) => {
           const services = mockServices[repairMan.id] || [];
           const previewServices = services.slice(0, 3);
-          
+
           return (
             <Card 
               key={repairMan.id} 
@@ -271,7 +271,7 @@ export default function RepairMen() {
                 </div>
               </CardContent>
               <CardFooter className="pt-0 gap-2" onClick={(e) => e.stopPropagation()}>
-                <Button
+                {/* <Button
                   variant="outline"
                   className="flex-1"
                   onClick={() => handleContact(repairMan.email)}
@@ -279,7 +279,7 @@ export default function RepairMen() {
                 >
                   <Mail className="w-4 h-4 mr-2" />
                   Contact
-                </Button>
+                </Button> */}
                 <Button
                   variant="default"
                   className="flex-1"
