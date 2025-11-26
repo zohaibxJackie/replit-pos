@@ -14,7 +14,7 @@ interface SignupCredentials {
   email: string;
   password: string;
   role: string;
-  phone?: string;
+  phone: string;
   businessName?: string;
 }
 
@@ -76,7 +76,7 @@ export function useSignup() {
   return useMutation({
     mutationFn: async (credentials: SignupCredentials): Promise<AuthResponse> => {
       setIsLoading(true);
-      return apiRequest<AuthResponse>('POST', '/api/auth/signup', credentials);
+      return apiRequest<AuthResponse>('POST', 'http://localhost:3000/api/auth/register', credentials);
     },
     onSuccess: (data) => {
       if (data.success && data.user && data.token) {

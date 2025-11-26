@@ -31,7 +31,7 @@
         "repair_man": "Repair Technician",
         "wholesaler": "Wholesaler"
       },
-      "phone_label": "Phone (Optional)",
+      "phone_label": "Phone",
       "phone_placeholder": "Enter your phone number",
       "business_name_label": "Business Name",
       "business_name_placeholder": "Enter your business name",

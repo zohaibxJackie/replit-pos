@@ -51,7 +51,7 @@ export default function Signup() {
         email, 
         password, 
         role,
-        phone: phone || undefined,
+        phone,
         businessName: businessName || undefined,
       },
       {
