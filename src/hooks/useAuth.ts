@@ -1,6 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuthStore, AuthResponse, User } from '@/store/authStore';
+import { useLocation } from 'wouter';
+import { useEffect } from 'react';
 
 interface LoginCredentials {
   username: string;
@@ -16,6 +18,39 @@ interface SignupCredentials {
   businessName?: string;
 }
 
+export function useAuth(requiredRoles?: string | string[]) {
+  const { isAuthenticated, user } = useAuthStore();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setLocation('/login');
+      return;
+    }
+
+    if (requiredRoles) {
+      const rolesArray = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+      const userRole = user?.role ?? '';
+
+      if (!rolesArray.includes(userRole)) {
+        if (user?.role === 'super_admin') {
+          setLocation('/super-admin/dashboard');
+        } else if (user?.role === 'admin') {
+          setLocation('/admin/dashboard');
+        } else if (user?.role === 'sales_person') {
+          setLocation('/pos');
+        } else if (user?.role === 'repair_man') {
+          setLocation('/repair-man/dashboard');
+        } else if (user?.role === 'wholesaler') {
+          setLocation('/wholesaler/dashboard');
+        }
+      }
+    }
+  }, [isAuthenticated, user, requiredRoles, setLocation]);
+
+  return { isAuthenticated, user };
+}
+
 export function useLogin() {
   const { loginSuccess, setIsLoading } = useAuthStore();
 
@@ -29,7 +64,7 @@ export function useLogin() {
         loginSuccess(data.user, data.token);
       }
     },
-    onError: () => {
+    onSettled: () => {
       setIsLoading(false);
     },
   });
@@ -48,7 +83,7 @@ export function useSignup() {
         loginSuccess(data.user, data.token);
       }
     },
-    onError: () => {
+    onSettled: () => {
       setIsLoading(false);
     },
   });
