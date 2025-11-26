@@ -1,0 +1,200 @@
+# Mobile Shop POS Backend
+
+A complete backend API for Mobile Shop Point of Sale system built with Node.js, Express.js, and PostgreSQL.
+
+## Features
+
+- **Authentication & Authorization**
+  - User registration and login
+  - JWT-based access and refresh tokens
+  - Role-based access control (RBAC)
+  - Login history tracking
+
+- **User Management**
+  - User CRUD operations
+  - User details management
+  - Role assignment
+
+- **Roles**
+  - super_admin
+  - admin
+  - sales_person
+  - repair_man
+  - wholesaler
+
+## Setup Instructions
+
+### 1. PostgreSQL Database Setup
+
+This backend requires a PostgreSQL database. You have two options:
+
+#### Option A: Use Replit PostgreSQL Database (Recommended)
+
+1. In your Replit workspace, look for the **Database** tool in the left sidebar
+2. Click "Create a database" and select PostgreSQL
+3. The database credentials will be automatically added as environment variables:
+   - `DATABASE_URL`
+   - `PGHOST`
+   - `PGUSER`
+   - `PGPASSWORD`
+   - `PGDATABASE`
+   - `PGPORT`
+
+4. Update the `backend/.env` file to use these environment variables (or the system will use them automatically if available)
+
+#### Option B: Use External PostgreSQL Database
+
+If you have an external PostgreSQL database, update the `backend/.env` file with your credentials:
+
+```env
+DB_HOST=your-database-host
+DB_PORT=5432
+DB_NAME=your-database-name
+DB_USER=your-database-user
+DB_PASSWORD=your-database-password
+```
+
+### 2. Initialize the Database
+
+After setting up your PostgreSQL database, run the initialization script to create all tables and seed default roles:
+
+```bash
+cd backend
+node scripts/initDb.js
+```
+
+This will create all required tables:
+- users
+- roles (with default roles)
+- user_roles
+- user_details
+- login_history
+
+### 3. Install Dependencies
+
+Dependencies should already be installed, but if needed:
+
+```bash
+cd backend
+npm install
+```
+
+### 4. Start the Server
+
+The server will start automatically via the workflow, or you can start it manually:
+
+```bash
+cd backend
+npm start
+```
+
+The API will be available at `http://localhost:3000`
+
+## API Endpoints
+
+### Authentication (`/api/auth`)
+
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/logout` - Logout user (requires authentication)
+- `GET /api/auth/me` - Get current user info (requires authentication)
+
+### Users (`/api/users`)
+
+- `GET /api/users` - Get all users (requires admin/super_admin role)
+- `GET /api/users/:id` - Get user by ID (requires authentication)
+- `PUT /api/users/:id` - Update user (requires authentication)
+- `DELETE /api/users/:id` - Delete user (requires admin/super_admin role)
+
+### Roles (`/api/roles`)
+
+- `GET /api/roles` - Get all roles (requires authentication)
+- `POST /api/roles/assign` - Assign role to user (requires admin/super_admin role)
+- `POST /api/roles/remove` - Remove role from user (requires admin/super_admin role)
+
+### Login History (`/api/login-history`)
+
+- `GET /api/login-history/user/:userId` - Get login history for a user (requires authentication)
+- `GET /api/login-history` - Get all login history (requires admin/super_admin role)
+
+### User Details (`/api/user-details`)
+
+- `GET /api/user-details/:userId` - Get user details (requires authentication)
+- `POST /api/user-details/:userId` - Create user details (requires authentication)
+- `PUT /api/user-details/:userId` - Update user details (requires authentication)
+- `DELETE /api/user-details/:userId` - Delete user details (requires authentication)
+
+## Example API Requests
+
+### Register a User
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "password": "password123",
+    "role": "sales_person"
+  }'
+```
+
+### Login
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "password123"
+  }'
+```
+
+### Get Current User (requires token from login)
+
+```bash
+curl -X GET http://localhost:3000/api/auth/me \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+## Project Structure
+
+```
+backend/
+├── config/          # Configuration files
+├── controllers/     # Route controllers
+├── middleware/      # Custom middleware
+├── models/          # Database models
+├── routes/          # API routes
+├── scripts/         # Utility scripts
+├── sql/             # SQL schema files
+├── utils/           # Utility functions
+├── validators/      # Input validators
+├── .env             # Environment variables
+├── server.js        # Main server file
+└── package.json     # Dependencies
+```
+
+## Environment Variables
+
+See `backend/.env` for all available environment variables.
+
+Key variables:
+- `PORT` - Server port (default: 3000)
+- `NODE_ENV` - Environment (development/production)
+- `DB_*` - Database connection settings
+- `JWT_SECRET` - JWT signing secret
+- `JWT_REFRESH_SECRET` - Refresh token signing secret
+
+## Security Notes
+
+- Change the `JWT_SECRET` and `JWT_REFRESH_SECRET` in production
+- Use strong passwords
+- Enable HTTPS in production
+- Keep dependencies updated
+
+## License
+
+ISC

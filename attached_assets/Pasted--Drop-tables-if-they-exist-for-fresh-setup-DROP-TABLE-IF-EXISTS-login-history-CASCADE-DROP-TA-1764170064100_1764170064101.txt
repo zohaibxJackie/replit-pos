@@ -1,0 +1,70 @@
+-- Drop tables if they exist (for fresh setup)
+DROP TABLE IF EXISTS login_history CASCADE;
+DROP TABLE IF EXISTS user_details CASCADE;
+DROP TABLE IF EXISTS user_roles CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- Create users table
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  businessName VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  refresh_token TEXT,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create roles table
+CREATE TABLE roles (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- Create user_roles table (many-to-many relationship)
+CREATE TABLE user_roles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  UNIQUE(user_id, role_id)
+);
+
+-- Create user_details table
+CREATE TABLE user_details (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  address TEXT,
+  nationality VARCHAR(100),
+  passport VARCHAR(50),
+  more_info JSONB DEFAULT '{}',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create login_history table
+CREATE TABLE login_history (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ip_address VARCHAR(45),
+  device_info TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default roles
+INSERT INTO roles (name) VALUES 
+  ('super_admin'),
+  ('admin'),
+  ('sales_person'),
+  ('repair_man'),
+  ('wholesaler');
+
+-- Create indexes for better performance
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
+CREATE INDEX idx_user_details_user_id ON user_details(user_id);
+CREATE INDEX idx_login_history_user_id ON login_history(user_id);
