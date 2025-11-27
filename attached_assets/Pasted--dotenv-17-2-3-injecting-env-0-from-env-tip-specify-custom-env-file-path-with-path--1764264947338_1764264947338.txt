@@ -1,0 +1,39 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with
+ { path: '/custom/path/.env' }
+postgresql://postgres:admin@localhost:5432/mobileshop_pos
+Using local PostgreSQL database driver
+Setting up database...
+Database setup failed: DrizzleQueryError: Failed query: select "id", "username", "password", "email", "role", "shop_id", "business_name", "phone", "whatsapp", "address", "refresh_token", "active", "created_at", "modified_at" from "users" where "users"."email" = $1 limit $2
+params: superadmin@pos.com,1
+    at NodePgPreparedQuery.queryWithCache (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)        
+    at async <anonymous> (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\node-postgres\session.ts:154:19)
+    at async setupDatabase (file:///D:/A%20Side%20Porjects/A%20POS%20System%20Project/POScribe/backend/scripts/setup-database.js:14:34) {
+  query: 'select "id", "username", "password", "email", "role", "shop_id", "business_name", "phone", "whatsapp", "address", "refresh_token", "active", "created_at", "modified_at" from "users" where "users"."email" = $1 limit $2',
+  params: [ 'superadmin@pos.com', 1 ],
+  cause: error: relation "users" does not exist
+      at D:\A Side Porjects\A POS System Project\POScribe\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)      
+      at async <anonymous> (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\node-postgres\session.ts:154:19)
+      at async setupDatabase (file:///D:/A%20Side%20Porjects/A%20POS%20System%20Project/POScribe/backend/scripts/setup-database.js:14:34) {
+    length: 105,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '175',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1469',
+    routine: 'parserOpenTable'
+  }
+}
