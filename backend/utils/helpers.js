@@ -37,8 +37,11 @@ export const paginationHelper = (page = 1, limit = 10) => {
 
 export const sanitizeUser = (user) => {
   if (!user) return null;
-  const { password, ...safeUser } = user;
-  return safeUser;
+  const { password, refreshToken, ...safeUser } = user;
+  return {
+    ...safeUser,
+    name: user.username
+  };
 };
 
 export default {

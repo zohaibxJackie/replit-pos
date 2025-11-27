@@ -52,9 +52,11 @@ export const login = async (req, res) => {
     }
 
     res.json({
+      success: true,
+      message: 'Login successful',
       user: sanitizeUser(user),
+      token: accessToken,
       shop,
-      accessToken,
       refreshToken
     });
   } catch (error) {
@@ -111,8 +113,10 @@ export const register = async (req, res) => {
     );
 
     res.status(201).json({
+      success: true,
+      message: 'Registration successful',
       user: sanitizeUser(newUser),
-      accessToken
+      token: accessToken
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -125,7 +129,7 @@ export const logout = async (req, res) => {
     if (req.user) {
       await db.update(users).set({ refreshToken: null }).where(eq(users.id, req.user.id));
     }
-    res.json({ message: 'Logged out successfully' });
+    res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
