@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web"]
+modules = ["nodejs-20", "web", "postgresql-16"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
@@ -19,20 +19,12 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 34005
-externalPort = 3000
-
-[[ports]]
 localPort = 35269
 externalPort = 3002
 
 [[ports]]
 localPort = 41655
 externalPort = 3001
-
-[[ports]]
-localPort = 43889
-externalPort = 3003
 
 [env]
 PORT = "5000"
@@ -49,10 +41,6 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Backend API"
-
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -62,20 +50,8 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "npx tsx backend/server.js & npm run dev"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Backend API"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npx tsx backend/server.js"
-waitForPort = 3001
 
 [agent]
 integrations = ["javascript_mem_db:1.0.0"]
