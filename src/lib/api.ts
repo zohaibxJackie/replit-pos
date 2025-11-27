@@ -54,7 +54,14 @@ export const api = {
       request('/api/auth/login', { method: 'POST', body: credentials }),
     
     register: (data: { name: string; email: string; phone: string; businessName: string; password: string; role: string }) =>
-      request('/api/auth/register', { method: 'POST', body: data }),
+      request('/api/auth/register', { method: 'POST', body: { 
+        username: data.name, 
+        email: data.email, 
+        password: data.password, 
+        role: data.role, 
+        phone: data.phone, 
+        businessName: data.businessName 
+      } }),
     
     logout: () =>
       request('/api/auth/logout', { method: 'POST' }),
