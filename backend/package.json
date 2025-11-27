@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "setup-db": "node scripts/setup-database.js"
+    "setup-db": "tsx backend/scripts/setup-database.js"
   },
   "dependencies": {},
   "engines": {
