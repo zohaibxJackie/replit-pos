@@ -4,9 +4,12 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "sh -c 'node backend/server.js & vite --config vite.config.mjs'",
+    "dev:frontend": "vite --config vite.config.mjs",
+    "dev:backend": "node backend/server.js",
+    "build": "vite build --config vite.config.mjs",
+    "preview": "vite preview",
+    "start": "sh -c 'node backend/server.js & vite preview --config vite.config.mjs'"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
