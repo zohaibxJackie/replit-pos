@@ -2,9 +2,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../config/database.js';
 import { jwtConfig } from '../config/jwt.js';
-import { users, shops, loginHistory } from '../../shared/schema.js';
+import { users, shops, loginHistory, passwordResetRequests } from '../../shared/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { sanitizeUser } from '../utils/helpers.js';
+import { createNotification } from './notificationController.js';
 
 export const login = async (req, res) => {
   try {
@@ -203,4 +204,65 @@ export const updatePassword = async (req, res) => {
   }
 };
 
-export default { login, register, logout, refreshToken, getMe, updatePassword };
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    if (!user) {
+      return res.json({ 
+        message: 'If an account with that email exists, a password reset notification has been sent.' 
+      });
+    }
+
+    if (user.role === 'sales_person') {
+      const [shop] = await db.select().from(shops).where(eq(shops.id, user.shopId)).limit(1);
+      
+      if (shop) {
+        const [existingRequest] = await db.select().from(passwordResetRequests)
+          .where(and(
+            eq(passwordResetRequests.userId, user.id),
+            eq(passwordResetRequests.status, 'pending')
+          ))
+          .limit(1);
+
+        if (!existingRequest) {
+          await db.insert(passwordResetRequests).values({
+            userId: user.id,
+            adminId: shop.ownerId,
+            requestMessage: 'Password reset requested via forgot password',
+            status: 'pending'
+          });
+
+          await createNotification(
+            shop.ownerId,
+            'Password Reset Request',
+            `${user.username} has requested a password reset. Please review and update their password.`,
+            'warning',
+            `/admin/sale-managers`
+          );
+        }
+      }
+
+      return res.json({ 
+        message: 'Password reset request sent to your administrator. They will reset your password shortly.',
+        type: 'admin_notification'
+      });
+    }
+
+    return res.json({ 
+      message: 'If an account with that email exists, password reset instructions have been sent.',
+      type: 'email'
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Failed to process password reset request' });
+  }
+};
+
+export default { login, register, logout, refreshToken, getMe, updatePassword, forgotPassword };

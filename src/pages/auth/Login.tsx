@@ -6,13 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [, setLocation] = useLocation();
@@ -20,6 +25,32 @@ export default function Login() {
   const { t } = useTranslation();
   
   const loginMutation = useLogin();
+  
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (email: string) => {
+      return apiRequest<{ message: string }>('POST', '/api/auth/forgot-password', { email });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Request Sent',
+        description: data?.message || 'If an account exists, password reset instructions have been sent.'
+      });
+      setIsForgotPasswordOpen(false);
+      setForgotPasswordEmail('');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const handleForgotPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    forgotPasswordMutation.mutate(forgotPasswordEmail);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +133,17 @@ export default function Login() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-semibold">{t('auth.login.password_label')}</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-sm font-semibold">{t('auth.login.password_label')}</Label>
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordOpen(true)}
+                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                data-testid="link-forgot-password"
+              >
+                Forgot password?
+              </button>
+            </div>
             <Input
               id="password"
               type="password"
@@ -171,6 +212,43 @@ export default function Login() {
           </div>
         </div>
       </Card>
+
+      <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send password reset instructions.
+              Sales persons will receive assistance from their administrator.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email Address</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  data-testid="input-forgot-email"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsForgotPasswordOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={forgotPasswordMutation.isPending} data-testid="button-submit-forgot">
+                {forgotPasswordMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Send Reset Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

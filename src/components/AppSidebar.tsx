@@ -39,6 +39,7 @@ import {
   Calendar,
   TrendingUp,
   FileText,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -308,18 +309,21 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3 mb-4 px-2">
-          <Avatar className="h-10 w-10 border-2 border-sidebar-primary/30">
-            <AvatarImage src="" />
-            <AvatarFallback className={`bg-gradient-to-br ${config.gradient} text-white font-semibold`}>
-              {user.username.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-sidebar-foreground truncate">{user.username}</div>
-            <div className="text-xs text-sidebar-foreground/70 truncate">{user.email}</div>
+        <Link href="/profile">
+          <div className="flex items-center gap-3 mb-4 px-2 py-2 rounded-xl cursor-pointer hover:bg-sidebar-accent transition-colors" data-testid="link-profile">
+            <Avatar className="h-10 w-10 border-2 border-sidebar-primary/30">
+              <AvatarImage src="" />
+              <AvatarFallback className={`bg-gradient-to-br ${config.gradient} text-white font-semibold`}>
+                {user.username.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-sidebar-foreground truncate">{user.username}</div>
+              <div className="text-xs text-sidebar-foreground/70 truncate">{user.email}</div>
+            </div>
+            <User className="w-4 h-4 text-sidebar-foreground/70" />
           </div>
-        </div>
+        </Link>
         <Button
           variant="outline"
           size="sm"

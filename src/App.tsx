@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
+import Profile from "@/pages/Profile";
 
 import { TitleProvider } from '@/context/TitleContext';
 
@@ -293,6 +294,11 @@ function Router() {
       </Route>
       <Route path="/wholesaler/reports">
         <ProtectedLayout><WholesalerReports /></ProtectedLayout>
+      </Route>
+
+      {/* Profile route - accessible by all authenticated users */}
+      <Route path="/profile">
+        <ProtectedLayout><Profile /></ProtectedLayout>
       </Route>
 
       <Route path="/">

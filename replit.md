@@ -26,6 +26,10 @@ The application features a modern, luxurious, and premium design inspired by hig
 - **Admin (Shop Owner)**: Shop performance dashboard, product & category management, sales reports, staff management, subscription management, POS access.
 - **Sales Person**: POS interface, recent sales view, product catalog access.
 - **Dashboard Features**: Stat cards (Today's Sales, Wallet Balance, Total Stock, Clients Credit), multi-period sales analytics chart, devices in repair tracking, recent sales, low stock alerts.
+- **User Management Features**:
+  - **Sales Person Management**: Admins can add, edit, and deactivate sales persons with package-based limits (Silver: 3, Gold: 10, Platinum: 50 staff).
+  - **Password Reset Workflow**: Sales persons can request password resets through the login page, which creates an admin notification. Admins can approve/reject password reset requests from the Staff management page.
+  - **Profile Management**: All authenticated users can view and update their profile (username, email, phone, address, etc.) via the /profile route. Password change is available for admins/super admins directly; sales persons must request reset through admin.
 - **POS System**: Quick products feature with `localStorage` persistence, management dialog for selecting frequently used products, quick product display section, dynamic header title, sidebar navigation toggle, two-column layout for quick products and cart, customer selection integrated into order summary, enhanced quick product search.
 - **Super Admin Platform Management**: Notification system (with Zustand store), CRUD for pricing plans, admin user management (including shop assignment), shop management (subscription status, plan assignment), platform-wide user management (impersonation, role filtering), feature flags system (toggle features, shop-specific enablement), activity logs (audit trail, filtering).
 - **Internationalization**: Support for `Accept-Language` header for multi-language responses (English, Urdu).
