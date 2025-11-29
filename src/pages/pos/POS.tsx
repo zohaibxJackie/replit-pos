@@ -577,7 +577,7 @@ export default function POS() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1">
         <div className="p-3 sm:p-4 lg:p-6 max-w-[1600px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 flex flex-col gap-4">
@@ -753,15 +753,15 @@ export default function POS() {
                             return (
                               <Button
                                 key={product.id}
-                                variant="secondary"
-                                className="h-auto flex flex-col items-start p-3 gap-1 min-w-0"
+                                variant="default"
+                                className="h-auto flex flex-col items-start justify-start p-3 gap-1 min-w-0"
                                 onClick={() => handleAddToCart(product)}
                                 data-testid={`quick-product-${product.id}`}
                               >
                                 <div className="font-medium text-sm text-left line-clamp-2 w-full break-words">
                                   {product.name}
                                 </div>
-                                <div className="text-primary font-semibold">
+                                <div className="font-semibold text-white">
                                   ${product.price}
                                 </div>
                                 {product.stock < product.lowStockThreshold && (

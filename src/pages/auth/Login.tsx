@@ -52,6 +52,7 @@ export default function Login() {
               description: data.message || t('auth.login.error_description'),
               variant: 'destructive',
             });
+            console.log("data")
           }
         },
         onError: (error) => {
