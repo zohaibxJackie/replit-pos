@@ -6,6 +6,7 @@ import {
   CustomerFormDialog,
   CustomerFormData,
 } from "@/components/CustomerFormDialog";
+import { CustomerSearchSelect, CustomerOption } from "@/components/CustomerSearchSelect";
 import { QuickProductsDialog } from "@/components/QuickProductsDialog";
 import { BarcodeScannerDialog } from "@/components/BarcodeScannerDialog";
 import { useQuickProducts } from "@/hooks/useQuickProducts";
@@ -13,13 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,7 +27,6 @@ import {
 import {
   Printer,
   Check,
-  UserPlus,
   CreditCard,
   Banknote,
   Smartphone,
@@ -72,6 +65,7 @@ interface Customer {
   id: string;
   name: string;
   phone?: string;
+  email?: string;
 }
 
 const PAYMENT_METHODS = [
@@ -90,12 +84,9 @@ export default function POS() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [result, setResult] = useState("");
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(
     null,
   );
-  const [customers, setCustomers] = useState<Customer[]>([
-    { id: "1", name: "Walk-in Customer", phone: "" },
-  ]);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -106,7 +97,7 @@ export default function POS() {
     change: number;
   } | null>(null);
   const [heldOrders, setHeldOrders] = useState<
-    { cart: CartItemType[]; customer: Customer | null }[]
+    { cart: CartItemType[]; customer: CustomerOption | null }[]
   >([]);
   const { quickProducts, setQuickProducts, maxQuickProducts } =
     useQuickProducts();
@@ -439,12 +430,12 @@ export default function POS() {
   };
 
   const handleCustomerAdded = (customerData: CustomerFormData) => {
-    const customer: Customer = {
+    const customer: CustomerOption = {
       id: customerData.id?.toString() || `temp_${Date.now()}`,
       name: customerData.name,
       phone: customerData.phone,
+      email: customerData.email,
     };
-    setCustomers([...customers, customer]);
     setSelectedCustomer(customer);
   };
 
@@ -452,33 +443,12 @@ export default function POS() {
     <div className="space-y-4">
       <div className="space-y-3">
         <Label>Customer</Label>
-        <Select
-          value={selectedCustomer?.id || ""}
-          onValueChange={(value) => {
-            const customer = customers.find((c) => c.id === value);
-            setSelectedCustomer(customer || null);
-          }}
-        >
-          <SelectTrigger data-testid="select-customer">
-            <SelectValue placeholder="Walk-in Customer" />
-          </SelectTrigger>
-          <SelectContent>
-            {customers.map((customer) => (
-              <SelectItem key={customer.id} value={customer.id}>
-                {customer.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => setShowCustomerDialog(true)}
-          data-testid="button-add-new-customer"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add New Customer
-        </Button>
+        <CustomerSearchSelect
+          value={selectedCustomer}
+          onSelect={setSelectedCustomer}
+          onAddNew={() => setShowCustomerDialog(true)}
+          placeholder="Search by name, phone, or email..."
+        />
       </div>
 
       <Separator />

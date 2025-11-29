@@ -184,11 +184,14 @@ export const api = {
     getAll: (shopId?: string) =>
       request(shopId ? `/api/customers?shopId=${shopId}` : '/api/customers'),
     
+    search: (search: string, page: number = 1, limit: number = 10) =>
+      request<{ customers: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; totalPurchases?: string }>; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/api/customers?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`),
+    
     getById: (id: string) =>
       request(`/api/customers/${id}`),
     
-    create: (data: { shopId: string; name: string; email?: string; phone?: string; address?: string }) =>
-      request('/api/customers', { method: 'POST', body: data }),
+    create: (data: { name: string; email?: string; phone?: string; address?: string }) =>
+      request<{ customer: { id: string; name: string; email?: string; phone?: string; address?: string } }>('/api/customers', { method: 'POST', body: data }),
     
     update: (id: string, data: Partial<{ name: string; email: string; phone: string; address: string }>) =>
       request(`/api/customers/${id}`, { method: 'PUT', body: data }),

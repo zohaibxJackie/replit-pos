@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select as ShadSelect,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import ReactSelect from "react-select";
 import countryList from "react-select-country-list";
+import { api } from "@/lib/api";
 
 export interface CustomerFormData {
   id?: string | number;
@@ -45,6 +46,7 @@ export function CustomerFormDialog({
 }: CustomerFormDialogProps) {
   const { toast } = useToast();
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const options = countryList().getData();
 
   const [formData, setFormData] = useState<CustomerFormData>({
@@ -99,17 +101,13 @@ export function CustomerFormDialog({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
 
-    // Only validate name and email as required
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -118,18 +116,63 @@ export function CustomerFormDialog({
       return;
     }
 
-    const customerData: CustomerFormData = {
-      ...formData,
-      id: editingCustomer?.id || `temp_${Date.now()}`,
-    };
+    setIsSubmitting(true);
 
-    onCustomerAdded(customerData);
-    onOpenChange(false);
+    try {
+      const fullAddress = [
+        formData.address,
+        formData.city,
+        formData.province,
+        formData.postelCode,
+      ].filter(Boolean).join(", ");
 
-    toast({
-      title: editingCustomer ? "Customer Updated" : "Customer Added",
-      description: `${formData.name} has been ${editingCustomer ? "updated" : "added"}.`,
-    });
+      let customerId: string;
+
+      if (editingCustomer?.id) {
+        await api.customers.update(editingCustomer.id.toString(), {
+          name: formData.name,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: fullAddress || undefined,
+        });
+        customerId = editingCustomer.id.toString();
+
+        toast({
+          title: "Customer Updated",
+          description: `${formData.name} has been updated.`,
+        });
+      } else {
+        const response = await api.customers.create({
+          name: formData.name,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: fullAddress || undefined,
+        });
+        customerId = response.customer.id;
+
+        toast({
+          title: "Customer Added",
+          description: `${formData.name} has been saved to the database.`,
+        });
+      }
+
+      const customerData: CustomerFormData = {
+        ...formData,
+        id: customerId,
+      };
+
+      onCustomerAdded(customerData);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Failed to save customer:", error);
+      toast({
+        title: "Error",
+        description: `Failed to ${editingCustomer ? "update" : "save"} customer. Please try again.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -164,7 +207,7 @@ export function CustomerFormDialog({
 
           {/* Email field */}
           <div>
-            <Label>Email *</Label>
+            <Label>Email</Label>
             <Input
               type="email"
               name="email"
@@ -173,7 +216,6 @@ export function CustomerFormDialog({
                 handleFormChange(e);
                 setErrors((prev) => ({ ...prev, email: "" }));
               }}
-              required
               data-testid="input-email"
             />
             {errors.email && (
@@ -278,11 +320,13 @@ export function CustomerFormDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
               data-testid="button-cancel-customer"
             >
               Cancel
             </Button>
-            <Button type="submit" data-testid="button-submit-customer">
+            <Button type="submit" disabled={isSubmitting} data-testid="button-submit-customer">
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingCustomer ? "Update Customer" : "Add Customer"}
             </Button>
           </div>
