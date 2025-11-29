@@ -78,13 +78,65 @@ export async function apiRequestRaw(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
+function serializeValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+function buildUrlFromQueryKey(queryKey: readonly unknown[]): string {
+  const pathParts: string[] = [];
+  const queryParams = new URLSearchParams();
+
+  for (const part of queryKey) {
+    if (typeof part === 'string') {
+      pathParts.push(part);
+    } else if (typeof part === 'number') {
+      pathParts.push(String(part));
+    } else if (Array.isArray(part)) {
+      part.forEach((item, index) => {
+        if (item !== undefined && item !== null) {
+          queryParams.append(String(index), serializeValue(item));
+        }
+      });
+    } else if (part && typeof part === 'object') {
+      for (const [key, value] of Object.entries(part)) {
+        if (value !== undefined && value !== null) {
+          if (typeof value === 'object' && !(value instanceof Date)) {
+            queryParams.append(key, JSON.stringify(value));
+          } else {
+            queryParams.append(key, serializeValue(value));
+          }
+        }
+      }
+    }
+  }
+
+  let url = pathParts.join('/');
+  const queryString = queryParams.toString();
+  if (queryString) {
+    const separator = url.includes('?') ? '&' : '?';
+    url += `${separator}${queryString}`;
+  }
+  return url;
+}
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const token = getAuthToken();
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = buildUrlFromQueryKey(queryKey);
+    const res = await fetch(url, {
       credentials: "include",
       headers: {
         "Accept-Language": getLanguageHeader(),
