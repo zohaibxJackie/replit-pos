@@ -203,9 +203,9 @@ export default function SalesManagers() {
   };
 
   const columns = [
-    { key: 'username', label: 'Username', filterType: 'none' },
-    { key: 'email', label: 'Email', filterType: 'none' },
-    { key: 'phone', label: 'Phone', filterType: 'none' },
+    { key: 'username', label: 'Username', filterType: 'none' as const },
+    { key: 'email', label: 'Email', filterType: 'none' as const },
+    { key: 'phone', label: 'Phone', filterType: 'none' as const },
     {
       key: 'active',
       label: 'Status',
@@ -213,12 +213,12 @@ export default function SalesManagers() {
         <Badge variant={value ? 'default' : 'secondary'}>
           {value ? 'Active' : 'Inactive'}
         </Badge>
-      ), filterType: 'none'
+      ), filterType: 'none' as const
     },
     {
       key: 'createdAt',
       label: 'Joined',
-      render: (value: string) => new Date(value).toLocaleDateString(), filterType: 'none'
+      render: (value: string) => new Date(value).toLocaleDateString(), filterType: 'none' as const
     },
     {
       key: 'actions',
@@ -236,7 +236,7 @@ export default function SalesManagers() {
           <Key className="w-4 h-4 mr-1" />
           Reset
         </Button>
-      ), filterType: 'none'
+      ), filterType: 'none' as const
     }
   ];
 

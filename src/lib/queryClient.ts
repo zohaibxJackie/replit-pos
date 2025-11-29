@@ -5,6 +5,19 @@ function getLanguageHeader(): string {
   return i18n.language || "en";
 }
 
+function getAuthToken(): string | null {
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      return parsed?.state?.token || null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -17,8 +30,10 @@ export async function apiRequest<T = unknown>(
   url: string,
   data?: unknown | undefined,
 ): Promise<T> {
+  const token = getAuthToken();
   const headers: HeadersInit = {
     "Accept-Language": getLanguageHeader(),
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
   };
   
   if (data) {
@@ -41,8 +56,10 @@ export async function apiRequestRaw(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const token = getAuthToken();
   const headers: HeadersInit = {
     "Accept-Language": getLanguageHeader(),
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
   };
   
   if (data) {
@@ -66,10 +83,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const token = getAuthToken();
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
       headers: {
         "Accept-Language": getLanguageHeader(),
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       },
     });
 
