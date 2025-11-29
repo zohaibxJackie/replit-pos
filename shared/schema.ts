@@ -261,6 +261,18 @@ export const dealRequests = pgTable("deal_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const passwordResetStatusEnum = pgEnum("password_reset_status", ["pending", "approved", "rejected"]);
+
+export const passwordResetRequests = pgTable("password_reset_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  adminId: varchar("admin_id"),
+  status: passwordResetStatusEnum("status").notNull().default("pending"),
+  requestMessage: text("request_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
@@ -279,6 +291,7 @@ export const insertRepairPersonSchema = createInsertSchema(repairPersons).omit({
 export const insertRepairJobSchema = createInsertSchema(repairJobs).omit({ id: true, createdAt: true, updatedAt: true, totalPaid: true });
 export const insertRepairPaymentSchema = createInsertSchema(repairPayments).omit({ id: true, createdAt: true });
 export const insertLoginHistorySchema = createInsertSchema(loginHistory).omit({ id: true, createdAt: true });
+export const insertPasswordResetRequestSchema = createInsertSchema(passwordResetRequests).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertUser = typeof users.$inferInsert;
 export type InsertLoginHistory = typeof loginHistory.$inferInsert;
@@ -314,3 +327,5 @@ export type RepairPerson = typeof repairPersons.$inferSelect;
 export type RepairJob = typeof repairJobs.$inferSelect;
 export type RepairPayment = typeof repairPayments.$inferSelect;
 export type LoginHistory = typeof loginHistory.$inferSelect;
+export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
+export type InsertPasswordResetRequest = typeof passwordResetRequests.$inferInsert;
