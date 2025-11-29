@@ -61,13 +61,6 @@ interface CartItemType {
   type?: "mobile" | "accessory";
 }
 
-interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-}
-
 const PAYMENT_METHODS = [
   { value: "cash", label: "Cash", icon: Banknote },
   { value: "card", label: "Card", icon: CreditCard },
