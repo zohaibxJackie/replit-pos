@@ -71,6 +71,7 @@ export const AccessControl = {
   },
 
   components: {
+    // These are example buttons
     deleteButton: ["admin", "super_admin"],
     exportButton: ["admin", "sales_person"],
     editProductButton: ["admin", "super_admin"],
