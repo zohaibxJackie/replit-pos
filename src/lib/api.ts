@@ -1,3 +1,5 @@
+import i18n from '@/config/i18n';
+
 const API_BASE_URL = 'http://localhost:3001';
 
 interface RequestOptions {
@@ -19,15 +21,21 @@ function getAuthToken(): string | null {
   return null;
 }
 
+function getCurrentLanguage(): string {
+  return i18n.language || 'en';
+}
+
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
   
   const token = getAuthToken();
+  const currentLang = getCurrentLanguage();
   
   const config: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
+      'Accept-Language': currentLang,
       ...headers,
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     },

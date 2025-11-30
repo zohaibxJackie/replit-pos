@@ -43,7 +43,7 @@ export const getNotifications = async (req, res) => {
     });
   } catch (error) {
     console.error('Get notifications error:', error);
-    res.status(500).json({ error: 'Failed to fetch notifications' });
+    res.status(500).json({ error: req.t('notification.fetch_failed') });
   }
 };
 
@@ -56,7 +56,7 @@ export const markAsRead = async (req, res) => {
     ).limit(1);
 
     if (!notification) {
-      return res.status(404).json({ error: 'Notification not found' });
+      return res.status(404).json({ error: req.t('notification.not_found') });
     }
 
     const [updated] = await db.update(notifications)
@@ -67,7 +67,7 @@ export const markAsRead = async (req, res) => {
     res.json({ notification: updated });
   } catch (error) {
     console.error('Mark as read error:', error);
-    res.status(500).json({ error: 'Failed to mark notification as read' });
+    res.status(500).json({ error: req.t('notification.mark_read_failed') });
   }
 };
 
@@ -77,10 +77,10 @@ export const markAllAsRead = async (req, res) => {
       .set({ isRead: true })
       .where(and(eq(notifications.userId, req.user.id), eq(notifications.isRead, false)));
 
-    res.json({ message: 'All notifications marked as read' });
+    res.json({ message: req.t('notification.all_marked_read') });
   } catch (error) {
     console.error('Mark all as read error:', error);
-    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+    res.status(500).json({ error: req.t('notification.mark_all_read_failed') });
   }
 };
 
@@ -93,15 +93,15 @@ export const deleteNotification = async (req, res) => {
     ).limit(1);
 
     if (!notification) {
-      return res.status(404).json({ error: 'Notification not found' });
+      return res.status(404).json({ error: req.t('notification.not_found') });
     }
 
     await db.delete(notifications).where(eq(notifications.id, id));
 
-    res.json({ message: 'Notification deleted successfully' });
+    res.json({ message: req.t('notification.deleted') });
   } catch (error) {
     console.error('Delete notification error:', error);
-    res.status(500).json({ error: 'Failed to delete notification' });
+    res.status(500).json({ error: req.t('notification.delete_failed') });
   }
 };
 
@@ -173,7 +173,7 @@ export const getActivityLogs = async (req, res) => {
     });
   } catch (error) {
     console.error('Get activity logs error:', error);
-    res.status(500).json({ error: 'Failed to fetch activity logs' });
+    res.status(500).json({ error: req.t('notification.activity_logs_fetch_failed') });
   }
 };
 

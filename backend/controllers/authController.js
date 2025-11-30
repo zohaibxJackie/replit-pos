@@ -14,16 +14,16 @@ export const login = async (req, res) => {
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: req.t('auth.invalid_credentials') });
     }
 
     if (!user.active) {
-      return res.status(401).json({ error: 'Account is inactive' });
+      return res.status(401).json({ error: req.t('auth.account_inactive') });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: req.t('auth.invalid_credentials') });
     }
 
     const accessToken = jwt.sign(
@@ -54,7 +54,7 @@ export const login = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Login successful',
+      message: req.t('auth.login_successful'),
       user: sanitizeUser(user),
       token: accessToken,
       shop,
@@ -62,7 +62,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: req.t('auth.login_failed') });
   }
 };
 
@@ -72,12 +72,12 @@ export const register = async (req, res) => {
 
     const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existingUser) {
-      return res.status(409).json({ error: 'Email already registered' });
+      return res.status(409).json({ error: req.t('auth.email_already_registered') });
     }
 
     const [existingUsername] = await db.select().from(users).where(eq(users.username, username)).limit(1);
     if (existingUsername) {
-      return res.status(409).json({ error: 'Username already taken' });
+      return res.status(409).json({ error: req.t('auth.username_already_taken') });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -115,13 +115,13 @@ export const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful',
+      message: req.t('auth.registration_successful'),
       user: sanitizeUser(newUser),
       token: accessToken
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    res.status(500).json({ error: req.t('auth.registration_failed') });
   }
 };
 
@@ -130,10 +130,10 @@ export const logout = async (req, res) => {
     if (req.user) {
       await db.update(users).set({ refreshToken: null }).where(eq(users.id, req.user.id));
     }
-    res.json({ success: true, message: 'Logged out successfully' });
+    res.json({ success: true, message: req.t('auth.logout_successful') });
   } catch (error) {
     console.error('Logout error:', error);
-    res.status(500).json({ error: 'Logout failed' });
+    res.status(500).json({ error: req.t('auth.logout_failed') });
   }
 };
 
@@ -142,7 +142,7 @@ export const refreshToken = async (req, res) => {
     const { refreshToken: token } = req.body;
 
     if (!token) {
-      return res.status(401).json({ error: 'Refresh token required' });
+      return res.status(401).json({ error: req.t('auth.refresh_token_required') });
     }
 
     const decoded = jwt.verify(token, jwtConfig.secret);
@@ -151,7 +151,7 @@ export const refreshToken = async (req, res) => {
     ).limit(1);
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid refresh token' });
+      return res.status(401).json({ error: req.t('auth.invalid_refresh_token') });
     }
 
     const accessToken = jwt.sign(
@@ -163,7 +163,7 @@ export const refreshToken = async (req, res) => {
     res.json({ accessToken });
   } catch (error) {
     console.error('Refresh token error:', error);
-    res.status(401).json({ error: 'Invalid refresh token' });
+    res.status(401).json({ error: req.t('auth.invalid_refresh_token') });
   }
 };
 
@@ -181,7 +181,7 @@ export const getMe = async (req, res) => {
     });
   } catch (error) {
     console.error('Get me error:', error);
-    res.status(500).json({ error: 'Failed to get user info' });
+    res.status(500).json({ error: req.t('auth.failed_get_user_info') });
   }
 };
 
@@ -191,16 +191,16 @@ export const updatePassword = async (req, res) => {
 
     const isValidPassword = await bcrypt.compare(currentPassword, req.user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
+      return res.status(401).json({ error: req.t('auth.current_password_incorrect') });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db.update(users).set({ password: hashedPassword }).where(eq(users.id, req.user.id));
 
-    res.json({ message: 'Password updated successfully' });
+    res.json({ message: req.t('auth.password_updated') });
   } catch (error) {
     console.error('Update password error:', error);
-    res.status(500).json({ error: 'Failed to update password' });
+    res.status(500).json({ error: req.t('auth.password_update_failed') });
   }
 };
 
@@ -209,14 +209,14 @@ export const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+      return res.status(400).json({ error: req.t('auth.email_required') });
     }
 
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (!user) {
       return res.json({ 
-        message: 'If an account with that email exists, a password reset notification has been sent.' 
+        message: req.t('auth.password_reset_email_sent')
       });
     }
 
@@ -250,18 +250,18 @@ export const forgotPassword = async (req, res) => {
       }
 
       return res.json({ 
-        message: 'Password reset request sent to your administrator. They will reset your password shortly.',
+        message: req.t('auth.password_reset_request_sent_admin'),
         type: 'admin_notification'
       });
     }
 
     return res.json({ 
-      message: 'If an account with that email exists, password reset instructions have been sent.',
+      message: req.t('auth.password_reset_email_sent'),
       type: 'email'
     });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ error: 'Failed to process password reset request' });
+    res.status(500).json({ error: req.t('auth.password_reset_failed') });
   }
 };
 

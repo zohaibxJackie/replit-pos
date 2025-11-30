@@ -53,7 +53,7 @@ export const getShops = async (req, res) => {
     });
   } catch (error) {
     console.error('Get shops error:', error);
-    res.status(500).json({ error: 'Failed to fetch shops' });
+    res.status(500).json({ error: req.t('shop.fetch_failed') });
   }
 };
 
@@ -64,7 +64,7 @@ export const getShopById = async (req, res) => {
     const [shop] = await db.select().from(shops).where(eq(shops.id, id)).limit(1);
 
     if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('shop.not_found') });
     }
 
     const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
@@ -84,7 +84,7 @@ export const getShopById = async (req, res) => {
     });
   } catch (error) {
     console.error('Get shop by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch shop' });
+    res.status(500).json({ error: req.t('shop.fetch_one_failed') });
   }
 };
 
@@ -108,7 +108,7 @@ export const createShop = async (req, res) => {
     res.status(201).json({ shop: newShop });
   } catch (error) {
     console.error('Create shop error:', error);
-    res.status(500).json({ error: 'Failed to create shop' });
+    res.status(500).json({ error: req.t('shop.create_failed') });
   }
 };
 
@@ -119,11 +119,11 @@ export const updateShop = async (req, res) => {
 
     const [existingShop] = await db.select().from(shops).where(eq(shops.id, id)).limit(1);
     if (!existingShop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('shop.not_found') });
     }
 
     if (req.user.role !== 'super_admin' && existingShop.ownerId !== req.user.id) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: req.t('shop.access_denied') });
     }
 
     const updateData = {};
@@ -142,7 +142,7 @@ export const updateShop = async (req, res) => {
     res.json({ shop: updatedShop });
   } catch (error) {
     console.error('Update shop error:', error);
-    res.status(500).json({ error: 'Failed to update shop' });
+    res.status(500).json({ error: req.t('shop.update_failed') });
   }
 };
 
@@ -152,17 +152,17 @@ export const deleteShop = async (req, res) => {
 
     const [existingShop] = await db.select().from(shops).where(eq(shops.id, id)).limit(1);
     if (!existingShop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('shop.not_found') });
     }
 
     await db.update(shops)
       .set({ subscriptionStatus: 'inactive' })
       .where(eq(shops.id, id));
 
-    res.json({ message: 'Shop deactivated successfully' });
+    res.json({ message: req.t('shop.deactivated') });
   } catch (error) {
     console.error('Delete shop error:', error);
-    res.status(500).json({ error: 'Failed to delete shop' });
+    res.status(500).json({ error: req.t('shop.delete_failed') });
   }
 };
 

@@ -59,7 +59,7 @@ export const getRepairJobs = async (req, res) => {
     });
   } catch (error) {
     console.error('Get repair jobs error:', error);
-    res.status(500).json({ error: 'Failed to fetch repair jobs' });
+    res.status(500).json({ error: req.t('repair.jobs_fetch_failed') });
   }
 };
 
@@ -72,7 +72,7 @@ export const getRepairJobById = async (req, res) => {
     ).limit(1);
 
     if (!job) {
-      return res.status(404).json({ error: 'Repair job not found' });
+      return res.status(404).json({ error: req.t('repair.job_not_found') });
     }
 
     const payments = await db.select()
@@ -89,7 +89,7 @@ export const getRepairJobById = async (req, res) => {
     res.json({ repairJob: job, payments, repairPerson });
   } catch (error) {
     console.error('Get repair job by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch repair job' });
+    res.status(500).json({ error: req.t('repair.job_fetch_failed') });
   }
 };
 
@@ -160,7 +160,7 @@ export const createRepairJob = async (req, res) => {
     res.status(201).json({ repairJob: newJob });
   } catch (error) {
     console.error('Create repair job error:', error);
-    res.status(500).json({ error: 'Failed to create repair job' });
+    res.status(500).json({ error: req.t('repair.job_create_failed') });
   }
 };
 
@@ -174,7 +174,7 @@ export const updateRepairJob = async (req, res) => {
     ).limit(1);
 
     if (!existingJob) {
-      return res.status(404).json({ error: 'Repair job not found' });
+      return res.status(404).json({ error: req.t('repair.job_not_found') });
     }
 
     const updateData = { updatedAt: new Date() };
@@ -215,7 +215,7 @@ export const updateRepairJob = async (req, res) => {
     res.json({ repairJob: updatedJob });
   } catch (error) {
     console.error('Update repair job error:', error);
-    res.status(500).json({ error: 'Failed to update repair job' });
+    res.status(500).json({ error: req.t('repair.job_update_failed') });
   }
 };
 
@@ -229,7 +229,7 @@ export const addRepairPayment = async (req, res) => {
     ).limit(1);
 
     if (!existingJob) {
-      return res.status(404).json({ error: 'Repair job not found' });
+      return res.status(404).json({ error: req.t('repair.job_not_found') });
     }
 
     const [newPayment] = await db.insert(repairPayments).values({
@@ -248,7 +248,7 @@ export const addRepairPayment = async (req, res) => {
     res.status(201).json({ payment: newPayment, totalPaid: newTotalPaid });
   } catch (error) {
     console.error('Add repair payment error:', error);
-    res.status(500).json({ error: 'Failed to add payment' });
+    res.status(500).json({ error: req.t('repair.payment_add_failed') });
   }
 };
 
@@ -264,7 +264,7 @@ export const getRepairPersons = async (req, res) => {
     res.json({ repairPersons: persons });
   } catch (error) {
     console.error('Get repair persons error:', error);
-    res.status(500).json({ error: 'Failed to fetch repair persons' });
+    res.status(500).json({ error: req.t('repair.persons_fetch_failed') });
   }
 };
 
@@ -283,7 +283,7 @@ export const createRepairPerson = async (req, res) => {
     res.status(201).json({ repairPerson: newPerson });
   } catch (error) {
     console.error('Create repair person error:', error);
-    res.status(500).json({ error: 'Failed to create repair person' });
+    res.status(500).json({ error: req.t('repair.person_create_failed') });
   }
 };
 
@@ -297,7 +297,7 @@ export const updateRepairPerson = async (req, res) => {
     ).limit(1);
 
     if (!existingPerson) {
-      return res.status(404).json({ error: 'Repair person not found' });
+      return res.status(404).json({ error: req.t('repair.person_not_found') });
     }
 
     const updateData = {};
@@ -314,7 +314,7 @@ export const updateRepairPerson = async (req, res) => {
     res.json({ repairPerson: updatedPerson });
   } catch (error) {
     console.error('Update repair person error:', error);
-    res.status(500).json({ error: 'Failed to update repair person' });
+    res.status(500).json({ error: req.t('repair.person_update_failed') });
   }
 };
 
@@ -327,15 +327,15 @@ export const deleteRepairPerson = async (req, res) => {
     ).limit(1);
 
     if (!existingPerson) {
-      return res.status(404).json({ error: 'Repair person not found' });
+      return res.status(404).json({ error: req.t('repair.person_not_found') });
     }
 
     await db.delete(repairPersons).where(eq(repairPersons.id, id));
 
-    res.json({ message: 'Repair person deleted successfully' });
+    res.json({ message: req.t('repair.person_deleted') });
   } catch (error) {
     console.error('Delete repair person error:', error);
-    res.status(500).json({ error: 'Failed to delete repair person' });
+    res.status(500).json({ error: req.t('repair.person_delete_failed') });
   }
 };
 

@@ -53,7 +53,7 @@ export const getWholesalerProducts = async (req, res) => {
     });
   } catch (error) {
     console.error('Get wholesaler products error:', error);
-    res.status(500).json({ error: 'Failed to fetch wholesaler products' });
+    res.status(500).json({ error: req.t('wholesaler.products_fetch_failed') });
   }
 };
 
@@ -64,13 +64,13 @@ export const getWholesalerProductById = async (req, res) => {
     const [product] = await db.select().from(wholesalerProducts).where(eq(wholesalerProducts.id, id)).limit(1);
 
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('wholesaler.product_not_found') });
     }
 
     res.json({ product });
   } catch (error) {
     console.error('Get wholesaler product by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch product' });
+    res.status(500).json({ error: req.t('wholesaler.products_fetch_failed') });
   }
 };
 
@@ -79,7 +79,7 @@ export const createWholesalerProduct = async (req, res) => {
     const { name, description, category, price, stock, discount, minOrderQuantity, unit, imageUrl } = req.validatedBody;
 
     if (req.user.role !== 'wholesaler') {
-      return res.status(403).json({ error: 'Only wholesalers can create products' });
+      return res.status(403).json({ error: req.t('wholesaler.only_wholesalers_create') });
     }
 
     const [newProduct] = await db.insert(wholesalerProducts).values({
@@ -98,7 +98,7 @@ export const createWholesalerProduct = async (req, res) => {
     res.status(201).json({ product: newProduct });
   } catch (error) {
     console.error('Create wholesaler product error:', error);
-    res.status(500).json({ error: 'Failed to create product' });
+    res.status(500).json({ error: req.t('wholesaler.product_create_failed') });
   }
 };
 
@@ -112,7 +112,7 @@ export const updateWholesalerProduct = async (req, res) => {
     ).limit(1);
 
     if (!existingProduct) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('wholesaler.product_not_found') });
     }
 
     const updateData = { updatedAt: new Date() };
@@ -135,7 +135,7 @@ export const updateWholesalerProduct = async (req, res) => {
     res.json({ product: updatedProduct });
   } catch (error) {
     console.error('Update wholesaler product error:', error);
-    res.status(500).json({ error: 'Failed to update product' });
+    res.status(500).json({ error: req.t('wholesaler.product_update_failed') });
   }
 };
 
@@ -148,17 +148,17 @@ export const deleteWholesalerProduct = async (req, res) => {
     ).limit(1);
 
     if (!existingProduct) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('wholesaler.product_not_found') });
     }
 
     await db.update(wholesalerProducts)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(wholesalerProducts.id, id));
 
-    res.json({ message: 'Product deactivated successfully' });
+    res.json({ message: req.t('wholesaler.product_deactivated') });
   } catch (error) {
     console.error('Delete wholesaler product error:', error);
-    res.status(500).json({ error: 'Failed to delete product' });
+    res.status(500).json({ error: req.t('wholesaler.product_delete_failed') });
   }
 };
 
@@ -203,7 +203,7 @@ export const getPurchaseOrders = async (req, res) => {
     });
   } catch (error) {
     console.error('Get purchase orders error:', error);
-    res.status(500).json({ error: 'Failed to fetch purchase orders' });
+    res.status(500).json({ error: req.t('wholesaler.orders_fetch_failed') });
   }
 };
 
@@ -214,13 +214,13 @@ export const getPurchaseOrderById = async (req, res) => {
     const [order] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1);
 
     if (!order) {
-      return res.status(404).json({ error: 'Purchase order not found' });
+      return res.status(404).json({ error: req.t('wholesaler.order_not_found') });
     }
 
     if (req.user.role !== 'super_admin' &&
         order.wholesalerId !== req.user.id &&
         order.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: req.t('wholesaler.access_denied') });
     }
 
     const items = await db.select().from(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, id));
@@ -228,7 +228,7 @@ export const getPurchaseOrderById = async (req, res) => {
     res.json({ purchaseOrder: order, items });
   } catch (error) {
     console.error('Get purchase order by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch purchase order' });
+    res.status(500).json({ error: req.t('wholesaler.order_fetch_failed') });
   }
 };
 
@@ -239,7 +239,7 @@ export const createPurchaseOrder = async (req, res) => {
 
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('shop.not_found') });
     }
 
     const [user] = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
@@ -291,7 +291,7 @@ export const createPurchaseOrder = async (req, res) => {
     res.status(201).json({ purchaseOrder: newOrder, items: insertedItems });
   } catch (error) {
     console.error('Create purchase order error:', error);
-    res.status(500).json({ error: 'Failed to create purchase order' });
+    res.status(500).json({ error: req.t('wholesaler.order_create_failed') });
   }
 };
 
@@ -303,11 +303,11 @@ export const updatePurchaseOrderStatus = async (req, res) => {
     const [existingOrder] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1);
 
     if (!existingOrder) {
-      return res.status(404).json({ error: 'Purchase order not found' });
+      return res.status(404).json({ error: req.t('wholesaler.order_not_found') });
     }
 
     if (req.user.role !== 'wholesaler' || existingOrder.wholesalerId !== req.user.id) {
-      return res.status(403).json({ error: 'Only the wholesaler can update order status' });
+      return res.status(403).json({ error: req.t('wholesaler.only_wholesaler_update_status') });
     }
 
     const updateData = {
@@ -327,7 +327,7 @@ export const updatePurchaseOrderStatus = async (req, res) => {
     res.json({ purchaseOrder: updatedOrder });
   } catch (error) {
     console.error('Update purchase order status error:', error);
-    res.status(500).json({ error: 'Failed to update purchase order' });
+    res.status(500).json({ error: req.t('wholesaler.order_update_failed') });
   }
 };
 
@@ -372,7 +372,7 @@ export const getDealRequests = async (req, res) => {
     });
   } catch (error) {
     console.error('Get deal requests error:', error);
-    res.status(500).json({ error: 'Failed to fetch deal requests' });
+    res.status(500).json({ error: req.t('wholesaler.deals_fetch_failed') });
   }
 };
 
@@ -383,7 +383,7 @@ export const createDealRequest = async (req, res) => {
 
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('shop.not_found') });
     }
 
     const [user] = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
@@ -406,7 +406,7 @@ export const createDealRequest = async (req, res) => {
     res.status(201).json({ dealRequest: newRequest });
   } catch (error) {
     console.error('Create deal request error:', error);
-    res.status(500).json({ error: 'Failed to create deal request' });
+    res.status(500).json({ error: req.t('wholesaler.deal_create_failed') });
   }
 };
 
@@ -418,11 +418,11 @@ export const updateDealRequestStatus = async (req, res) => {
     const [existingRequest] = await db.select().from(dealRequests).where(eq(dealRequests.id, id)).limit(1);
 
     if (!existingRequest) {
-      return res.status(404).json({ error: 'Deal request not found' });
+      return res.status(404).json({ error: req.t('wholesaler.deal_not_found') });
     }
 
     if (req.user.role !== 'wholesaler' || existingRequest.wholesalerId !== req.user.id) {
-      return res.status(403).json({ error: 'Only the wholesaler can update deal request status' });
+      return res.status(403).json({ error: req.t('wholesaler.only_wholesaler_update_deal') });
     }
 
     const updateData = {
@@ -442,7 +442,7 @@ export const updateDealRequestStatus = async (req, res) => {
     res.json({ dealRequest: updatedRequest });
   } catch (error) {
     console.error('Update deal request status error:', error);
-    res.status(500).json({ error: 'Failed to update deal request' });
+    res.status(500).json({ error: req.t('wholesaler.deal_update_failed') });
   }
 };
 
@@ -476,7 +476,7 @@ export const getWholesalers = async (req, res) => {
     res.json({ wholesalers });
   } catch (error) {
     console.error('Get wholesalers error:', error);
-    res.status(500).json({ error: 'Failed to fetch wholesalers' });
+    res.status(500).json({ error: req.t('wholesaler.wholesalers_fetch_failed') });
   }
 };
 

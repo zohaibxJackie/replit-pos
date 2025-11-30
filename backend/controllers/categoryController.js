@@ -27,7 +27,7 @@ export const getCategories = async (req, res) => {
     res.json({ categories: categoryList });
   } catch (error) {
     console.error('Get categories error:', error);
-    res.status(500).json({ error: 'Failed to fetch categories' });
+    res.status(500).json({ error: req.t('category.fetch_failed') });
   }
 };
 
@@ -40,7 +40,7 @@ export const getCategoryById = async (req, res) => {
     ).limit(1);
 
     if (!category) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: req.t('category.not_found') });
     }
 
     const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
@@ -58,7 +58,7 @@ export const getCategoryById = async (req, res) => {
     });
   } catch (error) {
     console.error('Get category by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch category' });
+    res.status(500).json({ error: req.t('category.fetch_failed') });
   }
 };
 
@@ -73,7 +73,7 @@ export const createCategory = async (req, res) => {
       ).limit(1);
 
       if (!parentCategory) {
-        return res.status(404).json({ error: 'Parent category not found' });
+        return res.status(404).json({ error: req.t('category.parent_not_found') });
       }
       level = parentCategory.level + 1;
     }
@@ -89,7 +89,7 @@ export const createCategory = async (req, res) => {
     res.status(201).json({ category: newCategory });
   } catch (error) {
     console.error('Create category error:', error);
-    res.status(500).json({ error: 'Failed to create category' });
+    res.status(500).json({ error: req.t('category.create_failed') });
   }
 };
 
@@ -103,7 +103,7 @@ export const updateCategory = async (req, res) => {
     ).limit(1);
 
     if (!existingCategory) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: req.t('category.not_found') });
     }
 
     const updateData = {};
@@ -118,7 +118,7 @@ export const updateCategory = async (req, res) => {
     res.json({ category: updatedCategory });
   } catch (error) {
     console.error('Update category error:', error);
-    res.status(500).json({ error: 'Failed to update category' });
+    res.status(500).json({ error: req.t('category.update_failed') });
   }
 };
 
@@ -131,7 +131,7 @@ export const deleteCategory = async (req, res) => {
     ).limit(1);
 
     if (!existingCategory) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: req.t('category.not_found') });
     }
 
     const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
@@ -139,20 +139,20 @@ export const deleteCategory = async (req, res) => {
       .where(eq(products.categoryId, id));
 
     if (productCount > 0) {
-      return res.status(400).json({ error: 'Cannot delete category with products' });
+      return res.status(400).json({ error: req.t('category.has_products') });
     }
 
     const subcategories = await db.select().from(categories).where(eq(categories.parentId, id));
     if (subcategories.length > 0) {
-      return res.status(400).json({ error: 'Cannot delete category with subcategories' });
+      return res.status(400).json({ error: req.t('category.has_subcategories') });
     }
 
     await db.delete(categories).where(eq(categories.id, id));
 
-    res.json({ message: 'Category deleted successfully' });
+    res.json({ message: req.t('category.deleted') });
   } catch (error) {
     console.error('Delete category error:', error);
-    res.status(500).json({ error: 'Failed to delete category' });
+    res.status(500).json({ error: req.t('category.delete_failed') });
   }
 };
 

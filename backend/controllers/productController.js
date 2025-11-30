@@ -52,7 +52,7 @@ export const getProducts = async (req, res) => {
     });
   } catch (error) {
     console.error('Get products error:', error);
-    res.status(500).json({ error: 'Failed to fetch products' });
+    res.status(500).json({ error: req.t('product.fetch_failed') });
   }
 };
 
@@ -65,7 +65,7 @@ export const getProductById = async (req, res) => {
     ).limit(1);
 
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('product.not_found') });
     }
 
     let category = null;
@@ -77,7 +77,7 @@ export const getProductById = async (req, res) => {
     res.json({ product, category });
   } catch (error) {
     console.error('Get product by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch product' });
+    res.status(500).json({ error: req.t('product.fetch_failed') });
   }
 };
 
@@ -90,13 +90,13 @@ export const getProductByBarcode = async (req, res) => {
     ).limit(1);
 
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('product.not_found') });
     }
 
     res.json({ product });
   } catch (error) {
     console.error('Get product by barcode error:', error);
-    res.status(500).json({ error: 'Failed to fetch product' });
+    res.status(500).json({ error: req.t('product.fetch_failed') });
   }
 };
 
@@ -109,7 +109,7 @@ export const createProduct = async (req, res) => {
         and(eq(products.barcode, barcode), eq(products.shopId, req.user.shopId))
       ).limit(1);
       if (existing) {
-        return res.status(409).json({ error: 'Product with this barcode already exists' });
+        return res.status(409).json({ error: req.t('product.barcode_exists') });
       }
     }
 
@@ -126,7 +126,7 @@ export const createProduct = async (req, res) => {
     res.status(201).json({ product: newProduct });
   } catch (error) {
     console.error('Create product error:', error);
-    res.status(500).json({ error: 'Failed to create product' });
+    res.status(500).json({ error: req.t('product.create_failed') });
   }
 };
 
@@ -140,7 +140,7 @@ export const updateProduct = async (req, res) => {
     ).limit(1);
 
     if (!existingProduct) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('product.not_found') });
     }
 
     const updateData = {};
@@ -158,7 +158,7 @@ export const updateProduct = async (req, res) => {
     res.json({ product: updatedProduct });
   } catch (error) {
     console.error('Update product error:', error);
-    res.status(500).json({ error: 'Failed to update product' });
+    res.status(500).json({ error: req.t('product.update_failed') });
   }
 };
 
@@ -172,7 +172,7 @@ export const updateStock = async (req, res) => {
     ).limit(1);
 
     if (!existingProduct) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('product.not_found') });
     }
 
     let newStock;
@@ -183,14 +183,14 @@ export const updateStock = async (req, res) => {
       case 'subtract':
         newStock = existingProduct.stock - quantity;
         if (newStock < 0) {
-          return res.status(400).json({ error: 'Insufficient stock' });
+          return res.status(400).json({ error: req.t('product.insufficient_stock') });
         }
         break;
       case 'set':
         newStock = quantity;
         break;
       default:
-        return res.status(400).json({ error: 'Invalid stock update type' });
+        return res.status(400).json({ error: req.t('product.invalid_stock_type') });
     }
 
     const [updatedProduct] = await db.update(products)
@@ -201,7 +201,7 @@ export const updateStock = async (req, res) => {
     res.json({ product: updatedProduct });
   } catch (error) {
     console.error('Update stock error:', error);
-    res.status(500).json({ error: 'Failed to update stock' });
+    res.status(500).json({ error: req.t('product.stock_update_failed') });
   }
 };
 
@@ -214,15 +214,15 @@ export const deleteProduct = async (req, res) => {
     ).limit(1);
 
     if (!existingProduct) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: req.t('product.not_found') });
     }
 
     await db.delete(products).where(eq(products.id, id));
 
-    res.json({ message: 'Product deleted successfully' });
+    res.json({ message: req.t('product.deleted') });
   } catch (error) {
     console.error('Delete product error:', error);
-    res.status(500).json({ error: 'Failed to delete product' });
+    res.status(500).json({ error: req.t('product.delete_failed') });
   }
 };
 
@@ -243,7 +243,7 @@ export const getLowStockProducts = async (req, res) => {
     res.json({ products: lowStockProducts });
   } catch (error) {
     console.error('Get low stock products error:', error);
-    res.status(500).json({ error: 'Failed to fetch low stock products' });
+    res.status(500).json({ error: req.t('product.low_stock_fetch_failed') });
   }
 };
 

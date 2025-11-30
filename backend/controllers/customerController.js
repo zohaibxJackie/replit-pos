@@ -45,7 +45,7 @@ export const getCustomers = async (req, res) => {
     });
   } catch (error) {
     console.error('Get customers error:', error);
-    res.status(500).json({ error: 'Failed to fetch customers' });
+    res.status(500).json({ error: req.t('customer.fetch_failed') });
   }
 };
 
@@ -58,7 +58,7 @@ export const getCustomerById = async (req, res) => {
     ).limit(1);
 
     if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: req.t('customer.not_found') });
     }
 
     const customerSales = await db.select()
@@ -70,7 +70,7 @@ export const getCustomerById = async (req, res) => {
     res.json({ customer, recentSales: customerSales });
   } catch (error) {
     console.error('Get customer by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch customer' });
+    res.status(500).json({ error: req.t('customer.fetch_failed') });
   }
 };
 
@@ -89,7 +89,7 @@ export const createCustomer = async (req, res) => {
     res.status(201).json({ customer: newCustomer });
   } catch (error) {
     console.error('Create customer error:', error);
-    res.status(500).json({ error: 'Failed to create customer' });
+    res.status(500).json({ error: req.t('customer.create_failed') });
   }
 };
 
@@ -103,7 +103,7 @@ export const updateCustomer = async (req, res) => {
     ).limit(1);
 
     if (!existingCustomer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: req.t('customer.not_found') });
     }
 
     const updateData = {};
@@ -120,7 +120,7 @@ export const updateCustomer = async (req, res) => {
     res.json({ customer: updatedCustomer });
   } catch (error) {
     console.error('Update customer error:', error);
-    res.status(500).json({ error: 'Failed to update customer' });
+    res.status(500).json({ error: req.t('customer.update_failed') });
   }
 };
 
@@ -133,15 +133,15 @@ export const deleteCustomer = async (req, res) => {
     ).limit(1);
 
     if (!existingCustomer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: req.t('customer.not_found') });
     }
 
     await db.delete(customers).where(eq(customers.id, id));
 
-    res.json({ message: 'Customer deleted successfully' });
+    res.json({ message: req.t('customer.deleted') });
   } catch (error) {
     console.error('Delete customer error:', error);
-    res.status(500).json({ error: 'Failed to delete customer' });
+    res.status(500).json({ error: req.t('customer.delete_failed') });
   }
 };
 

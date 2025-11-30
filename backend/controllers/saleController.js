@@ -54,7 +54,7 @@ export const getSales = async (req, res) => {
     });
   } catch (error) {
     console.error('Get sales error:', error);
-    res.status(500).json({ error: 'Failed to fetch sales' });
+    res.status(500).json({ error: req.t('sale.fetch_failed') });
   }
 };
 
@@ -67,7 +67,7 @@ export const getSaleById = async (req, res) => {
     ).limit(1);
 
     if (!sale) {
-      return res.status(404).json({ error: 'Sale not found' });
+      return res.status(404).json({ error: req.t('sale.not_found') });
     }
 
     const items = await db.select().from(saleItems).where(eq(saleItems.saleId, id));
@@ -81,7 +81,7 @@ export const getSaleById = async (req, res) => {
     res.json({ sale, items, customer });
   } catch (error) {
     console.error('Get sale by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch sale' });
+    res.status(500).json({ error: req.t('sale.fetch_failed') });
   }
 };
 
@@ -100,11 +100,11 @@ export const createSale = async (req, res) => {
       ).limit(1);
 
       if (!product) {
-        return res.status(404).json({ error: `Product ${item.productId} not found` });
+        return res.status(404).json({ error: req.t('product.product_id_not_found', { id: item.productId }) });
       }
 
       if (product.stock < item.quantity) {
-        return res.status(400).json({ error: `Insufficient stock for ${product.name}` });
+        return res.status(400).json({ error: req.t('product.insufficient_stock_for', { name: product.name }) });
       }
 
       const itemTotal = item.price * item.quantity;
@@ -155,7 +155,7 @@ export const createSale = async (req, res) => {
     res.status(201).json({ sale: newSale, items: insertedItems });
   } catch (error) {
     console.error('Create sale error:', error);
-    res.status(500).json({ error: 'Failed to create sale' });
+    res.status(500).json({ error: req.t('sale.create_failed') });
   }
 };
 
@@ -196,7 +196,7 @@ export const getTodaySales = async (req, res) => {
     });
   } catch (error) {
     console.error('Get today sales error:', error);
-    res.status(500).json({ error: 'Failed to fetch today sales' });
+    res.status(500).json({ error: req.t('sale.today_fetch_failed') });
   }
 };
 
@@ -256,7 +256,7 @@ export const getSalesAnalytics = async (req, res) => {
     });
   } catch (error) {
     console.error('Get sales analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch sales analytics' });
+    res.status(500).json({ error: req.t('sale.analytics_fetch_failed') });
   }
 };
 

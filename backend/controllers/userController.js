@@ -61,7 +61,7 @@ export const getUsers = async (req, res) => {
     });
   } catch (error) {
     console.error('Get users error:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: req.t('user.fetch_failed') });
   }
 };
 
@@ -72,17 +72,17 @@ export const getUserById = async (req, res) => {
     const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: req.t('user.not_found') });
     }
 
     if (req.user.role !== 'super_admin' && user.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: req.t('user.access_denied') });
     }
 
     res.json({ user: sanitizeUser(user) });
   } catch (error) {
     console.error('Get user by id error:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
+    res.status(500).json({ error: req.t('user.fetch_failed') });
   }
 };
 
@@ -92,7 +92,7 @@ export const getStaffLimits = async (req, res) => {
     
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('user.shop_not_found') });
     }
 
     const [plan] = await db.select().from(pricingPlans)
@@ -119,7 +119,7 @@ export const getStaffLimits = async (req, res) => {
     });
   } catch (error) {
     console.error('Get staff limits error:', error);
-    res.status(500).json({ error: 'Failed to fetch staff limits' });
+    res.status(500).json({ error: req.t('user.staff_limits_fetch_failed') });
   }
 };
 
@@ -130,7 +130,7 @@ export const createSalesPerson = async (req, res) => {
 
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('user.shop_not_found') });
     }
 
     const [plan] = await db.select().from(pricingPlans)
@@ -148,7 +148,7 @@ export const createSalesPerson = async (req, res) => {
     const maxStaff = plan?.maxStaff || 3;
     if (currentStaffCount >= maxStaff) {
       return res.status(403).json({ 
-        error: `Staff limit reached. Your ${shop.subscriptionTier} plan allows maximum ${maxStaff} sales persons. Please upgrade your plan.`,
+        error: req.t('user.staff_limit_reached', { tier: shop.subscriptionTier, max: maxStaff }),
         currentCount: currentStaffCount,
         maxAllowed: maxStaff
       });
@@ -156,12 +156,12 @@ export const createSalesPerson = async (req, res) => {
 
     const [existingEmail] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existingEmail) {
-      return res.status(409).json({ error: 'Email already registered' });
+      return res.status(409).json({ error: req.t('user.email_already_registered') });
     }
 
     const [existingUsername] = await db.select().from(users).where(eq(users.username, username)).limit(1);
     if (existingUsername) {
-      return res.status(409).json({ error: 'Username already taken' });
+      return res.status(409).json({ error: req.t('user.username_already_taken') });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -179,13 +179,13 @@ export const createSalesPerson = async (req, res) => {
 
     res.status(201).json({ 
       user: sanitizeUser(newUser),
-      message: 'Sales person created successfully',
+      message: req.t('user.sales_person_created'),
       staffCount: currentStaffCount + 1,
       maxStaff
     });
   } catch (error) {
     console.error('Create sales person error:', error);
-    res.status(500).json({ error: 'Failed to create sales person' });
+    res.status(500).json({ error: req.t('user.sales_person_create_failed') });
   }
 };
 
@@ -195,7 +195,7 @@ export const createUser = async (req, res) => {
 
     const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existingUser) {
-      return res.status(409).json({ error: 'Email already registered' });
+      return res.status(409).json({ error: req.t('user.email_already_registered') });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -217,7 +217,7 @@ export const createUser = async (req, res) => {
     res.status(201).json({ user: sanitizeUser(newUser) });
   } catch (error) {
     console.error('Create user error:', error);
-    res.status(500).json({ error: 'Failed to create user' });
+    res.status(500).json({ error: req.t('user.create_failed') });
   }
 };
 
@@ -228,11 +228,11 @@ export const updateUser = async (req, res) => {
 
     const [existingUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
     if (!existingUser) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: req.t('user.not_found') });
     }
 
     if (req.user.role !== 'super_admin' && existingUser.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: req.t('user.access_denied') });
     }
 
     const updateData = {};
@@ -254,7 +254,7 @@ export const updateUser = async (req, res) => {
     res.json({ user: sanitizeUser(updatedUser) });
   } catch (error) {
     console.error('Update user error:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    res.status(500).json({ error: req.t('user.update_failed') });
   }
 };
 
@@ -264,23 +264,23 @@ export const deleteUser = async (req, res) => {
 
     const [existingUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
     if (!existingUser) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: req.t('user.not_found') });
     }
 
     if (req.user.role !== 'super_admin' && existingUser.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: req.t('user.access_denied') });
     }
 
     if (existingUser.role === 'super_admin') {
-      return res.status(403).json({ error: 'Cannot delete super admin' });
+      return res.status(403).json({ error: req.t('user.cannot_delete_super_admin') });
     }
 
     await db.update(users).set({ active: false }).where(eq(users.id, id));
 
-    res.json({ message: 'User deactivated successfully' });
+    res.json({ message: req.t('user.deactivated') });
   } catch (error) {
     console.error('Delete user error:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
+    res.status(500).json({ error: req.t('user.delete_failed') });
   }
 };
 
@@ -289,7 +289,7 @@ export const getMyProfile = async (req, res) => {
     const [user] = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
     
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: req.t('user.not_found') });
     }
 
     let shop = null;
@@ -301,7 +301,7 @@ export const getMyProfile = async (req, res) => {
     res.json({ user: sanitizeUser(user), shop });
   } catch (error) {
     console.error('Get profile error:', error);
-    res.status(500).json({ error: 'Failed to fetch profile' });
+    res.status(500).json({ error: req.t('user.profile_fetch_failed') });
   }
 };
 
@@ -314,7 +314,7 @@ export const updateMyProfile = async (req, res) => {
         .where(and(eq(users.email, email), ne(users.id, req.user.id)))
         .limit(1);
       if (existingEmail) {
-        return res.status(409).json({ error: 'Email already in use' });
+        return res.status(409).json({ error: req.t('user.email_in_use') });
       }
     }
 
@@ -323,7 +323,7 @@ export const updateMyProfile = async (req, res) => {
         .where(and(eq(users.username, username), ne(users.id, req.user.id)))
         .limit(1);
       if (existingUsername) {
-        return res.status(409).json({ error: 'Username already taken' });
+        return res.status(409).json({ error: req.t('user.username_already_taken') });
       }
     }
 
@@ -341,10 +341,10 @@ export const updateMyProfile = async (req, res) => {
       .where(eq(users.id, req.user.id))
       .returning();
 
-    res.json({ user: sanitizeUser(updatedUser), message: 'Profile updated successfully' });
+    res.json({ user: sanitizeUser(updatedUser), message: req.t('user.profile_updated') });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+    res.status(500).json({ error: req.t('user.profile_update_failed') });
   }
 };
 
@@ -354,7 +354,7 @@ export const requestPasswordReset = async (req, res) => {
     const userId = req.user.id;
     
     if (req.user.role !== 'sales_person') {
-      return res.status(403).json({ error: 'Only sales persons can request password reset through admin' });
+      return res.status(403).json({ error: req.t('user.only_sales_can_request_reset') });
     }
 
     const [existingRequest] = await db.select().from(passwordResetRequests)
@@ -365,12 +365,12 @@ export const requestPasswordReset = async (req, res) => {
       .limit(1);
 
     if (existingRequest) {
-      return res.status(409).json({ error: 'You already have a pending password reset request' });
+      return res.status(409).json({ error: req.t('user.pending_reset_exists') });
     }
 
     const [shop] = await db.select().from(shops).where(eq(shops.id, req.user.shopId)).limit(1);
     if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
+      return res.status(404).json({ error: req.t('user.shop_not_found') });
     }
 
     const [newRequest] = await db.insert(passwordResetRequests).values({
@@ -389,12 +389,12 @@ export const requestPasswordReset = async (req, res) => {
     );
 
     res.status(201).json({ 
-      message: 'Password reset request sent to admin',
+      message: req.t('user.reset_request_sent'),
       requestId: newRequest.id 
     });
   } catch (error) {
     console.error('Request password reset error:', error);
-    res.status(500).json({ error: 'Failed to submit password reset request' });
+    res.status(500).json({ error: req.t('user.reset_request_failed') });
   }
 };
 
@@ -440,7 +440,7 @@ export const getPasswordResetRequests = async (req, res) => {
     });
   } catch (error) {
     console.error('Get password reset requests error:', error);
-    res.status(500).json({ error: 'Failed to fetch password reset requests' });
+    res.status(500).json({ error: req.t('user.reset_requests_fetch_failed') });
   }
 };
 
@@ -450,20 +450,20 @@ export const resetUserPassword = async (req, res) => {
     const { newPassword, requestId } = req.body;
 
     if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return res.status(400).json({ error: req.t('user.password_min_length') });
     }
 
     const [targetUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
     if (!targetUser) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: req.t('user.not_found') });
     }
 
     if (req.user.role !== 'super_admin' && targetUser.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: req.t('user.access_denied') });
     }
 
     if (req.user.role === 'admin' && targetUser.role !== 'sales_person') {
-      return res.status(403).json({ error: 'Admins can only reset passwords for sales persons' });
+      return res.status(403).json({ error: req.t('user.admin_only_reset_sales') });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -486,10 +486,10 @@ export const resetUserPassword = async (req, res) => {
       '/login'
     );
 
-    res.json({ message: 'Password reset successfully' });
+    res.json({ message: req.t('user.password_reset_successful') });
   } catch (error) {
     console.error('Reset user password error:', error);
-    res.status(500).json({ error: 'Failed to reset password' });
+    res.status(500).json({ error: req.t('user.password_reset_failed') });
   }
 };
 
@@ -502,11 +502,11 @@ export const rejectPasswordResetRequest = async (req, res) => {
       .limit(1);
 
     if (!request) {
-      return res.status(404).json({ error: 'Request not found' });
+      return res.status(404).json({ error: req.t('user.request_not_found') });
     }
 
     if (request.adminId !== req.user.id && req.user.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: req.t('user.access_denied') });
     }
 
     await db.update(passwordResetRequests)
@@ -520,10 +520,10 @@ export const rejectPasswordResetRequest = async (req, res) => {
       'error'
     );
 
-    res.json({ message: 'Password reset request rejected' });
+    res.json({ message: req.t('user.reset_request_rejected') });
   } catch (error) {
     console.error('Reject password reset request error:', error);
-    res.status(500).json({ error: 'Failed to reject request' });
+    res.status(500).json({ error: req.t('user.reject_failed') });
   }
 };
 
