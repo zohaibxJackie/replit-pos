@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/utils/mockData';
 
 export default function POSProducts() {
-  useAuth('sales_person');
+  useAuth("posProducts");
   const [products] = useState(mockProducts); //todo: remove mock functionality
 
   const columns = [

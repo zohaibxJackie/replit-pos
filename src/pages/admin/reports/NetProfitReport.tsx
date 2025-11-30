@@ -37,7 +37,7 @@ type DateRange = {
 };
 
 export default function NetProfitReport() {
-  useAuth('admin');
+  useAuth("adminReportsNetProfit");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

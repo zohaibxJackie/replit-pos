@@ -17,7 +17,7 @@ type Reason = {
 };
 
 export default function ManageReasons() {
-  useAuth(['admin', 'sales_person'])
+  useAuth("catalogManageReasons");
 
   const { t } = useTranslation();
   const { setTitle } = useTitle();

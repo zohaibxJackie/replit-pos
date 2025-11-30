@@ -20,7 +20,7 @@ interface TaxItem {
 }
 
 export default function Tax() {
-  useAuth(["admin", "sales_person"]);
+  useAuth("catalogTax");
 
   const { setTitle } = useTitle();
   const { toast } = useToast();

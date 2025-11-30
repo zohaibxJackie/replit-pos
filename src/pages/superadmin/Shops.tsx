@@ -43,7 +43,7 @@ import {
 import type { Shop } from '@shared/schema';
 
 export default function ShopManagement() {
-  useAuth('super_admin');
+  useAuth("superAdminShops");
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');

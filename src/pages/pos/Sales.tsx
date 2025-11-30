@@ -4,7 +4,7 @@ import DataTable from '@/components/DataTable';
 import { mockSales } from '@/utils/mockData';
 
 export default function RecentSales() {
-  useAuth('sales_person');
+  useAuth("posSales");
   const [sales] = useState(mockSales); //todo: remove mock functionality
 
   const columns = [

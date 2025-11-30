@@ -31,7 +31,7 @@ type Product = {
 };
 
 export default function Wholesalers() {
-  useAuth("admin");
+  useAuth("adminWholesalers");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

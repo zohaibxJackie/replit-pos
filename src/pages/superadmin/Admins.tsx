@@ -35,7 +35,7 @@ import {
 import type { User } from '@shared/schema';
 
 export default function ManageAdmins() {
-  useAuth('super_admin');
+  useAuth("superAdminAdmins");
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isImpersonateDialogOpen, setIsImpersonateDialogOpen] = useState(false);

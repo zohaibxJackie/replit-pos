@@ -46,7 +46,7 @@ interface Products {
 }
 
 export default function Products() {
-  useAuth(["admin", "sales_person"]);
+  useAuth("catalogProducts");
   const { toast } = useToast();
   const { t } = useTranslation();
   const {setTitle} = useTitle();

@@ -158,7 +158,7 @@ const mockTaxes = [
 
 /* --- main component --- */
 export default function AddProduct() {
-  useAuth(['admin', 'sales_person'])
+  useAuth("catalogAddProduct");
   const { setTitle } = useTitle();
   const [, setLocation] = useLocation();
   const [errors, setErrors] = useState<Record<string, string>>({});

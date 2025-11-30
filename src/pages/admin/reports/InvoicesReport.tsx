@@ -34,7 +34,7 @@ type DateRange = {
 };
 
 export default function InvoicesReport() {
-  useAuth('admin');
+  useAuth("adminReportsInvoices");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

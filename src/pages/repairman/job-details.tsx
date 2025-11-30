@@ -29,7 +29,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function RepairmanJobDetails() {
-  useAuth('repair_man');
+  useAuth("repairManJobDetails");
   const { setTitle } = useTitle();
   const params = useParams();
   const [, setLocation] = useLocation();

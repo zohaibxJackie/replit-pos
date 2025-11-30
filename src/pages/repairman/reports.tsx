@@ -23,7 +23,7 @@ import {
 import { useState, useEffect } from "react";
 
 export default function RepairmanReports() {
-  useAuth("repair_man");
+  useAuth("repairManReports");
   const { setTitle } = useTitle();
   const [timeRange, setTimeRange] = useState("this_week");
 

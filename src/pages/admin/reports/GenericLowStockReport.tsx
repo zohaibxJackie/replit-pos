@@ -35,7 +35,7 @@ type DateRange = {
 };
 
 export default function GenericLowStockReport() {
-  useAuth('admin');
+  useAuth("adminReportsGenericLowStock");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

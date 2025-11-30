@@ -34,7 +34,7 @@ type DateRange = {
 const COLORS = ['#00C49F', '#FFBB28', '#FF8042', '#0088FE'];
 
 export default function ContractsReport() {
-  useAuth('admin');
+  useAuth("adminReportsContractsReport");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

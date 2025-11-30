@@ -13,7 +13,7 @@ import { useTitle } from "@/context/TitleContext";
 import { CustomerFormDialog, CustomerFormData } from "@/components/CustomerFormDialog";
 
 export default function Customer() {
-  useAuth(["admin", "sales_person"]);
+  useAuth("adminCustomer");
   const { toast } = useToast();
   const { t } = useTranslation();
   const { setTitle } = useTitle();

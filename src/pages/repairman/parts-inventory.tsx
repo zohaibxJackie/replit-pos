@@ -33,7 +33,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 export default function RepairmanPartsInventory() {
-  useAuth("repair_man");
+  useAuth("repairManPartsInventory");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");

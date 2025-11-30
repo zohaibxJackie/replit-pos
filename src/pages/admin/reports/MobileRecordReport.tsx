@@ -34,7 +34,7 @@ type DateRange = {
 };
 
 export default function MobileRecordReport() {
-  useAuth('admin');
+  useAuth("adminReportsMobileRecord");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

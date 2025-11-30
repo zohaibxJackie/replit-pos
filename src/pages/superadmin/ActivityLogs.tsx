@@ -30,7 +30,7 @@ import {
 import type { ActivityLog } from '@shared/schema';
 
 export default function ActivityLogs() {
-  useAuth('super_admin');
+  useAuth("superAdminActivityLogs");
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState('all');
   

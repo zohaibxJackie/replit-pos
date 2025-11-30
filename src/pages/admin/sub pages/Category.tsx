@@ -29,7 +29,7 @@ type Category = {
 };
 
 export default function Category() {
-  useAuth(['admin', 'sales_person'])
+  useAuth("catalogCategory");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
   const { toast } = useToast();

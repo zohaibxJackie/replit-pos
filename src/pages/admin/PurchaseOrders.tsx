@@ -24,7 +24,7 @@ type PurchaseOrder = {
 };
 
 export default function AdminPurchaseOrders() {
-  useAuth("admin");
+  useAuth("adminPurchaseOrders");
   const { setTitle } = useTitle();
   const { toast } = useToast();
 

@@ -34,7 +34,7 @@ type DateRange = {
 };
 
 export default function TopMobileSalesReport() {
-  useAuth('admin');
+  useAuth("adminReportsTopMobileSales");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

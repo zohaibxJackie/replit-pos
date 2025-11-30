@@ -28,7 +28,7 @@ type WholesalerProduct = {
 };
 
 export default function WholesalersMarketplace() {
-  useAuth("admin");
+  useAuth("adminWholesalersMarketplace");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
   const { toast } = useToast();

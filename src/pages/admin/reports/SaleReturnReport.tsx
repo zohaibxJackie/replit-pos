@@ -34,7 +34,7 @@ type DateRange = {
 };
 
 export default function SaleReturnReport() {
-  useAuth('admin');
+  useAuth("adminReportsSaleReturn");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

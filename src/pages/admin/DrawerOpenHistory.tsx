@@ -16,7 +16,7 @@ interface DrawerHistoryItem {
 }
 
 export default function DrawerOpenHistory() {
-  useAuth('admin')
+  useAuth("adminDrawerHistory");
   const { toast } = useToast();
   const {t} = useTranslation();
   const {setTitle} = useTitle();

@@ -28,7 +28,7 @@ interface PlanFormData {
 }
 
 export default function PricingPlans() {
-  useAuth('super_admin');
+  useAuth("superAdminPricing");
   const [plans, setPlans] = useState<PricingPlan[]>([
     {
       id: 'plan-1',

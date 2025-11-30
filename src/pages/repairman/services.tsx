@@ -24,7 +24,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 
 export default function RepairmanServices() {
-  useAuth("repair_man");
+  useAuth("repairManServices");
   const { setTitle } = useTitle();
   const [searchTerm, setSearchTerm] = useState("");
 

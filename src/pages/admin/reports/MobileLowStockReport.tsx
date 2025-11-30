@@ -35,7 +35,7 @@ type DateRange = {
 };
 
 export default function MobileLowStockReport() {
-  useAuth('admin');
+  useAuth("adminReportsMobileLowStock");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

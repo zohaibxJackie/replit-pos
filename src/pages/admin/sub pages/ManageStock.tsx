@@ -31,7 +31,7 @@ interface Product {
 }
 
 export default function ManageStock() {
-  useAuth(["admin", "sales_person"]);
+  useAuth("catalogManageStock");
   const { setTitle } = useTitle();
   const { t } = useTranslation();
   const { toast } = useToast();

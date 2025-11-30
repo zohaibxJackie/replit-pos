@@ -18,7 +18,7 @@ type DateRange = {
 };
 
 export default function DailySalesReport() {
-  useAuth('admin')
+  useAuth("adminReportsSales");
   const { toast } = useToast();
   const { t } = useTranslation();
   const {setTitle} = useTitle();

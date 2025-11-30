@@ -65,7 +65,7 @@ type PurchaseOrder = {
 };
 
 export default function WholesalerDashboard() {
-  useAuth("wholesaler");
+  useAuth("wholesalerDashboard");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
   const { toast } = useToast();

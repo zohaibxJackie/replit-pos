@@ -24,7 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 export default function WholesalerReports() {
-  useAuth("wholesaler");
+  useAuth("wholesalerReports");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [timeRange, setTimeRange] = useState("this_month");

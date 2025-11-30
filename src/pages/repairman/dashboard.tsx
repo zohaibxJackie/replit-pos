@@ -19,7 +19,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 
 export default function RepairmanDashboard() {
-  useAuth("repair_man");
+  useAuth("repairManDashboard");
   const { setTitle } = useTitle();
   const [isAvailable, setIsAvailable] = useState(true);
 

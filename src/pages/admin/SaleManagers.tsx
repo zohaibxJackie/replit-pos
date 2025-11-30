@@ -42,7 +42,7 @@ interface PasswordResetRequest {
 }
 
 export default function SalesManagers() {
-  useAuth('admin');
+  useAuth("adminSaleManagers");
   const { toast } = useToast();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

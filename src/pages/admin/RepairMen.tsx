@@ -29,7 +29,7 @@ type Service = {
 };
 
 export default function RepairMen() {
-  useAuth("admin");
+  useAuth("adminRepairMen");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
   const { toast } = useToast();

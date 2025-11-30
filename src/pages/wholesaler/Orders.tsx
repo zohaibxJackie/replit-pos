@@ -49,7 +49,7 @@ type Order = {
 };
 
 export default function WholesalerOrders() {
-  useAuth("wholesaler");
+  useAuth("wholesalerOrders");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const { user } = useAuth();

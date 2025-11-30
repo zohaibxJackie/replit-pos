@@ -21,7 +21,7 @@ interface RechargePayment {
 }
 
 export default function RechargePayments() {
-  useAuth("admin");
+  useAuth("adminRechargePayments");
   const { t } = useTranslation();
   const {setTitle} = useTitle();
   useEffect(() => {

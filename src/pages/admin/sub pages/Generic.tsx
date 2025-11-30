@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTitle } from '@/context/TitleContext';
 
 export default function GenericProducts() {
-    useAuth(["admin", "sales_person"]);
+    useAuth("catalogGeneric");
     const { toast } = useToast();
     const { t } = useTranslation();
     const {setTitle} = useTitle();

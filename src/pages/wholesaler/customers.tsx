@@ -33,7 +33,7 @@ type Customer = {
 };
 
 export default function WholesalerCustomers() {
-  useAuth("wholesaler");
+  useAuth("wholesalerCustomers");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");

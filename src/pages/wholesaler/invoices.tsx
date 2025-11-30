@@ -18,7 +18,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function WholesalerInvoices() {
-  useAuth("wholesaler");
+  useAuth("wholesalerInvoices");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");

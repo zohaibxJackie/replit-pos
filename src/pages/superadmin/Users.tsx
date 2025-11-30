@@ -43,7 +43,7 @@ import {
 import type { User } from '@shared/schema';
 
 export default function UserManagement() {
-  useAuth('super_admin');
+  useAuth("superAdminUsers");
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');

@@ -68,7 +68,7 @@ const PAYMENT_METHODS = [
 ] as const;
 
 export default function POS() {
-  useAuth(["sales_person", "admin"]);
+  useAuth("pos");
   const { setOpen: setSidebarOpen } = useSidebar();
   const { setTitle } = useTitle();
   const [cart, setCart] = useState<CartItemType[]>([]);

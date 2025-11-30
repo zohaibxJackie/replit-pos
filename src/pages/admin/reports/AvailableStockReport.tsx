@@ -34,7 +34,7 @@ type DateRange = {
 };
 
 export default function AvailableStockReport() {
-  useAuth('admin');
+  useAuth("adminReportsAvailableStock");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
 

@@ -36,7 +36,12 @@ The application features a modern, luxurious, and premium design inspired by hig
 
 ### System Design Choices
 - **API Architecture**: Organized into `config`, `controllers`, `middleware`, `routes`, `validators`, `sql`, `scripts`, `utils` directories.
-- **Role-Based Access Control**: Implemented using JWT middleware to secure API endpoints based on user roles.
+- **Role-Based Access Control (RBAC)**: Centralized AccessControl system in `src/config/accessControl.ts`:
+  - **AccessControl Configuration**: Single source of truth for all page and component permissions
+  - **Page Keys**: Each route has a unique PageKey (e.g., `adminDashboard`, `posProducts`, `wholesalerOrders`)
+  - **useAuth Hook**: Takes a PageKey and validates access against AccessControl.pages
+  - **useCanAccess Hook**: For component-level permission checks
+  - **Adding New Routes**: 1) Define PageKey in AccessControl.pages, 2) Use useAuth("pageKey") in the page component
 - **Modular Frontend**: Components are organized into `components/`, `pages/`, `store/`, and `utils/` for maintainability.
 - **Responsive Design**: Prioritizes adaptability across various screen sizes and devices.
 

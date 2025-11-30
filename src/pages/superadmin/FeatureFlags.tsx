@@ -35,7 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { FeatureFlag } from '@shared/schema';
 
 export default function FeatureFlags() {
-  useAuth('super_admin');
+  useAuth("superAdminFeatureFlags");
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFlag, setEditingFlag] = useState<FeatureFlag | null>(null);

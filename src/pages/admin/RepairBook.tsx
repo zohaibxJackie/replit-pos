@@ -120,7 +120,7 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
 };
 
 export default function RepairBook() {
-  useAuth("admin");
+  useAuth("adminRepairBook");
   const { toast } = useToast();
   const { t } = useTranslation();
   const { setTitle } = useTitle();

@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useTitle } from '@/context/TitleContext';
 
 export default function Subscription() {
-  useAuth("admin");
+  useAuth("adminSubscription");
   const { toast } = useToast();
   const { t } = useTranslation();
   const {setTitle} = useTitle();

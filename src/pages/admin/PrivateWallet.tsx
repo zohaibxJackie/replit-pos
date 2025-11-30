@@ -21,7 +21,7 @@ interface Transaction {
 }
 
 export default function PrivateWallet() {
-    useAuth('admin');
+    useAuth("adminPrivateWallet");
     const { toast } = useToast();
     const {t} = useTranslation();
     const {setTitle} = useTitle();

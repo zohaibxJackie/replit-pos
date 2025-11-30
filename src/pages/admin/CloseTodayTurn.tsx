@@ -21,7 +21,7 @@ interface TurnItem {
 }
 
 export default function CloseTodayTurn() {
-  useAuth("admin");
+  useAuth("adminCloseTodayTurn");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
   useEffect(() => {

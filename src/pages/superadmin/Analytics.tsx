@@ -3,7 +3,7 @@ import StatCard from '@/components/StatCard';
 import { DollarSign, Users, ShoppingCart, TrendingUp } from 'lucide-react';
 
 export default function SystemAnalytics() {
-  useAuth('super_admin');
+  useAuth("superAdminAnalytics");
 
   //todo: remove mock functionality
   return (

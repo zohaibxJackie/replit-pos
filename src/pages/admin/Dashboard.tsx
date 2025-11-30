@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 export default function AdminDashboard() {
-  useAuth('admin');
+  useAuth("adminDashboard");
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
   const { setTitle } = useTitle();

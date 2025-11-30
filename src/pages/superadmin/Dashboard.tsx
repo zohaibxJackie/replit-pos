@@ -3,7 +3,7 @@ import StatCard from '@/components/StatCard';
 import { Users, Store, DollarSign, TrendingUp } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
-  useAuth('super_admin');
+  useAuth("superAdminDashboard");
 
   //todo: remove mock functionality
   const stats = {

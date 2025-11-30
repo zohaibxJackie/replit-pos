@@ -28,7 +28,7 @@ type PurchaseOrder = {
 };
 
 export default function WholesalerPurchaseOrders() {
-  useAuth("wholesaler");
+  useAuth("wholesalerPurchaseOrders");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const { user } = useAuth();

@@ -248,7 +248,7 @@ type Product = {
 };
 
 export default function WholesalerProducts() {
-  useAuth("wholesaler");
+  useAuth("wholesalerProducts");
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");

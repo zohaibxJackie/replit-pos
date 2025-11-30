@@ -3,6 +3,14 @@ import { useAuthStore, AuthResponse, User } from '@/store/authStore';
 import { useLocation } from 'wouter';
 import { useEffect } from 'react';
 import api from '@/lib/api';
+import { 
+  canAccessPage, 
+  canAccessComponent,
+  canAccess,
+  getDefaultRedirectForRole,
+  PageKey, 
+  ComponentKey 
+} from '@/config/accessControl';
 
 interface LoginCredentials {
   email: string;
@@ -18,7 +26,7 @@ interface SignupCredentials {
   businessName: string;
 }
 
-export function useAuth(requiredRoles?: string | string[]) {
+export function useAuth(pageKey?: PageKey) {
   const { isAuthenticated, user } = useAuthStore();
   const [, setLocation] = useLocation();
 
@@ -28,27 +36,26 @@ export function useAuth(requiredRoles?: string | string[]) {
       return;
     }
 
-    if (requiredRoles) {
-      const rolesArray = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+    if (pageKey) {
       const userRole = user?.role ?? '';
-
-      if (!rolesArray.includes(userRole)) {
-        if (user?.role === 'super_admin') {
-          setLocation('/super-admin/dashboard');
-        } else if (user?.role === 'admin') {
-          setLocation('/admin/dashboard');
-        } else if (user?.role === 'sales_person') {
-          setLocation('/pos');
-        } else if (user?.role === 'repair_man') {
-          setLocation('/repair-man/dashboard');
-        } else if (user?.role === 'wholesaler') {
-          setLocation('/wholesaler/dashboard');
-        }
+      
+      if (!canAccessPage(userRole, pageKey)) {
+        setLocation(getDefaultRedirectForRole(userRole));
       }
     }
-  }, [isAuthenticated, user, requiredRoles, setLocation]);
+  }, [isAuthenticated, user, pageKey, setLocation]);
 
   return { isAuthenticated, user };
+}
+
+export function useCanAccess() {
+  const { user } = useAuthStore();
+  
+  return {
+    canAccessPage: (pageKey: PageKey) => canAccessPage(user?.role, pageKey),
+    canAccessComponent: (componentKey: ComponentKey) => canAccessComponent(user?.role, componentKey),
+    canAccess: (key: PageKey | ComponentKey) => canAccess(user?.role, key),
+  };
 }
 
 export function useLogin() {

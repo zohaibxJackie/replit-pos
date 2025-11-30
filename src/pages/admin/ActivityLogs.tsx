@@ -15,7 +15,7 @@ interface ActivityLog {
 }
 
 export default function ActivityLogs() {
-  useAuth("admin");
+  useAuth("adminActivityLogs");
   const {t} = useTranslation();
   const {setTitle} = useTitle();
   useEffect(() => {
