@@ -32,7 +32,13 @@ The application features a modern, luxurious, and premium design inspired by hig
   - **Profile Management**: All authenticated users can view and update their profile (username, email, phone, address, etc.) via the /profile route. Password change is available for admins/super admins directly; sales persons must request reset through admin.
 - **POS System**: Quick products feature with `localStorage` persistence, management dialog for selecting frequently used products, quick product display section, dynamic header title, sidebar navigation toggle, two-column layout for quick products and cart, customer selection integrated into order summary, enhanced quick product search.
 - **Super Admin Platform Management**: Notification system (with Zustand store), CRUD for pricing plans, admin user management (including shop assignment), shop management (subscription status, plan assignment), platform-wide user management (impersonation, role filtering), feature flags system (toggle features, shop-specific enablement), activity logs (audit trail, filtering).
-- **Internationalization**: Support for `Accept-Language` header for multi-language responses (English, Urdu).
+- **Internationalization**: Full multi-language support (English, Urdu) with:
+  - Frontend i18next integration for UI translations
+  - Backend localization using Accept-Language header detection
+  - Translation files: `backend/locales/en.json` and `backend/locales/ur.json`
+  - Language middleware (`backend/middleware/language.js`) for request language detection
+  - Translation helper (`backend/utils/i18n.js`) with parameter interpolation and fallback mechanism
+  - All API responses return localized error/success messages based on user's language preference
 
 ### System Design Choices
 - **API Architecture**: Organized into `config`, `controllers`, `middleware`, `routes`, `validators`, `sql`, `scripts`, `utils` directories.
