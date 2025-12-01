@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Plus, Users, AlertTriangle, Loader2, Key, X, Check, Pencil, Trash2 } fr
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useTitle } from '@/context/TitleContext';
+import { useTranslation } from "react-i18next";
 
 interface StaffLimits {
   currentStaff: number;
@@ -44,12 +46,19 @@ interface PasswordResetRequest {
 export default function SalesManagers() {
   useAuth("adminSaleManagers");
   const { toast } = useToast();
-  
+  const { setTitle } = useTitle();
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    setTitle("Manage Staff");
+    return () => setTitle("Dashboard");
+  }, [t, setTitle]);
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SalesPerson | null>(null);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -58,7 +67,7 @@ export default function SalesManagers() {
     whatsapp: '',
     address: ''
   });
-  
+
   const [newPassword, setNewPassword] = useState('');
 
   const { data: staffLimits, isLoading: limitsLoading } = useQuery<StaffLimits>({
@@ -166,7 +175,7 @@ export default function SalesManagers() {
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
-    
+
     const { password, ...updateData } = formData;
     updateMutation.mutate({ id: selectedUser.id, data: updateData });
   };
@@ -174,10 +183,10 @@ export default function SalesManagers() {
   const handleResetPassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
-    
+
     const request = resetRequests?.requests?.find(r => r.userId === selectedUser.id);
-    resetPasswordMutation.mutate({ 
-      userId: selectedUser.id, 
+    resetPasswordMutation.mutate({
+      userId: selectedUser.id,
       password: newPassword,
       requestId: request?.id
     });
@@ -224,8 +233,8 @@ export default function SalesManagers() {
       key: 'actions',
       label: 'Password',
       render: (_: unknown, row: SalesPerson) => (
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
@@ -245,23 +254,7 @@ export default function SalesManagers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-semibold">Manage Staff</h1>
-          <p className="text-muted-foreground mt-1">Add and manage sales persons</p>
-        </div>
-        <Button 
-          onClick={() => {
-            resetForm();
-            setIsAddDialogOpen(true);
-          }}
-          disabled={!staffLimits?.canAddMore}
-          data-testid="button-add-staff"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Staff
-        </Button>
-      </div>
+
 
       {staffLimits && (
         <div className="grid gap-4 md:grid-cols-3">
@@ -314,8 +307,8 @@ export default function SalesManagers() {
           <CardContent>
             <div className="space-y-3">
               {pendingRequests.map((request) => (
-                <div 
-                  key={request.id} 
+                <div
+                  key={request.id}
                   className="flex items-center justify-between gap-4 p-3 bg-background rounded-md border"
                 >
                   <div>
@@ -355,6 +348,20 @@ export default function SalesManagers() {
         </Card>
       )}
 
+      <div className="flex items-center justify-end gap-4 flex-wrap">
+        <Button
+          onClick={() => {
+            resetForm();
+            setIsAddDialogOpen(true);
+          }}
+          disabled={!staffLimits?.canAddMore}
+          data-testid="button-add-staff"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Staff
+        </Button>
+      </div>
+
       {staffLoading || limitsLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -365,7 +372,7 @@ export default function SalesManagers() {
           data={staff}
           showActions
           renderActions={(row: SalesPerson) => (
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-center">
               <Button
                 size="sm"
                 variant="ghost"

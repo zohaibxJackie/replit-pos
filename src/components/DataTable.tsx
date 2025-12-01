@@ -78,7 +78,7 @@ export default function DataTable({
                   key={column.key}
                   className="font-semibold text-foreground whitespace-nowrap px-3 py-3 relative"
                 >
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-start gap-1">
                     <span>{column.label}</span>
 
                     {column.filterType !== "none" && (
@@ -160,7 +160,7 @@ export default function DataTable({
                 </TableHead>
               ))}
               {showActions && (
-                <TableHead className="text-right font-semibold text-foreground">
+                <TableHead className="flex justify-center items-center text-right font-semibold text-foreground">
                   {t("admin.common.actions")}
                 </TableHead>
               )}

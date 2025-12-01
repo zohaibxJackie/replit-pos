@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     address TEXT,
     refresh_token TEXT,
     active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT now(),
-    modified_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    modified_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Login history table
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS login_history (
     user_id VARCHAR NOT NULL,
     ip_address TEXT,
     device_info TEXT,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Shops table
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS shops (
     phone TEXT,
     whatsapp TEXT,
     address TEXT,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Products table
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS products (
     price DECIMAL(10, 2) NOT NULL,
     stock INTEGER NOT NULL DEFAULT 0,
     low_stock_threshold INTEGER NOT NULL DEFAULT 5,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Categories table
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS categories (
     type TEXT NOT NULL,
     parent_id VARCHAR,
     level INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Customers table
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS customers (
     phone TEXT,
     address TEXT,
     total_purchases DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Sales table
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS sales (
     tax DECIMAL(10, 2) NOT NULL DEFAULT 0,
     discount DECIMAL(10, 2) NOT NULL DEFAULT 0,
     total DECIMAL(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Sale items table
@@ -109,8 +109,8 @@ CREATE TABLE IF NOT EXISTS pricing_plans (
     max_products INTEGER NOT NULL,
     features TEXT[],
     is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Notifications table
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     type TEXT NOT NULL,
     is_read BOOLEAN NOT NULL DEFAULT false,
     action_url TEXT,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Activity logs table
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     details TEXT,
     ip_address TEXT,
     user_agent TEXT,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Feature flags table
@@ -145,8 +145,8 @@ CREATE TABLE IF NOT EXISTS feature_flags (
     description TEXT,
     is_enabled BOOLEAN NOT NULL DEFAULT false,
     shop_id VARCHAR,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Wholesaler products table
@@ -163,8 +163,8 @@ CREATE TABLE IF NOT EXISTS wholesaler_products (
     unit TEXT NOT NULL DEFAULT 'pack',
     image_url TEXT,
     is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Purchase orders table
@@ -184,8 +184,8 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     total DECIMAL(10, 2) NOT NULL,
     notes TEXT,
     wholesaler_response TEXT,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Purchase order items table
@@ -215,8 +215,8 @@ CREATE TABLE IF NOT EXISTS deal_requests (
     message TEXT NOT NULL,
     status deal_request_status NOT NULL DEFAULT 'pending',
     wholesaler_response TEXT,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Repair persons table
@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS repair_persons (
     phone TEXT,
     email TEXT,
     is_available BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Repair jobs table
@@ -253,11 +253,11 @@ CREATE TABLE IF NOT EXISTS repair_jobs (
     repair_person_name TEXT,
     auto_assign BOOLEAN NOT NULL DEFAULT false,
     photos TEXT[],
-    due_date TIMESTAMP,
-    assigned_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP NOT NULL DEFAULT now()
+    due_date TIMESTAMPTZ,
+    assigned_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Repair payments table
@@ -267,5 +267,13 @@ CREATE TABLE IF NOT EXISTS repair_payments (
     amount DECIMAL(10, 2) NOT NULL,
     payment_method TEXT NOT NULL DEFAULT 'cash',
     note TEXT,
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS user_shop (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+    user_id VARCHAR NOT NULL,
+    shop_id VARCHAR NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
