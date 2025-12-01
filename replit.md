@@ -25,7 +25,7 @@ The application features a modern, luxurious, and premium design inspired by hig
 - **Super Admin**: System-wide analytics dashboard, shop admin management, pricing plan configuration, system analytics.
 - **Admin (Shop Owner)**: Shop performance dashboard, product & category management, sales reports, staff management, subscription management, POS access.
 - **Sales Person**: POS interface, recent sales view, product catalog access.
-- **Dashboard Features**: Stat cards (Today's Sales, Wallet Balance, Total Stock, Clients Credit), multi-period sales analytics chart, devices in repair tracking, recent sales, low stock alerts.
+- **Dashboard Features**: Stat cards (Today's Sales, Active Repairs, Total Products, Total Customers), multi-period sales analytics chart (week/month/year), devices in repair tracking, recent sales, low stock alerts. All dashboard data is fetched from real API endpoints.
 - **User Management Features**:
   - **Sales Person Management**: Admins can add, edit, and deactivate sales persons with package-based limits (Silver: 3, Gold: 10, Platinum: 50 staff).
   - **Password Reset Workflow**: Sales persons can request password resets through the login page, which creates an admin notification. Admins can approve/reject password reset requests from the Staff management page.
