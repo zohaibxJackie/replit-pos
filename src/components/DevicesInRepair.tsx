@@ -1,36 +1,49 @@
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Wrench } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
-interface Device {
+interface RepairJob {
   id: string;
-  deviceName: string;
+  ticketNumber: string;
+  deviceBrand: string;
+  deviceModel: string;
   customerName: string;
-  issue: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  estimatedDate: string;
+  defectSummary: string;
+  status: string;
+  dueDate?: string;
+  createdAt: string;
 }
 
-interface DevicesInRepairProps {
-  devices?: Device[];
+interface RepairJobsResponse {
+  repairJobs: RepairJob[];
+  pagination: {
+    total: number;
+  };
 }
 
-export default function DevicesInRepair({ devices: propDevices }: DevicesInRepairProps) {
-  //todo: remove mock functionality
-  const mockDevices: Device[] = [
-    { id: 'D001', deviceName: 'iPhone 13 Pro', customerName: 'John Doe', issue: 'Screen Replacement', status: 'in_progress', estimatedDate: '2024-10-15' },
-    { id: 'D002', deviceName: 'Samsung S21', customerName: 'Jane Smith', issue: 'Battery Issue', status: 'pending', estimatedDate: '2024-10-16' },
-    { id: 'D003', deviceName: 'iPhone 12', customerName: 'Mike Johnson', issue: 'Water Damage', status: 'in_progress', estimatedDate: '2024-10-17' },
-    { id: 'D004', deviceName: 'iPad Air', customerName: 'Sarah Williams', issue: 'Screen Crack', status: 'completed', estimatedDate: '2024-10-14' },
-  ];
+export default function DevicesInRepair() {
+  const { data, isLoading } = useQuery<RepairJobsResponse>({
+    queryKey: ['/api/repairs/jobs', { limit: 5 }]
+  });
 
-  const devices = propDevices || mockDevices;
+  const devices = data?.repairJobs || [];
 
   const getStatusConfig = (status: string) => {
-    if (status === 'completed') return { variant: 'default' as const, label: 'Completed', color: 'bg-emerald-500' };
-    if (status === 'in_progress') return { variant: 'secondary' as const, label: 'In Progress', color: 'bg-blue-500' };
-    return { variant: 'destructive' as const, label: 'Pending', color: 'bg-amber-500' };
+    switch (status) {
+      case 'completed':
+      case 'delivered':
+        return { variant: 'default' as const, label: 'Completed', color: 'bg-emerald-500' };
+      case 'in_progress':
+      case 'diagnosed':
+        return { variant: 'secondary' as const, label: 'In Progress', color: 'bg-blue-500' };
+      case 'waiting_parts':
+        return { variant: 'secondary' as const, label: 'Waiting Parts', color: 'bg-purple-500' };
+      default:
+        return { variant: 'destructive' as const, label: 'Pending', color: 'bg-amber-500' };
+    }
   };
 
   return (
@@ -42,45 +55,57 @@ export default function DevicesInRepair({ devices: propDevices }: DevicesInRepai
           </div>
           <div>
             <h3 className="font-bold text-lg">Devices in Repair</h3>
-            <p className="text-sm text-muted-foreground">Active repair queue</p>
+            <p className="text-sm text-muted-foreground">
+              {data?.pagination?.total ? `${data.pagination.total} active jobs` : 'Active repair queue'}
+            </p>
           </div>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/30">
-              <TableHead className="font-semibold">ID</TableHead>
-              <TableHead className="font-semibold">Device</TableHead>
-              <TableHead className="font-semibold">Customer</TableHead>
-              <TableHead className="font-semibold">Issue</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Est. Date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {devices.map((device) => {
-              const statusConfig = getStatusConfig(device.status);
-              return (
-                <TableRow key={device.id} className="hover:bg-muted/20">
-                  <TableCell className="font-mono text-sm font-medium">{device.id}</TableCell>
-                  <TableCell className="font-semibold">{device.deviceName}</TableCell>
-                  <TableCell>{device.customerName}</TableCell>
-                  <TableCell className="text-muted-foreground">{device.issue}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
-                      <Badge variant={statusConfig.variant} className="rounded-lg">
-                        {statusConfig.label}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">{new Date(device.estimatedDate).toLocaleDateString()}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        {isLoading ? (
+          <div className="p-6 space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : devices.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            No repair jobs in queue
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="font-semibold">Ticket</TableHead>
+                <TableHead className="font-semibold">Device</TableHead>
+                <TableHead className="font-semibold">Customer</TableHead>
+                <TableHead className="font-semibold">Issue</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {devices.map((device) => {
+                const statusConfig = getStatusConfig(device.status);
+                return (
+                  <TableRow key={device.id} className="hover:bg-muted/20" data-testid={`row-repair-${device.id}`}>
+                    <TableCell className="font-mono text-sm font-medium">{device.ticketNumber}</TableCell>
+                    <TableCell className="font-semibold">{device.deviceBrand} {device.deviceModel}</TableCell>
+                    <TableCell>{device.customerName}</TableCell>
+                    <TableCell className="text-muted-foreground max-w-[200px] truncate">{device.defectSummary}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
+                        <Badge variant={statusConfig.variant} className="rounded-lg">
+                          {statusConfig.label}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </Card>
   );

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useQuery } from '@tanstack/react-query';
 import { 
   LineChart, 
   Line, 
@@ -12,63 +14,57 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 
-type Period = 'weekly' | 'monthly' | 'yearly' | 'custom';
+type Period = 'week' | 'month' | 'year';
 
-interface SalesAnalyticsChartProps {
-  data?: any[];
+interface SalesAnalyticsResponse {
+  period: string;
+  stats: {
+    totalSales: string;
+    saleCount: number;
+    avgSale: string;
+  };
+  dailySales: Array<{
+    date: string;
+    total: string;
+    count: number;
+  }>;
 }
 
-export default function SalesAnalyticsChart({ data: propData }: SalesAnalyticsChartProps) {
-  const [period, setPeriod] = useState<Period>('weekly');
+export default function SalesAnalyticsChart() {
+  const [period, setPeriod] = useState<Period>('week');
 
-  //todo: remove mock functionality
-  const mockData = {
-    weekly: [
-      { date: 'Mon', sales: 4200, profit: 1200 },
-      { date: 'Tue', sales: 3800, profit: 1100 },
-      { date: 'Wed', sales: 5200, profit: 1800 },
-      { date: 'Thu', sales: 4600, profit: 1400 },
-      { date: 'Fri', sales: 6200, profit: 2200 },
-      { date: 'Sat', sales: 7100, profit: 2800 },
-      { date: 'Sun', sales: 5400, profit: 1900 },
-    ],
-    monthly: [
-      { date: 'Week 1', sales: 18200, profit: 5400 },
-      { date: 'Week 2', sales: 22100, profit: 6800 },
-      { date: 'Week 3', sales: 19800, profit: 5900 },
-      { date: 'Week 4', sales: 25300, profit: 7600 },
-    ],
-    yearly: [
-      { date: 'Jan', sales: 45000, profit: 12000 },
-      { date: 'Feb', sales: 52000, profit: 15000 },
-      { date: 'Mar', sales: 48000, profit: 13500 },
-      { date: 'Apr', sales: 61000, profit: 18000 },
-      { date: 'May', sales: 55000, profit: 16000 },
-      { date: 'Jun', sales: 67000, profit: 20000 },
-    ],
-    custom: [
-      { date: 'Day 1', sales: 5200, profit: 1600 },
-      { date: 'Day 2', sales: 4800, profit: 1400 },
-      { date: 'Day 3', sales: 6100, profit: 1900 },
-      { date: 'Day 4', sales: 5600, profit: 1700 },
-      { date: 'Day 5', sales: 7200, profit: 2300 },
-    ],
-  };
+  const { data, isLoading } = useQuery<SalesAnalyticsResponse>({
+    queryKey: ['/api/sales/analytics', { period }]
+  });
 
-  const data = propData || mockData[period];
+  const chartData = data?.dailySales?.map(item => ({
+    date: new Date(item.date).toLocaleDateString('en-US', { 
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    }),
+    sales: parseFloat(item.total) || 0,
+    transactions: item.count
+  })) || [];
 
   return (
     <Card className="p-6 shadow-lg border-0 bg-card">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h3 className="text-xl font-bold">Sales Analytics</h3>
-          <p className="text-sm text-muted-foreground mt-1">Revenue and profit tracking</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {data?.stats ? (
+              <>Total: ${parseFloat(data.stats.totalSales).toLocaleString()} | {data.stats.saleCount} transactions</>
+            ) : (
+              'Revenue and transaction tracking'
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button
             size="sm"
-            variant={period === 'weekly' ? 'default' : 'outline'}
-            onClick={() => setPeriod('weekly')}
+            variant={period === 'week' ? 'default' : 'outline'}
+            onClick={() => setPeriod('week')}
             className="rounded-xl"
             data-testid="button-period-weekly"
           >
@@ -76,8 +72,8 @@ export default function SalesAnalyticsChart({ data: propData }: SalesAnalyticsCh
           </Button>
           <Button
             size="sm"
-            variant={period === 'monthly' ? 'default' : 'outline'}
-            onClick={() => setPeriod('monthly')}
+            variant={period === 'month' ? 'default' : 'outline'}
+            onClick={() => setPeriod('month')}
             className="rounded-xl"
             data-testid="button-period-monthly"
           >
@@ -85,82 +81,69 @@ export default function SalesAnalyticsChart({ data: propData }: SalesAnalyticsCh
           </Button>
           <Button
             size="sm"
-            variant={period === 'yearly' ? 'default' : 'outline'}
-            onClick={() => setPeriod('yearly')}
+            variant={period === 'year' ? 'default' : 'outline'}
+            onClick={() => setPeriod('year')}
             className="rounded-xl"
             data-testid="button-period-yearly"
           >
             Yearly
           </Button>
-          <Button
-            size="sm"
-            variant={period === 'custom' ? 'default' : 'outline'}
-            onClick={() => setPeriod('custom')}
-            className="rounded-xl"
-            data-testid="button-period-custom"
-          >
-            Custom
-          </Button>
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={340}>
-        <LineChart data={data}>
-          <defs>
-            <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0}/>
-            </linearGradient>
-            <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.2} />
-          <XAxis 
-            dataKey="date" 
-            className="text-xs"
-            tick={{ fill: 'hsl(var(--muted-foreground))' }}
-          />
-          <YAxis 
-            className="text-xs"
-            tick={{ fill: 'hsl(var(--muted-foreground))' }}
-          />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '1rem',
-              boxShadow: '0px 8px 16px hsl(0 0% 0% / 0.1)'
-            }}
-            labelStyle={{ fontWeight: '600', marginBottom: '8px' }}
-          />
-          <Legend 
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="circle"
-          />
-          <Line 
-            type="monotone" 
-            dataKey="sales" 
-            stroke="hsl(var(--chart-3))" 
-            strokeWidth={3}
-            name="Sales Amount"
-            dot={{ fill: 'hsl(var(--chart-3))', strokeWidth: 2, r: 6 }}
-            activeDot={{ r: 8 }}
-            fill="url(#salesGradient)"
-          />
-          <Line 
-            type="monotone" 
-            dataKey="profit" 
-            stroke="hsl(var(--chart-4))" 
-            strokeWidth={3}
-            name="Profit Amount"
-            dot={{ fill: 'hsl(var(--chart-4))', strokeWidth: 2, r: 6 }}
-            activeDot={{ r: 8 }}
-            fill="url(#profitGradient)"
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      {isLoading ? (
+        <Skeleton className="w-full h-[340px] rounded-lg" />
+      ) : chartData.length === 0 ? (
+        <div className="w-full h-[340px] flex items-center justify-center text-muted-foreground">
+          No sales data available for this period
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={340}>
+          <LineChart data={chartData}>
+            <defs>
+              <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.2} />
+            <XAxis 
+              dataKey="date" 
+              className="text-xs"
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            />
+            <YAxis 
+              className="text-xs"
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              tickFormatter={(value) => `$${value.toLocaleString()}`}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '1rem',
+                boxShadow: '0px 8px 16px hsl(0 0% 0% / 0.1)'
+              }}
+              labelStyle={{ fontWeight: '600', marginBottom: '8px' }}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Sales']}
+            />
+            <Legend 
+              wrapperStyle={{ paddingTop: '20px' }}
+              iconType="circle"
+            />
+            <Line 
+              type="monotone" 
+              dataKey="sales" 
+              stroke="hsl(var(--chart-3))" 
+              strokeWidth={3}
+              name="Sales Amount"
+              dot={{ fill: 'hsl(var(--chart-3))', strokeWidth: 2, r: 6 }}
+              activeDot={{ r: 8 }}
+              fill="url(#salesGradient)"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </Card>
   );
 }
