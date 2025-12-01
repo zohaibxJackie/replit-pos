@@ -1,6 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import i18n from "@/config/i18n";
 
+const API_BASE_URL = 'http://localhost:3001';
+
 function getLanguageHeader(): string {
   return i18n.language || "en";
 }
@@ -40,7 +42,8 @@ export async function apiRequest<T = unknown>(
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(url, {
+  const fullUrl = url.startsWith('/') ? `${API_BASE_URL}${url}` : url;
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -66,7 +69,8 @@ export async function apiRequestRaw(
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(url, {
+  const fullUrl = url.startsWith('/') ? `${API_BASE_URL}${url}` : url;
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -136,7 +140,8 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const token = getAuthToken();
     const url = buildUrlFromQueryKey(queryKey);
-    const res = await fetch(url, {
+    const fullUrl = url.startsWith('/') ? `${API_BASE_URL}${url}` : url;
+    const res = await fetch(fullUrl, {
       credentials: "include",
       headers: {
         "Accept-Language": getLanguageHeader(),
