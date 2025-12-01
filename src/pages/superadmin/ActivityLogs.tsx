@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTitle } from '@/context/TitleContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,8 +32,13 @@ import type { ActivityLog } from '@shared/schema';
 
 export default function ActivityLogs() {
   useAuth("superAdminActivityLogs");
+  const { setTitle } = useTitle();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState('all');
+
+  useEffect(() => {
+    setTitle('Activity Logs');
+  }, [setTitle]);
   
   const [logs, setLogs] = useState<ActivityLog[]>([
     {
@@ -150,13 +156,6 @@ export default function ActivityLogs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Activity Logs</h1>
-          <p className="text-muted-foreground mt-1">Monitor all system activities and changes</p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">

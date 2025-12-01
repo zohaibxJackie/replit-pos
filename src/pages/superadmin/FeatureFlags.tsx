@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTitle } from '@/context/TitleContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,9 +37,14 @@ import type { FeatureFlag } from '@shared/schema';
 
 export default function FeatureFlags() {
   useAuth("superAdminFeatureFlags");
+  const { setTitle } = useTitle();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFlag, setEditingFlag] = useState<FeatureFlag | null>(null);
+
+  useEffect(() => {
+    setTitle('Feature Flags');
+  }, [setTitle]);
   
   const [flags, setFlags] = useState<FeatureFlag[]>([
     {
@@ -177,11 +183,7 @@ export default function FeatureFlags() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Feature Flags</h1>
-          <p className="text-muted-foreground mt-1">Manage feature toggles and rollouts</p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={handleAddFlag} data-testid="button-add-flag">
           <Plus className="w-4 h-4 mr-2" />
           Add Feature Flag

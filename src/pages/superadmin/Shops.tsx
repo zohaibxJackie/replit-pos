@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTitle } from '@/context/TitleContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,14 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { 
   Building2, 
-  Plus, 
-  Edit, 
   Trash2, 
   DollarSign, 
   Users, 
   Package,
-  Search,
-  Filter
+  Search
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -44,18 +42,25 @@ import type { Shop } from '@shared/schema';
 
 export default function ShopManagement() {
   useAuth("superAdminShops");
+  const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+
+  useEffect(() => {
+    setTitle('Shop Management');
+  }, [setTitle]);
   
   const [shops, setShops] = useState<Shop[]>([
     {
       id: '1',
       name: 'Tech Store Downtown',
       ownerId: 'owner1',
+      address: '123 Main Street',
+      phone: '+1-555-0101',
+      whatsapp: '+1-555-0101',
       subscriptionTier: 'premium',
       subscriptionStatus: 'active',
       createdAt: new Date('2024-01-15'),
@@ -64,6 +69,9 @@ export default function ShopManagement() {
       id: '2',
       name: 'Mobile Mart',
       ownerId: 'owner2',
+      address: '456 Oak Avenue',
+      phone: '+1-555-0102',
+      whatsapp: '+1-555-0102',
       subscriptionTier: 'silver',
       subscriptionStatus: 'active',
       createdAt: new Date('2024-02-20'),
@@ -72,17 +80,14 @@ export default function ShopManagement() {
       id: '3',
       name: 'Gadget Hub',
       ownerId: 'owner3',
+      address: '789 Tech Boulevard',
+      phone: '+1-555-0103',
+      whatsapp: null,
       subscriptionTier: 'gold',
       subscriptionStatus: 'expired',
       createdAt: new Date('2024-03-10'),
     },
   ]);
-
-  const [formData, setFormData] = useState({
-    name: '',
-    ownerId: '',
-    subscriptionTier: 'silver',
-  });
 
   const [assignFormData, setAssignFormData] = useState({
     subscriptionTier: '',
@@ -150,13 +155,6 @@ export default function ShopManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Shop Management</h1>
-          <p className="text-muted-foreground mt-1">Manage all shops and their subscriptions</p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">

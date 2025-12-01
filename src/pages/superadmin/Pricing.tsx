@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTitle } from '@/context/TitleContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Plus, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
@@ -29,6 +30,16 @@ interface PlanFormData {
 
 export default function PricingPlans() {
   useAuth("superAdminPricing");
+  const { setTitle } = useTitle();
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
+  const [featureInput, setFeatureInput] = useState('');
+
+  useEffect(() => {
+    setTitle('Pricing Plans');
+  }, [setTitle]);
+
   const [plans, setPlans] = useState<PricingPlan[]>([
     {
       id: 'plan-1',
@@ -64,10 +75,6 @@ export default function PricingPlans() {
       updatedAt: new Date('2024-01-15'),
     },
   ]);
-  const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
-  const [featureInput, setFeatureInput] = useState('');
   
   const [formData, setFormData] = useState<PlanFormData>({
     name: '',
@@ -198,11 +205,7 @@ export default function PricingPlans() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Pricing Plans</h1>
-          <p className="text-muted-foreground mt-1">Manage subscription tiers and packages</p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={handleAddPlan} data-testid="button-add-plan">
           <Plus className="w-4 h-4 mr-2" />
           Add Plan

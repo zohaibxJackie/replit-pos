@@ -1,11 +1,17 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTitle } from '@/context/TitleContext';
 import StatCard from '@/components/StatCard';
 import { Users, Store, DollarSign, TrendingUp } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
   useAuth("superAdminDashboard");
+  const { setTitle } = useTitle();
 
-  //todo: remove mock functionality
+  useEffect(() => {
+    setTitle('Super Admin Dashboard');
+  }, [setTitle]);
+
   const stats = {
     totalAdmins: 24,
     totalShops: 24,
@@ -15,11 +21,6 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Super Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Platform overview and analytics</p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Admins"

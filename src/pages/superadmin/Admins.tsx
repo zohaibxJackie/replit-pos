@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTitle } from '@/context/TitleContext';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,10 +37,15 @@ import type { User } from '@shared/schema';
 
 export default function ManageAdmins() {
   useAuth("superAdminAdmins");
+  const { setTitle } = useTitle();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isImpersonateDialogOpen, setIsImpersonateDialogOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
+
+  useEffect(() => {
+    setTitle('Manage Admins');
+  }, [setTitle]);
   
   const [admins, setAdmins] = useState<User[]>([
     {
@@ -209,11 +215,7 @@ export default function ManageAdmins() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Manage Admins</h1>
-          <p className="text-muted-foreground mt-1">Create and manage shop admin accounts</p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => setIsCreateDialogOpen(true)} data-testid="button-add-admin">
           <Plus className="w-4 h-4 mr-2" />
           Create Admin
@@ -277,7 +279,7 @@ export default function ManageAdmins() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="********"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="pl-10"
@@ -296,7 +298,7 @@ export default function ManageAdmins() {
                 <Input
                   id="confirm-password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="********"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   className="pl-10"

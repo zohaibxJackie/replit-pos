@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTitle } from '@/context/TitleContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +9,8 @@ import {
   Search, 
   UserCog, 
   Ban, 
-  CheckCircle,
   Users as UsersIcon,
   UserCheck,
-  UserX,
   Shield
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -44,12 +43,17 @@ import type { User } from '@shared/schema';
 
 export default function UserManagement() {
   useAuth("superAdminUsers");
+  const { setTitle } = useTitle();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<'ban' | 'impersonate' | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    setTitle('User Management');
+  }, [setTitle]);
   
   const [users, setUsers] = useState<User[]>([
     {
@@ -156,13 +160,6 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">User Management</h1>
-          <p className="text-muted-foreground mt-1">View and manage all system users</p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
