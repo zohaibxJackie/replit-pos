@@ -158,5 +158,20 @@
     "not_found": "وسائل نہیں ملے",
     "route_not_found": "راستہ نہیں ملا",
     "validation_error": "توثیق کی خرابی"
+  },
+  "middleware": {
+    "access_token_required": "رسائی ٹوکن درکار ہے",
+    "user_not_found": "صارف نہیں ملا",
+    "token_expired": "ٹوکن کی میعاد ختم ہو گئی",
+    "invalid_token": "غلط ٹوکن",
+    "authentication_required": "تصدیق درکار ہے",
+    "insufficient_permissions": "ناکافی اجازتیں",
+    "access_denied_shop": "اس دکان تک رسائی سے انکار",
+    "validation_error": "توثیق کی خرابی",
+    "duplicate_entry": "ڈپلیکیٹ اندراج",
+    "record_already_exists": "اس قدر والا ریکارڈ پہلے سے موجود ہے",
+    "foreign_key_violation": "فارن کی کی خلاف ورزی",
+    "referenced_record_not_exist": "حوالہ شدہ ریکارڈ موجود نہیں ہے",
+    "internal_server_error": "سرور کی داخلی خرابی"
   }
 }

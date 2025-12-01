@@ -158,5 +158,20 @@
     "not_found": "Resource not found",
     "route_not_found": "Route not found",
     "validation_error": "Validation error"
+  },
+  "middleware": {
+    "access_token_required": "Access token required",
+    "user_not_found": "User not found",
+    "token_expired": "Token expired",
+    "invalid_token": "Invalid token",
+    "authentication_required": "Authentication required",
+    "insufficient_permissions": "Insufficient permissions",
+    "access_denied_shop": "Access denied to this shop",
+    "validation_error": "Validation error",
+    "duplicate_entry": "Duplicate entry",
+    "record_already_exists": "A record with this value already exists",
+    "foreign_key_violation": "Foreign key violation",
+    "referenced_record_not_exist": "Referenced record does not exist",
+    "internal_server_error": "Internal server error"
   }
 }
