@@ -22,5 +22,6 @@ router.get('/:id', requireRole('super_admin', 'admin'), userController.getUserBy
 router.post('/', requireRole('super_admin', 'admin'), userController.createUser);
 router.put('/:id', requireRole('super_admin', 'admin'), userController.updateUser);
 router.delete('/:id', requireRole('super_admin', 'admin'), userController.deleteUser);
+router.post('/:id/restore', requireRole('super_admin', 'admin'), userController.restoreUser);
 
 export default router;

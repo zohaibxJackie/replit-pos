@@ -93,7 +93,10 @@
     "password_reset_failed": "Failed to reset password",
     "request_not_found": "Request not found",
     "reset_request_rejected": "Password reset request rejected",
-    "reject_failed": "Failed to reject request"
+    "reject_failed": "Failed to reject request",
+    "already_active": "User is already active",
+    "restored": "User restored successfully",
+    "restore_failed": "Failed to restore user"
   },
   "shop": {
     "fetch_failed": "Failed to fetch shops",

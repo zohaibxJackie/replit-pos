@@ -7,10 +7,16 @@ import { createNotification } from './notificationController.js';
 
 export const getUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, role, shopId, search } = req.query;
+    const { page = 1, limit = 10, role, shopId, search, includeInactive } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
 
     let conditions = [];
+
+    // Global Query Filter: Only show active users by default
+    // Unless explicitly requested to include inactive users
+    if (includeInactive !== 'true') {
+      conditions.push(eq(users.active, true));
+    }
 
     if (req.user.role !== 'super_admin') {
       conditions.push(eq(users.shopId, req.user.shopId));
@@ -527,12 +533,70 @@ export const rejectPasswordResetRequest = async (req, res) => {
   }
 };
 
+export const restoreUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [existingUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    if (!existingUser) {
+      return res.status(404).json({ error: req.t('user.not_found') });
+    }
+
+    if (req.user.role !== 'super_admin' && existingUser.shopId !== req.user.shopId) {
+      return res.status(403).json({ error: req.t('user.access_denied') });
+    }
+
+    if (existingUser.active) {
+      return res.status(400).json({ error: req.t('user.already_active') });
+    }
+
+    // Check staff limits before restoring a sales person
+    if (existingUser.role === 'sales_person') {
+      const shopId = existingUser.shopId;
+      const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
+      
+      if (shop) {
+        const [plan] = await db.select().from(pricingPlans)
+          .where(eq(pricingPlans.name, shop.subscriptionTier.charAt(0).toUpperCase() + shop.subscriptionTier.slice(1)))
+          .limit(1);
+
+        const [{ count: currentStaffCount }] = await db.select({ count: sql`count(*)::int` })
+          .from(users)
+          .where(and(
+            eq(users.shopId, shopId),
+            eq(users.role, 'sales_person'),
+            eq(users.active, true)
+          ));
+
+        const maxStaff = plan?.maxStaff || 3;
+        if (currentStaffCount >= maxStaff) {
+          return res.status(403).json({ 
+            error: req.t('user.staff_limit_reached', { tier: shop.subscriptionTier, max: maxStaff }),
+            currentCount: currentStaffCount,
+            maxAllowed: maxStaff
+          });
+        }
+      }
+    }
+
+    await db.update(users)
+      .set({ active: true, modifiedAt: new Date() })
+      .where(eq(users.id, id));
+
+    res.json({ message: req.t('user.restored') });
+  } catch (error) {
+    console.error('Restore user error:', error);
+    res.status(500).json({ error: req.t('user.restore_failed') });
+  }
+};
+
 export default { 
   getUsers, 
   getUserById, 
   createUser, 
   updateUser, 
   deleteUser,
+  restoreUser,
   getStaffLimits,
   createSalesPerson,
   getMyProfile,

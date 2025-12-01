@@ -123,6 +123,59 @@
       "coupons": "کپون کوڈز",
       "logout": "لاگ آؤٹ"
     },
+    "sales_managers": {
+      "title": "سیلز منیجر شامل کریں",
+      "info_card": {
+        "limit_text": "آپ اپنے موجودہ پلان میں {{max}} سیلز منیجرز تک شامل کر سکتے ہیں۔",
+        "current_count": "سیلز منیجرز کی موجودہ تعداد: {{count}}"
+      },
+      "table": {
+        "columns": {
+          "id": "ID",
+          "name": "نام",
+          "email": "ای میل",
+          "phone": "فون",
+          "store": "سٹور",
+          "status": "حیثیت"
+        }
+      },
+      "status": {
+        "active": "فعال",
+        "inactive": "غیر فعال"
+      },
+      "buttons": {
+        "add_sales_manager": "سیلز منیجر شامل کریں",
+        "add_staff": "عملہ شامل کریں",
+        "cancel": "منسوخ کریں",
+        "add_manager": "منیجر شامل کریں",
+        "show_inactive": "غیر فعال عملہ دکھائیں"
+      },
+      "modal": {
+        "title": "سیلز منیجر شامل کریں",
+        "fields": {
+          "name": "نام",
+          "email": "ای میل",
+          "phone": "فون",
+          "store": "سٹور"
+        }
+      },
+      "toast": {
+        "limit_reached_title": "حد تک پہنچ گیا",
+        "limit_reached_description": "آپ اپنے موجودہ پلان میں صرف {{max}} سیلز منیجرز شامل کر سکتے ہیں۔",
+        "added_title": "سیلز منیجر شامل کیا گیا",
+        "added_description": "{{name}} کامیابی سے شامل کیا گیا۔",
+        "success": "کامیابی",
+        "error": "خرابی",
+        "created_success": "سیلز پرسن کامیابی سے شامل کیا گیا",
+        "updated_success": "سیلز پرسن کامیابی سے اپ ڈیٹ کیا گیا",
+        "deactivated_success": "سیلز پرسن کامیابی سے غیر فعال کیا گیا",
+        "restored_success": "سیلز پرسن کامیابی سے بحال کیا گیا",
+        "password_reset_success": "پاس ورڈ کامیابی سے ری سیٹ کیا گیا",
+        "request_rejected": "درخواست مسترد",
+        "request_rejected_description": "پاس ورڈ ری سیٹ کی درخواست مسترد کر دی گئی",
+        "staff_limit_reached": "عملے کی حد تک پہنچ گیا"
+      }
+    },
     "dashboard": {
       "title": "دکان کا ڈیش بورڈ",
       "subtitle": "اپنی دکان کی کارکردگی کا جائزہ لیں",

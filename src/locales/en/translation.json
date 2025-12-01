@@ -397,13 +397,20 @@
           "name": "Name",
           "email": "Email",
           "phone": "Phone",
-          "store": "Store"
+          "store": "Store",
+          "status": "Status"
         }
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
       },
       "buttons": {
         "add_sales_manager": "Add Sales Manager",
+        "add_staff": "Add Staff",
         "cancel": "Cancel",
-        "add_manager": "Add Manager"
+        "add_manager": "Add Manager",
+        "show_inactive": "Show inactive staff"
       },
       "modal": {
         "title": "Add Sales Manager",
@@ -418,7 +425,17 @@
         "limit_reached_title": "Limit Reached",
         "limit_reached_description": "You can only add {{max}} Sales Managers in your current plan.",
         "added_title": "Sales Manager Added",
-        "added_description": "{{name}} has been added successfully."
+        "added_description": "{{name}} has been added successfully.",
+        "success": "Success",
+        "error": "Error",
+        "created_success": "Sales person added successfully",
+        "updated_success": "Sales person updated successfully",
+        "deactivated_success": "Sales person deactivated successfully",
+        "restored_success": "Sales person restored successfully",
+        "password_reset_success": "Password reset successfully",
+        "request_rejected": "Request rejected",
+        "request_rejected_description": "Password reset request has been rejected",
+        "staff_limit_reached": "Staff limit reached"
       }
     },
     "sales_detail": {

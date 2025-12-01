@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Users, AlertTriangle, Loader2, Key, X, Check, Pencil, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Users, AlertTriangle, Loader2, Key, X, Check, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -58,6 +59,7 @@ export default function SalesManagers() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SalesPerson | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -75,7 +77,7 @@ export default function SalesManagers() {
   });
 
   const { data: staffData, isLoading: staffLoading } = useQuery<{ users: SalesPerson[] }>({
-    queryKey: ['/api/users', { role: 'sales_person' }]
+    queryKey: ['/api/users', { role: 'sales_person', includeInactive: showInactive ? 'true' : 'false' }]
   });
 
   const { data: resetRequests } = useQuery<{ requests: PasswordResetRequest[] }>({
@@ -87,14 +89,14 @@ export default function SalesManagers() {
       return apiRequest('POST', '/api/users/sales-person', data);
     },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Sales person added successfully' });
+      toast({ title: t('admin.sales_managers.toast.success'), description: t('admin.sales_managers.toast.created_success') });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/users/staff-limits'] });
       setIsAddDialogOpen(false);
       resetForm();
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('admin.sales_managers.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -103,13 +105,13 @@ export default function SalesManagers() {
       return apiRequest('PUT', `/api/users/${id}`, data);
     },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Sales person updated successfully' });
+      toast({ title: t('admin.sales_managers.toast.success'), description: t('admin.sales_managers.toast.updated_success') });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsEditDialogOpen(false);
       setSelectedUser(null);
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('admin.sales_managers.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -118,12 +120,26 @@ export default function SalesManagers() {
       return apiRequest('DELETE', `/api/users/${id}`);
     },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Sales person deactivated successfully' });
+      toast({ title: t('admin.sales_managers.toast.success'), description: t('admin.sales_managers.toast.deactivated_success') });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/users/staff-limits'] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('admin.sales_managers.toast.error'), description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest('POST', `/api/users/${id}/restore`);
+    },
+    onSuccess: () => {
+      toast({ title: t('admin.sales_managers.toast.success'), description: t('admin.sales_managers.toast.restored_success') });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/staff-limits'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: t('admin.sales_managers.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -132,14 +148,14 @@ export default function SalesManagers() {
       return apiRequest('POST', `/api/users/${userId}/reset-password`, { newPassword: password, requestId });
     },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Password reset successfully' });
+      toast({ title: t('admin.sales_managers.toast.success'), description: t('admin.sales_managers.toast.password_reset_success') });
       queryClient.invalidateQueries({ queryKey: ['/api/users/password-reset-requests'] });
       setIsResetPasswordDialogOpen(false);
       setSelectedUser(null);
       setNewPassword('');
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('admin.sales_managers.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -148,11 +164,11 @@ export default function SalesManagers() {
       return apiRequest('POST', `/api/users/password-reset-requests/${requestId}/reject`);
     },
     onSuccess: () => {
-      toast({ title: 'Request rejected', description: 'Password reset request has been rejected' });
+      toast({ title: t('admin.sales_managers.toast.request_rejected'), description: t('admin.sales_managers.toast.request_rejected_description') });
       queryClient.invalidateQueries({ queryKey: ['/api/users/password-reset-requests'] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('admin.sales_managers.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -348,7 +364,18 @@ export default function SalesManagers() {
         </Card>
       )}
 
-      <div className="flex items-center justify-end gap-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="show-inactive"
+            checked={showInactive}
+            onCheckedChange={setShowInactive}
+            data-testid="switch-show-inactive"
+          />
+          <Label htmlFor="show-inactive" className="text-sm text-muted-foreground cursor-pointer">
+            {t('admin.sales_managers.buttons.show_inactive')}
+          </Label>
+        </div>
         <Button
           onClick={() => {
             resetForm();
@@ -358,7 +385,7 @@ export default function SalesManagers() {
           data-testid="button-add-staff"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Staff
+          {t('admin.sales_managers.buttons.add_staff')}
         </Button>
       </div>
 
@@ -381,14 +408,28 @@ export default function SalesManagers() {
               >
                 <Pencil className="w-4 h-4" />
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => deleteMutation.mutate(row.id)}
-                data-testid={`button-delete-${row.id}`}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              {row.active ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => deleteMutation.mutate(row.id)}
+                  disabled={deleteMutation.isPending}
+                  data-testid={`button-delete-${row.id}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => restoreMutation.mutate(row.id)}
+                  disabled={restoreMutation.isPending || !staffLimits?.canAddMore}
+                  title={!staffLimits?.canAddMore ? t('admin.sales_managers.toast.staff_limit_reached') : ''}
+                  data-testid={`button-restore-${row.id}`}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           )}
         />

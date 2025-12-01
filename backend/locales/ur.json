@@ -93,7 +93,10 @@
     "password_reset_failed": "پاس ورڈ ری سیٹ کرنے میں ناکام",
     "request_not_found": "درخواست نہیں ملی",
     "reset_request_rejected": "پاس ورڈ ری سیٹ کی درخواست مسترد",
-    "reject_failed": "درخواست مسترد کرنے میں ناکام"
+    "reject_failed": "درخواست مسترد کرنے میں ناکام",
+    "already_active": "صارف پہلے سے فعال ہے",
+    "restored": "صارف کامیابی سے بحال ہو گیا",
+    "restore_failed": "صارف کو بحال کرنے میں ناکام"
   },
   "shop": {
     "fetch_failed": "دکانیں حاصل کرنے میں ناکام",
