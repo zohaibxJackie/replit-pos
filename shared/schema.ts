@@ -1,5 +1,4 @@
 import { sql } from "drizzle-orm";
-import { bigint } from "drizzle-orm/gel-core";
 import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
@@ -16,8 +15,8 @@ export const users = pgTable("users", {
   refreshToken: text("refresh_token"),
   active: boolean("active").notNull().default(true),
   maxShops: integer("max_shops").notNull().default(1),
-  createdAt: timestamp("created_at").defaultNow(),
-  modifiedAt: timestamp("modified_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const loginHistory = pgTable("login_history", {
@@ -25,7 +24,7 @@ export const loginHistory = pgTable("login_history", {
   userId: varchar("user_id").notNull(),
   ipAddress: text("ip_address"),
   deviceInfo: text("device_info"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const shops = pgTable("shops", {
@@ -37,15 +36,16 @@ export const shops = pgTable("shops", {
   phone: text("phone"),
   whatsapp: text("whatsapp"),
   address: text("address"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const userShop = pgTable("user_shop", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
   shopId: varchar("shop_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const products = pgTable("products", {
@@ -57,7 +57,8 @@ export const products = pgTable("products", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   stock: integer("stock").notNull().default(0),
   lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const categories = pgTable("categories", {
@@ -67,7 +68,8 @@ export const categories = pgTable("categories", {
   type: text("type").notNull(),
   parentId: varchar("parent_id"),
   level: integer("level").notNull().default(1),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const customers = pgTable("customers", {
@@ -78,7 +80,8 @@ export const customers = pgTable("customers", {
   phone: text("phone"),
   address: text("address"),
   totalPurchases: decimal("total_purchases", { precision: 10, scale: 2 }).notNull().default("0"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const sales = pgTable("sales", {
@@ -91,7 +94,7 @@ export const sales = pgTable("sales", {
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   discount: decimal("discount", { precision: 10, scale: 2 }).notNull().default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const saleItems = pgTable("sale_items", {
@@ -101,6 +104,7 @@ export const saleItems = pgTable("sale_items", {
   quantity: integer("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const pricingPlans = pgTable("pricing_plans", {
@@ -112,8 +116,8 @@ export const pricingPlans = pgTable("pricing_plans", {
   maxShops: integer("max_shops").notNull().default(1),
   features: text("features").array(),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const notifications = pgTable("notifications", {
@@ -124,7 +128,7 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(),
   isRead: boolean("is_read").notNull().default(false),
   actionUrl: text("action_url"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const activityLogs = pgTable("activity_logs", {
@@ -136,7 +140,7 @@ export const activityLogs = pgTable("activity_logs", {
   details: text("details"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const featureFlags = pgTable("feature_flags", {
@@ -145,8 +149,8 @@ export const featureFlags = pgTable("feature_flags", {
   description: text("description"),
   isEnabled: boolean("is_enabled").notNull().default(false),
   shopId: varchar("shop_id"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const wholesalerProducts = pgTable("wholesaler_products", {
@@ -162,8 +166,8 @@ export const wholesalerProducts = pgTable("wholesaler_products", {
   unit: text("unit").notNull().default("pack"),
   imageUrl: text("image_url"),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const purchaseOrderStatusEnum = pgEnum("purchase_order_status", ["pending", "approved", "rejected", "fulfilled"]);
@@ -184,8 +188,8 @@ export const purchaseOrders = pgTable("purchase_orders", {
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
   wholesalerResponse: text("wholesaler_response"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const purchaseOrderItems = pgTable("purchase_order_items", {
@@ -196,6 +200,7 @@ export const purchaseOrderItems = pgTable("purchase_order_items", {
   quantity: integer("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const dealRequestStatusEnum = pgEnum("deal_request_status", ["pending", "approved", "rejected", "negotiating"]);
@@ -210,7 +215,8 @@ export const repairPersons = pgTable("repair_persons", {
   phone: text("phone"),
   email: text("email"),
   isAvailable: boolean("is_available").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const repairJobs = pgTable("repair_jobs", {
@@ -235,11 +241,11 @@ export const repairJobs = pgTable("repair_jobs", {
   repairPersonName: text("repair_person_name"),
   autoAssign: boolean("auto_assign").notNull().default(false),
   photos: text("photos").array(),
-  dueDate: timestamp("due_date"),
-  assignedAt: timestamp("assigned_at"),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const repairPayments = pgTable("repair_payments", {
@@ -248,7 +254,7 @@ export const repairPayments = pgTable("repair_payments", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text("payment_method").notNull().default("cash"),
   note: text("note"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const dealRequests = pgTable("deal_requests", {
@@ -266,8 +272,8 @@ export const dealRequests = pgTable("deal_requests", {
   message: text("message").notNull(),
   status: dealRequestStatusEnum("status").notNull().default("pending"),
   wholesalerResponse: text("wholesaler_response"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const passwordResetStatusEnum = pgEnum("password_reset_status", ["pending", "approved", "rejected"]);
@@ -278,26 +284,27 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
   adminId: varchar("admin_id"),
   status: passwordResetStatusEnum("status").notNull().default("pending"),
   requestMessage: text("request_message"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserShopSchema = createInsertSchema(userShop).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
-export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
-export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, totalPurchases: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true, totalPurchases: true });
 export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true });
+export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true, createdAt: true });
 export const insertPricingPlanSchema = createInsertSchema(pricingPlans).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true, createdAt: true });
 export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWholesalerProductSchema = createInsertSchema(wholesalerProducts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true });
+export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true, createdAt: true });
 export const insertDealRequestSchema = createInsertSchema(dealRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertRepairPersonSchema = createInsertSchema(repairPersons).omit({ id: true, createdAt: true });
+export const insertRepairPersonSchema = createInsertSchema(repairPersons).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertRepairJobSchema = createInsertSchema(repairJobs).omit({ id: true, createdAt: true, updatedAt: true, totalPaid: true });
 export const insertRepairPaymentSchema = createInsertSchema(repairPayments).omit({ id: true, createdAt: true });
 export const insertLoginHistorySchema = createInsertSchema(loginHistory).omit({ id: true, createdAt: true });
@@ -318,6 +325,7 @@ export type InsertDealRequest = typeof dealRequests.$inferInsert;
 export type InsertRepairPerson = typeof repairPersons.$inferInsert;
 export type InsertRepairJob = typeof repairJobs.$inferInsert;
 export type InsertRepairPayment = typeof repairPayments.$inferInsert;
+export type InsertSaleItem = typeof saleItems.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Shop = typeof shops.$inferSelect;
 export type UserShop = typeof userShop.$inferSelect;

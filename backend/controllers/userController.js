@@ -314,7 +314,7 @@ export const updateUser = async (req, res) => {
     if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
     if (address !== undefined) updateData.address = address;
     if (active !== undefined) updateData.active = active;
-    updateData.modifiedAt = new Date();
+    updateData.updatedAt = new Date();
 
     const [updatedUser] = await db.update(users)
       .set(updateData)
@@ -409,7 +409,7 @@ export const updateMyProfile = async (req, res) => {
     if (phone !== undefined) updateData.phone = phone;
     if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
     if (address !== undefined) updateData.address = address;
-    updateData.modifiedAt = new Date();
+    updateData.updatedAt = new Date();
 
     const [updatedUser] = await db.update(users)
       .set(updateData)
@@ -553,7 +553,7 @@ export const resetUserPassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await db.update(users)
-      .set({ password: hashedPassword, modifiedAt: new Date() })
+      .set({ password: hashedPassword, updatedAt: new Date() })
       .where(eq(users.id, id));
 
     if (requestId) {
@@ -670,7 +670,7 @@ export const restoreUser = async (req, res) => {
     }
 
     await db.update(users)
-      .set({ active: true, modifiedAt: new Date() })
+      .set({ active: true, updatedAt: new Date() })
       .where(eq(users.id, id));
 
     res.json({ message: req.t('user.restored') });
