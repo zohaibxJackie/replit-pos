@@ -14,7 +14,6 @@ export const users = pgTable("users", {
   address: text("address"),
   refreshToken: text("refresh_token"),
   active: boolean("active").notNull().default(true),
-  maxShops: integer("max_shops").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
