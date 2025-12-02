@@ -47,30 +47,6 @@ export const userShop = pgTable("user_shop", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const products = pgTable("products", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  name: text("name").notNull(),
-  barcode: text("barcode"),
-  categoryId: varchar("category_id"),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  stock: integer("stock").notNull().default(0),
-  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-export const categories = pgTable("categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  name: text("name").notNull(),
-  type: text("type").notNull(),
-  parentId: varchar("parent_id"),
-  level: integer("level").notNull().default(1),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   shopId: varchar("shop_id").notNull(),
@@ -401,8 +377,6 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserShopSchema = createInsertSchema(userShop).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true, totalPurchases: true });
 export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true });
 export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true, createdAt: true });
@@ -430,7 +404,6 @@ export const insertUsedProductSchema = createInsertSchema(usedProducts).omit({ i
 
 export type InsertUser = typeof users.$inferInsert;
 export type InsertLoginHistory = typeof loginHistory.$inferInsert;
-export type InsertCategory = typeof categories.$inferInsert;
 export type InsertCustomer = typeof customers.$inferInsert;
 export type InsertPricingPlan = typeof pricingPlans.$inferInsert;
 export type InsertNotification = typeof notifications.$inferInsert;
@@ -456,8 +429,6 @@ export type User = typeof users.$inferSelect;
 export type Shop = typeof shops.$inferSelect;
 export type UserShop = typeof userShop.$inferSelect;
 export type InsertUserShop = typeof userShop.$inferInsert;
-export type Product = typeof products.$inferSelect;
-export type Category = typeof categories.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Sale = typeof sales.$inferSelect;
 export type SaleItem = typeof saleItems.$inferSelect;
