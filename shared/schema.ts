@@ -277,6 +277,117 @@ export const dealRequests = pgTable("deal_requests", {
 
 export const passwordResetStatusEnum = pgEnum("password_reset_status", ["pending", "approved", "rejected"]);
 
+export const productTypes = pgTable("product_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const brands = pgTable("brands", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  logo: text("logo"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const colors = pgTable("colors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  hexCode: text("hex_code"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const storageOptions = pgTable("storage_options", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  capacity: text("capacity").notNull().unique(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const productCategories = pgTable("product_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productTypeId: varchar("product_type_id").notNull(),
+  name: text("name").notNull(),
+  parentId: varchar("parent_id"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const productModels = pgTable("product_models", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productTypeId: varchar("product_type_id").notNull(),
+  brandId: varchar("brand_id").notNull(),
+  categoryId: varchar("category_id"),
+  name: text("name").notNull(),
+  modelNumber: text("model_number"),
+  specifications: text("specifications"),
+  releaseYear: integer("release_year"),
+  imageUrl: text("image_url"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const productConditionEnum = pgEnum("product_condition", ["new", "like_new", "good", "fair", "poor"]);
+
+export const shopInventory = pgTable("shop_inventory", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  productModelId: varchar("product_model_id").notNull(),
+  colorId: varchar("color_id"),
+  storageId: varchar("storage_id"),
+  imei: text("imei"),
+  serialNumber: text("serial_number"),
+  barcode: text("barcode"),
+  condition: productConditionEnum("condition").notNull().default("new"),
+  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
+  sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
+  stock: integer("stock").notNull().default(1),
+  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
+  isAvailable: boolean("is_available").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const usedProductStatusEnum = pgEnum("used_product_status", ["available", "sold", "reserved"]);
+
+export const usedProducts = pgTable("used_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  productModelId: varchar("product_model_id"),
+  brandId: varchar("brand_id"),
+  customBrand: text("custom_brand"),
+  customModel: text("custom_model"),
+  colorId: varchar("color_id"),
+  customColor: text("custom_color"),
+  storageId: varchar("storage_id"),
+  customStorage: text("custom_storage"),
+  imei: text("imei"),
+  serialNumber: text("serial_number"),
+  condition: productConditionEnum("condition").notNull(),
+  conditionNotes: text("condition_notes"),
+  sellerId: varchar("seller_id"),
+  sellerName: text("seller_name").notNull(),
+  sellerPhone: text("seller_phone"),
+  sellerIdNumber: text("seller_id_number"),
+  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }).notNull(),
+  sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }),
+  status: usedProductStatusEnum("status").notNull().default("available"),
+  photos: text("photos").array(),
+  purchaseDate: timestamp("purchase_date", { withTimezone: true }).defaultNow(),
+  soldDate: timestamp("sold_date", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const passwordResetRequests = pgTable("password_reset_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
@@ -308,6 +419,14 @@ export const insertRepairJobSchema = createInsertSchema(repairJobs).omit({ id: t
 export const insertRepairPaymentSchema = createInsertSchema(repairPayments).omit({ id: true, createdAt: true });
 export const insertLoginHistorySchema = createInsertSchema(loginHistory).omit({ id: true, createdAt: true });
 export const insertPasswordResetRequestSchema = createInsertSchema(passwordResetRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductTypeSchema = createInsertSchema(productTypes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBrandSchema = createInsertSchema(brands).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertColorSchema = createInsertSchema(colors).omit({ id: true, createdAt: true });
+export const insertStorageOptionSchema = createInsertSchema(storageOptions).omit({ id: true, createdAt: true });
+export const insertProductCategorySchema = createInsertSchema(productCategories).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductModelSchema = createInsertSchema(productModels).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertShopInventorySchema = createInsertSchema(shopInventory).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUsedProductSchema = createInsertSchema(usedProducts).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertUser = typeof users.$inferInsert;
 export type InsertLoginHistory = typeof loginHistory.$inferInsert;
@@ -325,6 +444,14 @@ export type InsertRepairPerson = typeof repairPersons.$inferInsert;
 export type InsertRepairJob = typeof repairJobs.$inferInsert;
 export type InsertRepairPayment = typeof repairPayments.$inferInsert;
 export type InsertSaleItem = typeof saleItems.$inferInsert;
+export type InsertProductType = typeof productTypes.$inferInsert;
+export type InsertBrand = typeof brands.$inferInsert;
+export type InsertColor = typeof colors.$inferInsert;
+export type InsertStorageOption = typeof storageOptions.$inferInsert;
+export type InsertProductCategory = typeof productCategories.$inferInsert;
+export type InsertProductModel = typeof productModels.$inferInsert;
+export type InsertShopInventory = typeof shopInventory.$inferInsert;
+export type InsertUsedProduct = typeof usedProducts.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Shop = typeof shops.$inferSelect;
 export type UserShop = typeof userShop.$inferSelect;
@@ -348,3 +475,11 @@ export type RepairPayment = typeof repairPayments.$inferSelect;
 export type LoginHistory = typeof loginHistory.$inferSelect;
 export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
 export type InsertPasswordResetRequest = typeof passwordResetRequests.$inferInsert;
+export type ProductType = typeof productTypes.$inferSelect;
+export type Brand = typeof brands.$inferSelect;
+export type Color = typeof colors.$inferSelect;
+export type StorageOption = typeof storageOptions.$inferSelect;
+export type ProductCategory = typeof productCategories.$inferSelect;
+export type ProductModel = typeof productModels.$inferSelect;
+export type ShopInventory = typeof shopInventory.$inferSelect;
+export type UsedProduct = typeof usedProducts.$inferSelect;
