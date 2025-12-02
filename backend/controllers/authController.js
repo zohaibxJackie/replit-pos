@@ -68,7 +68,7 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password, role, shopId, businessName, phone, whatsapp, address } = req.validatedBody;
+    const { username, email, password, role, businessName, phone, whatsapp, address } = req.validatedBody;
 
     const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existingUser) {

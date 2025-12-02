@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
+import { bigint } from "drizzle-orm/gel-core";
 import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -9,7 +9,6 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
   role: text("role").notNull(),
-  shopId: varchar("shop_id"),
   businessName: text("business_name"),
   phone: text("phone"),
   whatsapp: text("whatsapp"),

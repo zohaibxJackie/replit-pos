@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     role TEXT NOT NULL,
-    shop_id VARCHAR,
     business_name TEXT,
     phone TEXT,
     whatsapp TEXT,
@@ -15,7 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     refresh_token TEXT,
     active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now(),
-    modified_at TIMESTAMPTZ DEFAULT now()
+    modified_at TIMESTAMPTZ DEFAULT now(),
+    shop_id BIGINT
 );
 
 -- Login history table
