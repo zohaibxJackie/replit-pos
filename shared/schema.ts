@@ -109,6 +109,7 @@ export const pricingPlans = pgTable("pricing_plans", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   maxStaff: integer("max_staff").notNull(),
   maxProducts: integer("max_products").notNull(),
+  maxShops: integer("max_shops").notNull().default(1),
   features: text("features").array(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),

@@ -2,8 +2,11 @@
 
 -- Users indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_shop_id ON users(shop_id);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+-- User-Shop junction table indexes
+CREATE INDEX IF NOT EXISTS idx_user_shop_user_id ON user_shop(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_shop_shop_id ON user_shop(shop_id);
 
 -- Login history indexes
 CREATE INDEX IF NOT EXISTS idx_login_history_user_id ON login_history(user_id);

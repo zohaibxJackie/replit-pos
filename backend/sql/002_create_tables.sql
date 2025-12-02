@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS pricing_plans (
     price DECIMAL(10, 2) NOT NULL,
     max_staff INTEGER NOT NULL,
     max_products INTEGER NOT NULL,
+    max_shops INTEGER NOT NULL DEFAULT 1,
     features TEXT[],
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now(),
