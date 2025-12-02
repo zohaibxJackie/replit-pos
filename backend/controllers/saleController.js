@@ -7,7 +7,7 @@ export const getSales = async (req, res) => {
   try {
     const { page = 1, limit = 10, startDate, endDate, paymentMethod } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     let conditions = [eq(sales.shopId, shopId)];
 
@@ -63,7 +63,7 @@ export const getSaleById = async (req, res) => {
     const { id } = req.params;
 
     const [sale] = await db.select().from(sales).where(
-      and(eq(sales.id, id), eq(sales.shopId, req.user.shopId))
+      and(eq(sales.id, id), eq(sales.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!sale) {
@@ -88,7 +88,7 @@ export const getSaleById = async (req, res) => {
 export const createSale = async (req, res) => {
   try {
     const { customerId, paymentMethod, items, discount, tax } = req.validatedBody;
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
     const salesPersonId = req.user.id;
 
     let subtotal = 0;
@@ -161,7 +161,7 @@ export const createSale = async (req, res) => {
 
 export const getTodaySales = async (req, res) => {
   try {
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -202,7 +202,7 @@ export const getTodaySales = async (req, res) => {
 
 export const getSalesAnalytics = async (req, res) => {
   try {
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
     const { period = 'week' } = req.query;
 
     let startDate = new Date();

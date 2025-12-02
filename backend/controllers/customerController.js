@@ -7,7 +7,7 @@ export const getCustomers = async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     let conditions = [eq(customers.shopId, shopId)];
 
@@ -54,7 +54,7 @@ export const getCustomerById = async (req, res) => {
     const { id } = req.params;
 
     const [customer] = await db.select().from(customers).where(
-      and(eq(customers.id, id), eq(customers.shopId, req.user.shopId))
+      and(eq(customers.id, id), eq(customers.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!customer) {
@@ -79,7 +79,7 @@ export const createCustomer = async (req, res) => {
     const { name, email, phone, address } = req.validatedBody;
 
     const [newCustomer] = await db.insert(customers).values({
-      shopId: req.user.shopId,
+      shopId: req.userShopIds?.[0],
       name,
       email,
       phone,
@@ -99,7 +99,7 @@ export const updateCustomer = async (req, res) => {
     const { name, email, phone, address } = req.body;
 
     const [existingCustomer] = await db.select().from(customers).where(
-      and(eq(customers.id, id), eq(customers.shopId, req.user.shopId))
+      and(eq(customers.id, id), eq(customers.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingCustomer) {
@@ -129,7 +129,7 @@ export const deleteCustomer = async (req, res) => {
     const { id } = req.params;
 
     const [existingCustomer] = await db.select().from(customers).where(
-      and(eq(customers.id, id), eq(customers.shopId, req.user.shopId))
+      and(eq(customers.id, id), eq(customers.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingCustomer) {

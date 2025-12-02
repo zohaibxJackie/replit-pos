@@ -7,7 +7,7 @@ export const getRepairJobs = async (req, res) => {
   try {
     const { page = 1, limit = 10, status, priority, repairPersonId, search } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     let conditions = [eq(repairJobs.shopId, shopId)];
 
@@ -68,7 +68,7 @@ export const getRepairJobById = async (req, res) => {
     const { id } = req.params;
 
     const [job] = await db.select().from(repairJobs).where(
-      and(eq(repairJobs.id, id), eq(repairJobs.shopId, req.user.shopId))
+      and(eq(repairJobs.id, id), eq(repairJobs.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!job) {
@@ -101,7 +101,7 @@ export const createRepairJob = async (req, res) => {
       priority, estimatedCost, advancePayment, repairPersonId, autoAssign, dueDate
     } = req.validatedBody;
 
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
     const ticketNumber = generateTicketNumber('REP');
 
     let assignedRepairPersonId = repairPersonId;
@@ -170,7 +170,7 @@ export const updateRepairJob = async (req, res) => {
     const { status, repairPersonId, estimatedCost, notes } = req.body;
 
     const [existingJob] = await db.select().from(repairJobs).where(
-      and(eq(repairJobs.id, id), eq(repairJobs.shopId, req.user.shopId))
+      and(eq(repairJobs.id, id), eq(repairJobs.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingJob) {
@@ -225,7 +225,7 @@ export const addRepairPayment = async (req, res) => {
     const { amount, paymentMethod, note } = req.validatedBody;
 
     const [existingJob] = await db.select().from(repairJobs).where(
-      and(eq(repairJobs.id, id), eq(repairJobs.shopId, req.user.shopId))
+      and(eq(repairJobs.id, id), eq(repairJobs.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingJob) {
@@ -254,7 +254,7 @@ export const addRepairPayment = async (req, res) => {
 
 export const getRepairPersons = async (req, res) => {
   try {
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     const persons = await db.select()
       .from(repairPersons)
@@ -273,7 +273,7 @@ export const createRepairPerson = async (req, res) => {
     const { name, phone, email, isAvailable } = req.validatedBody;
 
     const [newPerson] = await db.insert(repairPersons).values({
-      shopId: req.user.shopId,
+      shopId: req.userShopIds?.[0],
       name,
       phone,
       email,
@@ -293,7 +293,7 @@ export const updateRepairPerson = async (req, res) => {
     const { name, phone, email, isAvailable } = req.body;
 
     const [existingPerson] = await db.select().from(repairPersons).where(
-      and(eq(repairPersons.id, id), eq(repairPersons.shopId, req.user.shopId))
+      and(eq(repairPersons.id, id), eq(repairPersons.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingPerson) {
@@ -323,7 +323,7 @@ export const deleteRepairPerson = async (req, res) => {
     const { id } = req.params;
 
     const [existingPerson] = await db.select().from(repairPersons).where(
-      and(eq(repairPersons.id, id), eq(repairPersons.shopId, req.user.shopId))
+      and(eq(repairPersons.id, id), eq(repairPersons.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingPerson) {

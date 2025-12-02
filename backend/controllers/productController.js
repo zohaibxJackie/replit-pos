@@ -7,7 +7,7 @@ export const getProducts = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, categoryId, lowStock } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     let conditions = [eq(products.shopId, shopId)];
 
@@ -61,7 +61,7 @@ export const getProductById = async (req, res) => {
     const { id } = req.params;
 
     const [product] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, req.user.shopId))
+      and(eq(products.id, id), eq(products.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!product) {
@@ -86,7 +86,7 @@ export const getProductByBarcode = async (req, res) => {
     const { barcode } = req.params;
 
     const [product] = await db.select().from(products).where(
-      and(eq(products.barcode, barcode), eq(products.shopId, req.user.shopId))
+      and(eq(products.barcode, barcode), eq(products.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!product) {
@@ -106,7 +106,7 @@ export const createProduct = async (req, res) => {
 
     if (barcode) {
       const [existing] = await db.select().from(products).where(
-        and(eq(products.barcode, barcode), eq(products.shopId, req.user.shopId))
+        and(eq(products.barcode, barcode), eq(products.shopId, req.userShopIds?.[0]))
       ).limit(1);
       if (existing) {
         return res.status(409).json({ error: req.t('product.barcode_exists') });
@@ -114,7 +114,7 @@ export const createProduct = async (req, res) => {
     }
 
     const [newProduct] = await db.insert(products).values({
-      shopId: req.user.shopId,
+      shopId: req.userShopIds?.[0],
       name,
       barcode,
       categoryId,
@@ -136,7 +136,7 @@ export const updateProduct = async (req, res) => {
     const { name, barcode, categoryId, price, lowStockThreshold } = req.body;
 
     const [existingProduct] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, req.user.shopId))
+      and(eq(products.id, id), eq(products.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingProduct) {
@@ -168,7 +168,7 @@ export const updateStock = async (req, res) => {
     const { quantity, type } = req.validatedBody;
 
     const [existingProduct] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, req.user.shopId))
+      and(eq(products.id, id), eq(products.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingProduct) {
@@ -210,7 +210,7 @@ export const deleteProduct = async (req, res) => {
     const { id } = req.params;
 
     const [existingProduct] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, req.user.shopId))
+      and(eq(products.id, id), eq(products.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingProduct) {
@@ -228,7 +228,7 @@ export const deleteProduct = async (req, res) => {
 
 export const getLowStockProducts = async (req, res) => {
   try {
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     const lowStockProducts = await db.select()
       .from(products)

@@ -172,7 +172,7 @@ export const getPurchaseOrders = async (req, res) => {
     if (req.user.role === 'wholesaler') {
       conditions.push(eq(purchaseOrders.wholesalerId, req.user.id));
     } else {
-      conditions.push(eq(purchaseOrders.shopId, req.user.shopId));
+      conditions.push(eq(purchaseOrders.shopId, req.userShopIds?.[0]));
     }
 
     if (status) {
@@ -219,7 +219,7 @@ export const getPurchaseOrderById = async (req, res) => {
 
     if (req.user.role !== 'super_admin' &&
         order.wholesalerId !== req.user.id &&
-        order.shopId !== req.user.shopId) {
+        order.shopId !== req.userShopIds?.[0]) {
       return res.status(403).json({ error: req.t('wholesaler.access_denied') });
     }
 
@@ -235,7 +235,7 @@ export const getPurchaseOrderById = async (req, res) => {
 export const createPurchaseOrder = async (req, res) => {
   try {
     const { wholesalerId, contactPerson, items, notes } = req.validatedBody;
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {
@@ -341,7 +341,7 @@ export const getDealRequests = async (req, res) => {
     if (req.user.role === 'wholesaler') {
       conditions.push(eq(dealRequests.wholesalerId, req.user.id));
     } else {
-      conditions.push(eq(dealRequests.shopId, req.user.shopId));
+      conditions.push(eq(dealRequests.shopId, req.userShopIds?.[0]));
     }
 
     if (status) {
@@ -379,7 +379,7 @@ export const getDealRequests = async (req, res) => {
 export const createDealRequest = async (req, res) => {
   try {
     const { wholesalerId, wholesalerProductId, productName, requestedDiscount, requestedPrice, quantity, message } = req.validatedBody;
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
 
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {

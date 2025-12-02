@@ -4,7 +4,7 @@ import { eq, and, desc, sql, isNull } from 'drizzle-orm';
 
 export const getCategories = async (req, res) => {
   try {
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0];
     const { type, parentId } = req.query;
 
     let conditions = [eq(categories.shopId, shopId)];
@@ -36,7 +36,7 @@ export const getCategoryById = async (req, res) => {
     const { id } = req.params;
 
     const [category] = await db.select().from(categories).where(
-      and(eq(categories.id, id), eq(categories.shopId, req.user.shopId))
+      and(eq(categories.id, id), eq(categories.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!category) {
@@ -69,7 +69,7 @@ export const createCategory = async (req, res) => {
     let level = 1;
     if (parentId) {
       const [parentCategory] = await db.select().from(categories).where(
-        and(eq(categories.id, parentId), eq(categories.shopId, req.user.shopId))
+        and(eq(categories.id, parentId), eq(categories.shopId, req.userShopIds?.[0]))
       ).limit(1);
 
       if (!parentCategory) {
@@ -79,7 +79,7 @@ export const createCategory = async (req, res) => {
     }
 
     const [newCategory] = await db.insert(categories).values({
-      shopId: req.user.shopId,
+      shopId: req.userShopIds?.[0],
       name,
       type,
       parentId: parentId || null,
@@ -99,7 +99,7 @@ export const updateCategory = async (req, res) => {
     const { name, type } = req.body;
 
     const [existingCategory] = await db.select().from(categories).where(
-      and(eq(categories.id, id), eq(categories.shopId, req.user.shopId))
+      and(eq(categories.id, id), eq(categories.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingCategory) {
@@ -127,7 +127,7 @@ export const deleteCategory = async (req, res) => {
     const { id } = req.params;
 
     const [existingCategory] = await db.select().from(categories).where(
-      and(eq(categories.id, id), eq(categories.shopId, req.user.shopId))
+      and(eq(categories.id, id), eq(categories.shopId, req.userShopIds?.[0]))
     ).limit(1);
 
     if (!existingCategory) {
