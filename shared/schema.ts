@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   address: text("address"),
   refreshToken: text("refresh_token"),
   active: boolean("active").notNull().default(true),
+  maxShops: integer("max_shops").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow(),
   modifiedAt: timestamp("modified_at").defaultNow(),
 });
@@ -37,6 +38,13 @@ export const shops = pgTable("shops", {
   phone: text("phone"),
   whatsapp: text("whatsapp"),
   address: text("address"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userShops = pgTable("user_shops", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  shopId: varchar("shop_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -275,6 +283,7 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true });
+export const insertUserShopSchema = createInsertSchema(userShops).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, totalPurchases: true });
@@ -310,6 +319,8 @@ export type InsertRepairJob = typeof repairJobs.$inferInsert;
 export type InsertRepairPayment = typeof repairPayments.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Shop = typeof shops.$inferSelect;
+export type UserShop = typeof userShops.$inferSelect;
+export type InsertUserShop = typeof userShops.$inferInsert;
 export type Product = typeof products.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Customer = typeof customers.$inferSelect;

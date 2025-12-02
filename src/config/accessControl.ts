@@ -10,6 +10,7 @@ export const AccessControl = {
     superAdminAnalytics: ["super_admin"],
 
     adminDashboard: ["admin"],
+    adminShops: ["admin"],
     adminActivityLogs: ["admin"],
     adminCloseTodayTurn: ["admin"],
     adminDrawerHistory: ["admin"],

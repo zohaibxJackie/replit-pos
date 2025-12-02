@@ -70,6 +70,7 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   admin: [
     { key: 'dashboard', url: '/admin/dashboard', icon: LayoutDashboard },
+    { key: 'my_shops', url: '/admin/shops', icon: Building2 },
     { key: 'POS', url: '/pos', icon: ShoppingCart },
     { key: 'clients', url: '/admin/customer', icon: Users },
     { key: 'providers', url: '/admin/providers', icon: UserCheck },

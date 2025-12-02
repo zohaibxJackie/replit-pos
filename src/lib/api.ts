@@ -149,6 +149,15 @@ export const api = {
     
     getStaff: (shopId: string) =>
       request(`/api/shops/${shopId}/staff`),
+    
+    getMyShops: () =>
+      request<{ shops: Array<{ id: string; name: string; phone?: string; whatsapp?: string; address?: string; subscriptionTier: string; subscriptionStatus: string; createdAt: string }>; maxShops: number; canAddMore: boolean }>('/api/shops/my-shops'),
+    
+    createAdminShop: (data: { name: string; phone?: string; whatsapp?: string; address?: string }) =>
+      request('/api/shops/admin', { method: 'POST', body: data }),
+    
+    updateAdminShop: (id: string, data: Partial<{ name: string; phone: string; whatsapp: string; address: string }>) =>
+      request(`/api/shops/admin/${id}`, { method: 'PUT', body: data }),
   },
 
   products: {

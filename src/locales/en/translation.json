@@ -87,6 +87,7 @@
     },
     "sidebar": {
       "dashboard": "Dashboard",
+      "my_shops": "My Shops",
       "POS": "POS",
       "clients": "Customer",
       "providers": "Providers",
@@ -147,6 +148,21 @@
     "dashboard": {
       "title": "Shop Dashboard",
       "subtitle": "Overview of your shop performance",
+      "filters": {
+        "all_shops": "All Shops",
+        "select_shop": "Select Shop",
+        "select_date": "Select Date",
+        "reset": "Reset",
+        "date_presets": {
+          "today": "Today",
+          "yesterday": "Yesterday",
+          "last_7_days": "Last 7 Days",
+          "last_30_days": "Last 30 Days",
+          "this_week": "This Week",
+          "this_month": "This Month",
+          "custom": "Custom Range"
+        }
+      },
       "cards": {
         "sales": {
           "title": "Today's Sales",
@@ -436,6 +452,59 @@
         "request_rejected": "Request rejected",
         "request_rejected_description": "Password reset request has been rejected",
         "staff_limit_reached": "Staff limit reached"
+      }
+    },
+    "shops": {
+      "title": "My Shops",
+      "my_shops": "My Shops",
+      "no_shops": "No Shops Yet",
+      "no_shops_description": "Get started by adding your first shop.",
+      "cards": {
+        "total_shops": "Total Shops",
+        "your_shops": "Your registered shops",
+        "shop_limit": "Shop Limit",
+        "max_allowed": "Maximum allowed by plan",
+        "available_slots": "Available Slots",
+        "slots_remaining": "Slots remaining",
+        "upgrade_for_more": "Upgrade plan for more"
+      },
+      "table": {
+        "shop_name": "Shop Name",
+        "phone": "Phone",
+        "address": "Address",
+        "tier": "Subscription",
+        "status": "Status",
+        "created": "Created",
+        "actions": "Actions"
+      },
+      "buttons": {
+        "add_shop": "Add Shop",
+        "add_first_shop": "Add Your First Shop",
+        "cancel": "Cancel",
+        "update": "Update Shop"
+      },
+      "modal": {
+        "add_title": "Add New Shop",
+        "add_description": "Create a new shop to manage your business locations.",
+        "edit_title": "Edit Shop",
+        "edit_description": "Update your shop details."
+      },
+      "form": {
+        "name": "Shop Name",
+        "name_placeholder": "Enter shop name",
+        "name_required": "Shop name is required.",
+        "phone": "Phone",
+        "phone_placeholder": "Enter phone number",
+        "whatsapp": "WhatsApp",
+        "whatsapp_placeholder": "Enter WhatsApp number",
+        "address": "Address",
+        "address_placeholder": "Enter shop address"
+      },
+      "toast": {
+        "success": "Success",
+        "error": "Error",
+        "shop_created": "Shop has been created successfully.",
+        "shop_updated": "Shop has been updated successfully."
       }
     },
     "sales_detail": {

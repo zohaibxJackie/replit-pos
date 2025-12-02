@@ -52,6 +52,7 @@ import NetProfitReport from "./pages/admin/reports/NetProfitReport";
 import SaleReturnReport from "./pages/admin/reports/SaleReturnReport";
 import Subscription from "@/pages/admin/Subscription";
 import SalesManagers from "@/pages/admin/SaleManagers";
+import AdminShops from "@/pages/admin/Shops";
 
 import POS from "@/pages/pos/POS";
 import RecentSales from "@/pages/pos/Sales";
@@ -234,6 +235,9 @@ function Router() {
       </Route>
       <Route path="/admin/sale-managers">
         <ProtectedLayout><SalesManagers /></ProtectedLayout>
+      </Route>
+      <Route path="/admin/shops">
+        <ProtectedLayout><AdminShops /></ProtectedLayout>
       </Route>
       <Route path="/admin/repair-men">
         <ProtectedLayout><RepairMen /></ProtectedLayout>
