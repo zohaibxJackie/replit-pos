@@ -1,0 +1,34 @@
+Login error: DrizzleQueryError: Failed query: select "id", "username", "password", "email", "role", "business_name", "phone", "whatsapp", "address", "refresh_token", "active", "max_shops", "created_at", "modified_at" from "users" where "users"."email" = $1 limit $2
+params: zkhan52607@gmail.com,1
+    at NodePgPreparedQuery.queryWithCache (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)     
+    at async <anonymous> (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\node-postgres\session.ts:154:19)
+    at async login (file:///D:/A%20Side%20Porjects/A%20POS%20System%20Project/POScribe/backend/controllers/authController.js:34:20) {
+  query: 'select "id", "username", "password", "email", "role", "business_name", "phone", "whatsapp", "address", "refresh_token", "active", "max_shops", "created_at", "modified_at" from "users" where "users"."email" = $1 limit $2',
+  params: [ 'zkhan52607@gmail.com', 1 ],
+  cause: error: column "max_shops" does not exist
+      at D:\A Side Porjects\A POS System Project\POScribe\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)   
+      at async <anonymous> (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (D:\A Side Porjects\A POS System Project\POScribe\node_modules\src\node-postgres\session.ts:154:19)
+      at async login (file:///D:/A%20Side%20Porjects/A%20POS%20System%20Project/POScribe/backend/controllers/authController.js:34:20) {
+    length: 110,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '131',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3827',
+    routine: 'errorMissingColumn'
+  }
+}
