@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { jwtConfig } from '../config/jwt.js';
 import { db } from '../config/database.js';
-import { users } from '../../shared/schema.js';
-import { eq } from 'drizzle-orm';
+import { users, userShop } from '../../shared/schema.js';
+import { eq, inArray } from 'drizzle-orm';
 
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -20,7 +20,12 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ error: req.t ? req.t('middleware.user_not_found') : 'User not found' });
     }
 
+    const userShops = await db.select({ shopId: userShop.shopId })
+      .from(userShop)
+      .where(eq(userShop.userId, user.id));
+    
     req.user = user;
+    req.userShopIds = userShops.map(us => us.shopId);
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -55,7 +60,7 @@ export const requireShopAccess = async (req, res, next) => {
     return next();
   }
 
-  if (shopId && req.user.shopId !== shopId) {
+  if (shopId && !req.userShopIds?.includes(shopId)) {
     return res.status(403).json({ error: req.t ? req.t('middleware.access_denied_shop') : 'Access denied to this shop' });
   }
 

@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS users (
     address TEXT,
     refresh_token TEXT,
     active BOOLEAN NOT NULL DEFAULT true,
+    max_shops INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ DEFAULT now(),
-    modified_at TIMESTAMPTZ DEFAULT now(),
-    shop_id BIGINT
+    modified_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Login history table
@@ -270,10 +270,12 @@ CREATE TABLE IF NOT EXISTS repair_payments (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- User-Shop junction table (for many-to-many relationship)
 CREATE TABLE IF NOT EXISTS user_shop (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
     user_id VARCHAR NOT NULL,
     shop_id VARCHAR NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-)
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(user_id, shop_id)
+);

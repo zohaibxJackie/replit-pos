@@ -40,11 +40,12 @@ export const shops = pgTable("shops", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const userShops = pgTable("user_shops", {
+export const userShop = pgTable("user_shop", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
   shopId: varchar("shop_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const products = pgTable("products", {
@@ -282,7 +283,7 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true });
-export const insertUserShopSchema = createInsertSchema(userShops).omit({ id: true, createdAt: true });
+export const insertUserShopSchema = createInsertSchema(userShop).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, totalPurchases: true });
@@ -318,8 +319,8 @@ export type InsertRepairJob = typeof repairJobs.$inferInsert;
 export type InsertRepairPayment = typeof repairPayments.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Shop = typeof shops.$inferSelect;
-export type UserShop = typeof userShops.$inferSelect;
-export type InsertUserShop = typeof userShops.$inferInsert;
+export type UserShop = typeof userShop.$inferSelect;
+export type InsertUserShop = typeof userShop.$inferInsert;
 export type Product = typeof products.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Customer = typeof customers.$inferSelect;

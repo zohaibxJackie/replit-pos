@@ -69,7 +69,7 @@ export function useLogin() {
     },
     onSuccess: (data) => {
       if (data.success && data.user && data.token) {
-        loginSuccess(data.user, data.token);
+        loginSuccess(data.user, data.token, data.shops || []);
       }
     },
     onSettled: () => {
@@ -89,7 +89,7 @@ export function useSignup() {
     },
     onSuccess: (data) => {
       if (data.success && data.user && data.token) {
-        loginSuccess(data.user, data.token);
+        loginSuccess(data.user, data.token, data.shops || []);
       }
     },
     onSettled: () => {

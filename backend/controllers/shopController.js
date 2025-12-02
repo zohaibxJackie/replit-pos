@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { shops, users, products, userShops } from '../../shared/schema.js';
+import { shops, users, products, userShop } from '../../shared/schema.js';
 import { eq, desc, ilike, sql, and, or, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 
@@ -72,8 +72,8 @@ export const getShopById = async (req, res) => {
       .where(eq(products.shopId, id));
 
     const [{ staffCount }] = await db.select({ staffCount: sql`count(*)::int` })
-      .from(users)
-      .where(eq(users.shopId, id));
+      .from(userShop)
+      .where(eq(userShop.shopId, id));
 
     res.json({
       shop,
@@ -101,9 +101,10 @@ export const createShop = async (req, res) => {
       subscriptionTier: subscriptionTier || 'silver'
     }).returning();
 
-    if (!req.user.shopId) {
-      await db.update(users).set({ shopId: newShop.id }).where(eq(users.id, req.user.id));
-    }
+    await db.insert(userShop).values({
+      userId: req.user.id,
+      shopId: newShop.id
+    });
 
     res.status(201).json({ shop: newShop });
   } catch (error) {
@@ -170,9 +171,9 @@ export const getMyShops = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    const myUserShops = await db.select({ shopId: userShops.shopId })
-      .from(userShops)
-      .where(eq(userShops.userId, userId));
+    const myUserShops = await db.select({ shopId: userShop.shopId })
+      .from(userShop)
+      .where(eq(userShop.userId, userId));
     
     const shopIds = myUserShops.map(us => us.shopId);
     
@@ -212,9 +213,9 @@ export const createAdminShop = async (req, res) => {
     const [userData] = await db.select({ maxShops: users.maxShops }).from(users).where(eq(users.id, userId)).limit(1);
     const maxShops = userData?.maxShops || 1;
     
-    const myUserShops = await db.select({ shopId: userShops.shopId })
-      .from(userShops)
-      .where(eq(userShops.userId, userId));
+    const myUserShops = await db.select({ shopId: userShop.shopId })
+      .from(userShop)
+      .where(eq(userShop.userId, userId));
     
     const ownedShops = await db.select({ id: shops.id }).from(shops).where(eq(shops.ownerId, userId));
     
@@ -240,14 +241,10 @@ export const createAdminShop = async (req, res) => {
       subscriptionTier: 'silver'
     }).returning();
     
-    await db.insert(userShops).values({
+    await db.insert(userShop).values({
       userId,
       shopId: newShop.id
     });
-    
-    if (!req.user.shopId) {
-      await db.update(users).set({ shopId: newShop.id }).where(eq(users.id, userId));
-    }
 
     res.status(201).json({ shop: newShop });
   } catch (error) {
@@ -268,7 +265,7 @@ export const updateAdminShop = async (req, res) => {
     }
 
     const hasAccess = existingShop.ownerId === userId || 
-      (await db.select().from(userShops).where(and(eq(userShops.userId, userId), eq(userShops.shopId, id))).limit(1)).length > 0;
+      (await db.select().from(userShop).where(and(eq(userShop.userId, userId), eq(userShop.shopId, id))).limit(1)).length > 0;
     
     if (!hasAccess && req.user.role !== 'super_admin') {
       return res.status(403).json({ error: req.t('shop.access_denied') });

@@ -1,9 +1,21 @@
 import bcrypt from 'bcryptjs';
 import { db } from '../config/database.js';
-import { users, shops, pricingPlans, passwordResetRequests, notifications } from '../../shared/schema.js';
-import { eq, and, or, ilike, desc, sql, ne } from 'drizzle-orm';
+import { users, shops, pricingPlans, passwordResetRequests, notifications, userShop } from '../../shared/schema.js';
+import { eq, and, or, ilike, desc, sql, ne, inArray } from 'drizzle-orm';
 import { sanitizeUser, paginationHelper } from '../utils/helpers.js';
 import { createNotification } from './notificationController.js';
+
+const getUserShopIds = async (userId) => {
+  const userShops = await db.select({ shopId: userShop.shopId })
+    .from(userShop)
+    .where(eq(userShop.userId, userId));
+  return userShops.map(us => us.shopId);
+};
+
+const getPrimaryShopId = async (userId) => {
+  const shopIds = await getUserShopIds(userId);
+  return shopIds.length > 0 ? shopIds[0] : null;
+};
 
 export const getUsers = async (req, res) => {
   try {
@@ -19,9 +31,25 @@ export const getUsers = async (req, res) => {
     }
 
     if (req.user.role !== 'super_admin') {
-      conditions.push(eq(users.shopId, req.user.shopId));
+      if (req.userShopIds && req.userShopIds.length > 0) {
+        const usersInShops = await db.select({ userId: userShop.userId })
+          .from(userShop)
+          .where(inArray(userShop.shopId, req.userShopIds));
+        const userIdsInShops = usersInShops.map(u => u.userId);
+        if (userIdsInShops.length > 0) {
+          conditions.push(inArray(users.id, userIdsInShops));
+        } else {
+          conditions.push(eq(users.id, req.user.id));
+        }
+      }
     } else if (shopId) {
-      conditions.push(eq(users.shopId, shopId));
+      const usersInShop = await db.select({ userId: userShop.userId })
+        .from(userShop)
+        .where(eq(userShop.shopId, shopId));
+      const userIdsInShop = usersInShop.map(u => u.userId);
+      if (userIdsInShop.length > 0) {
+        conditions.push(inArray(users.id, userIdsInShop));
+      }
     }
 
     if (role) {
@@ -81,8 +109,12 @@ export const getUserById = async (req, res) => {
       return res.status(404).json({ error: req.t('user.not_found') });
     }
 
-    if (req.user.role !== 'super_admin' && user.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: req.t('user.access_denied') });
+    if (req.user.role !== 'super_admin') {
+      const userShopIds = await getUserShopIds(user.id);
+      const hasSharedShop = userShopIds.some(id => req.userShopIds?.includes(id));
+      if (!hasSharedShop) {
+        return res.status(403).json({ error: req.t('user.access_denied') });
+      }
     }
 
     res.json({ user: sanitizeUser(user) });
@@ -94,7 +126,11 @@ export const getUserById = async (req, res) => {
 
 export const getStaffLimits = async (req, res) => {
   try {
-    const shopId = req.user.shopId;
+    const shopId = req.userShopIds?.[0] || await getPrimaryShopId(req.user.id);
+    
+    if (!shopId) {
+      return res.status(404).json({ error: req.t('user.shop_not_found') });
+    }
     
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {
@@ -105,10 +141,15 @@ export const getStaffLimits = async (req, res) => {
       .where(eq(pricingPlans.name, shop.subscriptionTier.charAt(0).toUpperCase() + shop.subscriptionTier.slice(1)))
       .limit(1);
 
+    const usersInShop = await db.select({ userId: userShop.userId })
+      .from(userShop)
+      .where(eq(userShop.shopId, shopId));
+    const userIdsInShop = usersInShop.map(u => u.userId);
+    
     const [{ count: currentStaffCount }] = await db.select({ count: sql`count(*)::int` })
       .from(users)
       .where(and(
-        eq(users.shopId, shopId),
+        inArray(users.id, userIdsInShop.length > 0 ? userIdsInShop : ['']),
         eq(users.role, 'sales_person'),
         eq(users.active, true)
       ));
@@ -131,8 +172,12 @@ export const getStaffLimits = async (req, res) => {
 
 export const createSalesPerson = async (req, res) => {
   try {
-    const { username, email, password, phone, whatsapp, address } = req.body;
-    const shopId = req.user.shopId;
+    const { username, email, password, phone, whatsapp, address, shopId: requestShopId } = req.body;
+    const shopId = requestShopId || req.userShopIds?.[0] || await getPrimaryShopId(req.user.id);
+
+    if (!shopId) {
+      return res.status(404).json({ error: req.t('user.shop_not_found') });
+    }
 
     const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
     if (!shop) {
@@ -143,10 +188,15 @@ export const createSalesPerson = async (req, res) => {
       .where(eq(pricingPlans.name, shop.subscriptionTier.charAt(0).toUpperCase() + shop.subscriptionTier.slice(1)))
       .limit(1);
 
+    const usersInShop = await db.select({ userId: userShop.userId })
+      .from(userShop)
+      .where(eq(userShop.shopId, shopId));
+    const userIdsInShop = usersInShop.map(u => u.userId);
+    
     const [{ count: currentStaffCount }] = await db.select({ count: sql`count(*)::int` })
       .from(users)
       .where(and(
-        eq(users.shopId, shopId),
+        inArray(users.id, userIdsInShop.length > 0 ? userIdsInShop : ['']),
         eq(users.role, 'sales_person'),
         eq(users.active, true)
       ));
@@ -177,11 +227,15 @@ export const createSalesPerson = async (req, res) => {
       email,
       password: hashedPassword,
       role: 'sales_person',
-      shopId,
       phone,
       whatsapp,
       address
     }).returning();
+
+    await db.insert(userShop).values({
+      userId: newUser.id,
+      shopId
+    });
 
     res.status(201).json({ 
       user: sanitizeUser(newUser),
@@ -206,19 +260,25 @@ export const createUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const assignedShopId = req.user.role === 'super_admin' ? shopId : req.user.shopId;
+    const assignedShopId = req.user.role === 'super_admin' ? shopId : (req.userShopIds?.[0] || await getPrimaryShopId(req.user.id));
 
     const [newUser] = await db.insert(users).values({
       username,
       email,
       password: hashedPassword,
       role,
-      shopId: assignedShopId,
       businessName,
       phone,
       whatsapp,
       address
     }).returning();
+
+    if (assignedShopId) {
+      await db.insert(userShop).values({
+        userId: newUser.id,
+        shopId: assignedShopId
+      });
+    }
 
     res.status(201).json({ user: sanitizeUser(newUser) });
   } catch (error) {
@@ -237,8 +297,12 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ error: req.t('user.not_found') });
     }
 
-    if (req.user.role !== 'super_admin' && existingUser.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: req.t('user.access_denied') });
+    if (req.user.role !== 'super_admin') {
+      const targetUserShopIds = await getUserShopIds(existingUser.id);
+      const hasSharedShop = targetUserShopIds.some(id => req.userShopIds?.includes(id));
+      if (!hasSharedShop) {
+        return res.status(403).json({ error: req.t('user.access_denied') });
+      }
     }
 
     const updateData = {};
@@ -273,8 +337,12 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ error: req.t('user.not_found') });
     }
 
-    if (req.user.role !== 'super_admin' && existingUser.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: req.t('user.access_denied') });
+    if (req.user.role !== 'super_admin') {
+      const targetUserShopIds = await getUserShopIds(existingUser.id);
+      const hasSharedShop = targetUserShopIds.some(id => req.userShopIds?.includes(id));
+      if (!hasSharedShop) {
+        return res.status(403).json({ error: req.t('user.access_denied') });
+      }
     }
 
     if (existingUser.role === 'super_admin') {
@@ -298,13 +366,14 @@ export const getMyProfile = async (req, res) => {
       return res.status(404).json({ error: req.t('user.not_found') });
     }
 
-    let shop = null;
-    if (user.shopId) {
-      const [shopData] = await db.select().from(shops).where(eq(shops.id, user.shopId)).limit(1);
-      shop = shopData;
+    const userShopIds = await getUserShopIds(user.id);
+    let userShops = [];
+    if (userShopIds.length > 0) {
+      userShops = await db.select().from(shops).where(inArray(shops.id, userShopIds));
     }
+    const primaryShop = userShops.length > 0 ? userShops[0] : null;
 
-    res.json({ user: sanitizeUser(user), shop });
+    res.json({ user: sanitizeUser(user), shop: primaryShop, shops: userShops });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ error: req.t('user.profile_fetch_failed') });
@@ -374,7 +443,12 @@ export const requestPasswordReset = async (req, res) => {
       return res.status(409).json({ error: req.t('user.pending_reset_exists') });
     }
 
-    const [shop] = await db.select().from(shops).where(eq(shops.id, req.user.shopId)).limit(1);
+    const userShopIds = await getUserShopIds(req.user.id);
+    if (userShopIds.length === 0) {
+      return res.status(404).json({ error: req.t('user.shop_not_found') });
+    }
+    
+    const [shop] = await db.select().from(shops).where(eq(shops.id, userShopIds[0])).limit(1);
     if (!shop) {
       return res.status(404).json({ error: req.t('user.shop_not_found') });
     }
@@ -464,8 +538,12 @@ export const resetUserPassword = async (req, res) => {
       return res.status(404).json({ error: req.t('user.not_found') });
     }
 
-    if (req.user.role !== 'super_admin' && targetUser.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: req.t('user.access_denied') });
+    if (req.user.role !== 'super_admin') {
+      const targetUserShopIds = await getUserShopIds(targetUser.id);
+      const hasSharedShop = targetUserShopIds.some(id => req.userShopIds?.includes(id));
+      if (!hasSharedShop) {
+        return res.status(403).json({ error: req.t('user.access_denied') });
+      }
     }
 
     if (req.user.role === 'admin' && targetUser.role !== 'sales_person') {
@@ -542,17 +620,24 @@ export const restoreUser = async (req, res) => {
       return res.status(404).json({ error: req.t('user.not_found') });
     }
 
-    if (req.user.role !== 'super_admin' && existingUser.shopId !== req.user.shopId) {
-      return res.status(403).json({ error: req.t('user.access_denied') });
+    if (req.user.role !== 'super_admin') {
+      const targetUserShopIds = await getUserShopIds(existingUser.id);
+      const hasSharedShop = targetUserShopIds.some(id => req.userShopIds?.includes(id));
+      if (!hasSharedShop) {
+        return res.status(403).json({ error: req.t('user.access_denied') });
+      }
     }
 
     if (existingUser.active) {
       return res.status(400).json({ error: req.t('user.already_active') });
     }
 
-    // Check staff limits before restoring a sales person
     if (existingUser.role === 'sales_person') {
-      const shopId = existingUser.shopId;
+      const shopIds = await getUserShopIds(existingUser.id);
+      if (shopIds.length === 0) {
+        return res.status(400).json({ error: req.t('user.shop_not_found') });
+      }
+      const shopId = shopIds[0];
       const [shop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
       
       if (shop) {
@@ -560,10 +645,15 @@ export const restoreUser = async (req, res) => {
           .where(eq(pricingPlans.name, shop.subscriptionTier.charAt(0).toUpperCase() + shop.subscriptionTier.slice(1)))
           .limit(1);
 
+        const usersInShop = await db.select({ userId: userShop.userId })
+          .from(userShop)
+          .where(eq(userShop.shopId, shopId));
+        const userIdsInShop = usersInShop.map(u => u.userId);
+        
         const [{ count: currentStaffCount }] = await db.select({ count: sql`count(*)::int` })
           .from(users)
           .where(and(
-            eq(users.shopId, shopId),
+            inArray(users.id, userIdsInShop.length > 0 ? userIdsInShop : ['']),
             eq(users.role, 'sales_person'),
             eq(users.active, true)
           ));
