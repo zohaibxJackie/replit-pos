@@ -40,6 +40,12 @@ The application features a modern, luxurious, and premium design inspired by hig
   - Translation helper (`backend/utils/i18n.js`) with parameter interpolation and fallback mechanism
   - All API responses return localized error/success messages based on user's language preference
 
+### Database Schema Design
+- **Timezone-Aware Timestamps**: All timestamp columns use `TIMESTAMPTZ` (with timezone) for explicit UTC storage and consistent timezone handling across the application.
+- **Many-to-Many User-Shop Relationship**: Users and shops are linked via the `user_shop` junction table, allowing a user to belong to multiple shops.
+- **Auth Middleware Pattern**: The auth middleware sets `req.userShopIds` as an array of shop IDs associated with the authenticated user. Controllers access the primary shop with `req.userShopIds?.[0]`.
+- **Consistent updatedAt Columns**: All mutable tables include `updatedAt` columns. Immutable/audit tables (sales, loginHistory, activityLogs, repairPayments, notifications) intentionally omit them.
+
 ### System Design Choices
 - **API Architecture**: Organized into `config`, `controllers`, `middleware`, `routes`, `validators`, `sql`, `scripts`, `utils` directories.
 - **Role-Based Access Control (RBAC)**: Centralized AccessControl system in `src/config/accessControl.ts`:
