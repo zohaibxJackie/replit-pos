@@ -1,7 +1,42 @@
 import { db } from '../config/database.js';
-import { shops, users, products, userShop } from '../../shared/schema.js';
+import { shops, users, products, userShop, pricingPlans } from '../../shared/schema.js';
 import { eq, desc, ilike, sql, and, or, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
+
+const getMaxShopsFromPlan = async (userId) => {
+  const ownedShops = await db.select().from(shops).where(eq(shops.ownerId, userId));
+  
+  if (ownedShops.length === 0) {
+    const [defaultPlan] = await db.select().from(pricingPlans)
+      .where(eq(pricingPlans.name, 'Silver'))
+      .limit(1);
+    return defaultPlan?.maxShops || 1;
+  }
+  
+  const primaryShop = ownedShops[0];
+  const tierName = primaryShop.subscriptionTier.charAt(0).toUpperCase() + primaryShop.subscriptionTier.slice(1);
+  
+  const [plan] = await db.select().from(pricingPlans)
+    .where(eq(pricingPlans.name, tierName))
+    .limit(1);
+  
+  return plan?.maxShops || 1;
+};
+
+const getAdminShopCount = async (userId) => {
+  const myUserShops = await db.select({ shopId: userShop.shopId })
+    .from(userShop)
+    .where(eq(userShop.userId, userId));
+  
+  const ownedShops = await db.select({ id: shops.id }).from(shops).where(eq(shops.ownerId, userId));
+  
+  const uniqueShopIds = new Set([
+    ...myUserShops.map(us => us.shopId),
+    ...ownedShops.map(s => s.id)
+  ]);
+  
+  return uniqueShopIds.size;
+};
 
 export const getShops = async (req, res) => {
   try {
@@ -91,10 +126,22 @@ export const getShopById = async (req, res) => {
 export const createShop = async (req, res) => {
   try {
     const { name, phone, whatsapp, address, subscriptionTier } = req.validatedBody;
+    const userId = req.user.id;
+
+    const maxShops = await getMaxShopsFromPlan(userId);
+    const currentShops = await getAdminShopCount(userId);
+
+    if (currentShops >= maxShops) {
+      return res.status(400).json({ 
+        error: req.t('shop.max_shops_reached'),
+        maxShops,
+        currentShops
+      });
+    }
 
     const [newShop] = await db.insert(shops).values({
       name,
-      ownerId: req.user.id,
+      ownerId: userId,
       phone,
       whatsapp,
       address,
@@ -102,7 +149,7 @@ export const createShop = async (req, res) => {
     }).returning();
 
     await db.insert(userShop).values({
-      userId: req.user.id,
+      userId,
       shopId: newShop.id
     });
 
@@ -191,8 +238,7 @@ export const getMyShops = async (req, res) => {
       });
     }
     
-    const [userData] = await db.select({ maxShops: users.maxShops }).from(users).where(eq(users.id, userId)).limit(1);
-    const maxShops = userData?.maxShops || 1;
+    const maxShops = await getMaxShopsFromPlan(userId);
     
     res.json({
       shops: allShops,
@@ -210,27 +256,19 @@ export const createAdminShop = async (req, res) => {
     const { name, phone, whatsapp, address } = req.body;
     const userId = req.user.id;
     
-    const [userData] = await db.select({ maxShops: users.maxShops }).from(users).where(eq(users.id, userId)).limit(1);
-    const maxShops = userData?.maxShops || 1;
+    const maxShops = await getMaxShopsFromPlan(userId);
+    const currentShops = await getAdminShopCount(userId);
     
-    const myUserShops = await db.select({ shopId: userShop.shopId })
-      .from(userShop)
-      .where(eq(userShop.userId, userId));
-    
-    const ownedShops = await db.select({ id: shops.id }).from(shops).where(eq(shops.ownerId, userId));
-    
-    const totalShops = new Set([
-      ...myUserShops.map(us => us.shopId),
-      ...ownedShops.map(s => s.id)
-    ]).size;
-    
-    if (totalShops >= maxShops) {
+    if (currentShops >= maxShops) {
       return res.status(400).json({ 
         error: req.t('shop.max_shops_reached'),
         maxShops,
-        currentShops: totalShops
+        currentShops
       });
     }
+    
+    const ownedShops = await db.select().from(shops).where(eq(shops.ownerId, userId));
+    const subscriptionTier = ownedShops.length > 0 ? ownedShops[0].subscriptionTier : 'silver';
     
     const [newShop] = await db.insert(shops).values({
       name,
@@ -238,7 +276,7 @@ export const createAdminShop = async (req, res) => {
       phone,
       whatsapp,
       address,
-      subscriptionTier: 'silver'
+      subscriptionTier
     }).returning();
     
     await db.insert(userShop).values({
