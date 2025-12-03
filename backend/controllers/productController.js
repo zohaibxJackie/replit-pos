@@ -194,14 +194,21 @@ export const createProduct = async (req, res) => {
     // Use shopId from request body if provided, otherwise fall back to user's first shop
     const shopId = requestedShopId || req.userShopIds?.[0];
 
+    // Debug logging
+    console.log('Create product - User:', req.user?.username, 'Role:', req.user?.role);
+    console.log('Create product - Requested shopId:', requestedShopId);
+    console.log('Create product - User shopIds:', req.userShopIds);
+    console.log('Create product - Final shopId:', shopId);
+
     if (!shopId) {
-      return res.status(400).json({ error: 'Shop ID is required' });
+      return res.status(400).json({ error: req.t ? req.t('product.shop_required') : 'Shop ID is required' });
     }
 
-    // Super admins have access to all shops, others need to be assigned to the shop
-    const isSuperAdmin = req.user?.role === 'super_admin';
-    if (!isSuperAdmin && req.userShopIds?.length > 0 && !req.userShopIds.includes(shopId)) {
-      return res.status(403).json({ error: 'You do not have access to this shop' });
+    // Super admins and admins have access to all shops
+    // Regular users (sales_person, etc.) need to be assigned to the shop
+    const hasFullAccess = req.user?.role === 'super_admin' || req.user?.role === 'admin';
+    if (!hasFullAccess && req.userShopIds?.length > 0 && !req.userShopIds.includes(shopId)) {
+      return res.status(403).json({ error: req.t ? req.t('product.shop_access_denied') : 'You do not have access to this shop' });
     }
 
     if (vendorId) {
@@ -209,24 +216,24 @@ export const createProduct = async (req, res) => {
         and(eq(vendors.id, vendorId), eq(vendors.shopId, shopId))
       ).limit(1);
       if (!vendorExists) {
-        return res.status(400).json({ error: req.t('product.invalid_vendor') });
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
       }
     }
 
     if (!(await checkBarcodeUniqueness(barcode, shopId))) {
-      return res.status(409).json({ error: req.t('product.barcode_exists') });
+      return res.status(409).json({ error: req.t ? req.t('product.barcode_exists') : 'Barcode already exists' });
     }
 
     if (!(await checkImeiUniqueness(imei1, shopId))) {
-      return res.status(409).json({ error: req.t('product.imei_exists') });
+      return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
     }
 
     if (!(await checkImeiUniqueness(imei2, shopId))) {
-      return res.status(409).json({ error: req.t('product.imei_exists') });
+      return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
     }
 
     if (imei1 && imei2 && imei1 === imei2) {
-      return res.status(400).json({ error: req.t('product.imei_duplicate') });
+      return res.status(400).json({ error: req.t ? req.t('product.imei_duplicate') : 'IMEI1 and IMEI2 cannot be the same' });
     }
 
     if (mobileCatalogId) {
@@ -234,7 +241,7 @@ export const createProduct = async (req, res) => {
         eq(mobileCatalog.id, mobileCatalogId)
       ).limit(1);
       if (!catalogExists) {
-        return res.status(400).json({ error: req.t('product.invalid_mobile_catalog') });
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_mobile_catalog') : 'Invalid mobile catalog item' });
       }
     }
 
@@ -243,7 +250,7 @@ export const createProduct = async (req, res) => {
         eq(accessoryCatalog.id, accessoryCatalogId)
       ).limit(1);
       if (!catalogExists) {
-        return res.status(400).json({ error: req.t('product.invalid_accessory_catalog') });
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_accessory_catalog') : 'Invalid accessory catalog item' });
       }
     }
 
@@ -297,7 +304,7 @@ export const createProduct = async (req, res) => {
     res.status(201).json({ product: newProduct });
   } catch (error) {
     console.error('Create product error:', error);
-    res.status(500).json({ error: req.t('product.create_failed') });
+    res.status(500).json({ error: req.t ? req.t('product.create_failed') : 'Failed to create product' });
   }
 };
 
