@@ -10,6 +10,10 @@ export const getProducts = async (req, res) => {
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
     const shopId = req.userShopIds?.[0];
 
+    if (!shopId) {
+      return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
+    }
+
     let conditions = [eq(products.shopId, shopId)];
 
     if (search) {
@@ -188,6 +192,10 @@ export const createProduct = async (req, res) => {
 
     const shopId = req.userShopIds?.[0];
 
+    if (!shopId) {
+      return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
+    }
+
     if (vendorId) {
       const [vendorExists] = await db.select().from(vendors).where(
         and(eq(vendors.id, vendorId), eq(vendors.shopId, shopId))
@@ -238,7 +246,7 @@ export const createProduct = async (req, res) => {
     let finalSku = sku;
     if (!finalSku && categoryId === 'mobile' && mobileCatalogId) {
       const [catalogItem] = await db.select().from(mobileCatalog).where(eq(mobileCatalog.id, mobileCatalogId)).limit(1);
-      if (catalogItem) {
+      if (catalogItem && catalogItem.brand && catalogItem.name) {
         const brandCode = catalogItem.brand.substring(0, 3).toUpperCase();
         const modelCode = catalogItem.name.replace(/\s+/g, '').substring(0, 6).toUpperCase();
         const memoryCode = catalogItem.memory ? `-${catalogItem.memory.replace(/\s+/g, '')}` : '';
@@ -302,6 +310,10 @@ export const updateProduct = async (req, res) => {
     } = req.validatedBody;
 
     const shopId = req.userShopIds?.[0];
+
+    if (!shopId) {
+      return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
+    }
 
     const [existingProduct] = await db.select().from(products).where(
       and(eq(products.id, id), eq(products.shopId, shopId))
@@ -495,6 +507,10 @@ export const deleteProduct = async (req, res) => {
 export const getLowStockProducts = async (req, res) => {
   try {
     const shopId = req.userShopIds?.[0];
+
+    if (!shopId) {
+      return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
+    }
 
     const lowStockProducts = await db.select()
       .from(products)
