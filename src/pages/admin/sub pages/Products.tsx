@@ -391,35 +391,35 @@ export default function Products() {
             />
           </div>
           
-          <Select value={shopFilter} onValueChange={(v) => { setShopFilter(v); setPage(1); }}>
+          <Select value={shopFilter || "__all__"} onValueChange={(v) => { setShopFilter(v === "__all__" ? "" : v); setPage(1); }}>
             <SelectTrigger className="w-40" data-testid="select-shop-filter">
               <SelectValue placeholder={t("admin.products.all_shops")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{t("admin.products.all_shops")}</SelectItem>
+              <SelectItem value="__all__">{t("admin.products.all_shops")}</SelectItem>
               {shops.map((shop) => (
                 <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
+          <Select value={typeFilter || "__all__"} onValueChange={(v) => { setTypeFilter(v === "__all__" ? "" : v); setPage(1); }}>
             <SelectTrigger className="w-32" data-testid="select-type-filter">
               <SelectValue placeholder={t("admin.products.all_types")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{t("admin.products.all_types")}</SelectItem>
+              <SelectItem value="__all__">{t("admin.products.all_types")}</SelectItem>
               <SelectItem value="mobile">{t("admin.products.type_mobile")}</SelectItem>
               <SelectItem value="accessory">{t("admin.products.type_accessory")}</SelectItem>
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <Select value={statusFilter || "__all__"} onValueChange={(v) => { setStatusFilter(v === "__all__" ? "" : v); setPage(1); }}>
             <SelectTrigger className="w-32" data-testid="select-status-filter">
               <SelectValue placeholder={t("admin.products.all_status")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{t("admin.products.all_status")}</SelectItem>
+              <SelectItem value="__all__">{t("admin.products.all_status")}</SelectItem>
               <SelectItem value="active">{t("admin.products.status_active")}</SelectItem>
               <SelectItem value="inactive">{t("admin.products.status_inactive")}</SelectItem>
             </SelectContent>
