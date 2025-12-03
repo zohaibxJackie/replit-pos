@@ -9,6 +9,7 @@ import saleRoutes from './sales.js';
 import repairRoutes from './repairs.js';
 import wholesalerRoutes from './wholesaler.js';
 import notificationRoutes from './notifications.js';
+import vendorRoutes from './vendors.js';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/sales', saleRoutes);
 router.use('/repairs', repairRoutes);
 router.use('/wholesaler', wholesalerRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/vendors', vendorRoutes);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

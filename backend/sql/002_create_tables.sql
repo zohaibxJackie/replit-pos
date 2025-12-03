@@ -1,5 +1,36 @@
 -- POS System Database Tables
 
+-- Mobile Catalog table (hardcoded master data)
+CREATE TABLE IF NOT EXISTS mobile_catalog (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+    brand TEXT NOT NULL,
+    name TEXT NOT NULL,
+    memory TEXT,
+    color TEXT,
+    gsm_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Accessory Catalog table (hardcoded master data)
+CREATE TABLE IF NOT EXISTS accessory_catalog (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+    brand TEXT NOT NULL,
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Vendors table
+CREATE TABLE IF NOT EXISTS vendors (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+    shop_id VARCHAR NOT NULL,
+    name TEXT NOT NULL,
+    phone TEXT,
+    email TEXT,
+    address TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
@@ -40,17 +71,26 @@ CREATE TABLE IF NOT EXISTS shops (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Products table
+-- Products table (shop inventory)
 CREATE TABLE IF NOT EXISTS products (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
     shop_id VARCHAR NOT NULL,
-    name TEXT NOT NULL,
-    barcode TEXT,
+    product_type product_type NOT NULL,
+    mobile_catalog_id VARCHAR REFERENCES mobile_catalog(id),
+    accessory_catalog_id VARCHAR REFERENCES accessory_catalog(id),
+    custom_name TEXT,
     category_id VARCHAR,
-    price DECIMAL(10, 2) NOT NULL,
+    sku TEXT,
+    imei1 TEXT,
+    imei2 TEXT,
+    barcode TEXT,
     stock INTEGER NOT NULL DEFAULT 0,
+    purchase_price DECIMAL(10, 2),
+    sale_price DECIMAL(10, 2) NOT NULL,
+    vendor_id VARCHAR REFERENCES vendors(id),
     low_stock_threshold INTEGER NOT NULL DEFAULT 5,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Categories table

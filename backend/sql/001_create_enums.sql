@@ -27,3 +27,10 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
+
+-- Product type enum
+DO $$ BEGIN
+    CREATE TYPE product_type AS ENUM ('mobile', 'accessory');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
