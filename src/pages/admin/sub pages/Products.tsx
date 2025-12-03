@@ -43,11 +43,6 @@ interface Product {
   updatedAt: string;
 }
 
-interface Shop {
-  id: string;
-  name: string;
-}
-
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
