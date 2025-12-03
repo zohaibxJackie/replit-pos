@@ -440,6 +440,34 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export const taxTypeEnum = pgEnum("tax_type", ["percent", "flat"]);
+
+export const taxes = pgTable("taxes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  name: text("name").notNull(),
+  type: taxTypeEnum("type").notNull().default("percent"),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const stockTransferStatusEnum = pgEnum("stock_transfer_status", ["pending", "completed", "cancelled"]);
+
+export const stockTransfers = pgTable("stock_transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull(),
+  fromShopId: varchar("from_shop_id").notNull(),
+  toShopId: varchar("to_shop_id").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  status: stockTransferStatusEnum("status").notNull().default("pending"),
+  notes: text("notes"),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserShopSchema = createInsertSchema(userShop).omit({ id: true, createdAt: true, updatedAt: true });
@@ -473,6 +501,8 @@ export const insertAccessoryCatalogSchema = createInsertSchema(accessoryCatalog)
 export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertTaxSchema = createInsertSchema(taxes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertStockTransferSchema = createInsertSchema(stockTransfers).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertUser = typeof users.$inferInsert;
 export type InsertLoginHistory = typeof loginHistory.$inferInsert;
@@ -537,3 +567,7 @@ export type Category = typeof categories.$inferSelect;
 export type InsertCategory = typeof categories.$inferInsert;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
+export type Tax = typeof taxes.$inferSelect;
+export type InsertTax = typeof taxes.$inferInsert;
+export type StockTransfer = typeof stockTransfers.$inferSelect;
+export type InsertStockTransfer = typeof stockTransfers.$inferInsert;

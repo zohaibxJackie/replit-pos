@@ -551,6 +551,116 @@ export const getAccessoryCatalogBrands = async (req, res) => {
   }
 };
 
+export const getMobileCatalogModels = async (req, res) => {
+  try {
+    const { brand } = req.query;
+    
+    if (!brand) {
+      return res.status(400).json({ error: req.t('product.brand_required') });
+    }
+
+    const models = await db.select({
+      id: mobileCatalog.id,
+      name: mobileCatalog.name,
+      memory: mobileCatalog.memory,
+      color: mobileCatalog.color
+    })
+      .from(mobileCatalog)
+      .where(eq(mobileCatalog.brand, brand))
+      .orderBy(mobileCatalog.name);
+
+    const uniqueModels = [];
+    const modelSet = new Set();
+
+    for (const model of models) {
+      const modelKey = `${model.name}-${model.memory || ''}`;
+      if (!modelSet.has(modelKey)) {
+        modelSet.add(modelKey);
+        uniqueModels.push({
+          id: model.id,
+          name: model.name,
+          memory: model.memory,
+          displayName: model.memory ? `${model.name} ${model.memory}` : model.name
+        });
+      }
+    }
+
+    res.json({ models: uniqueModels });
+  } catch (error) {
+    console.error('Get mobile catalog models error:', error);
+    res.status(500).json({ error: req.t('product.catalog_fetch_failed') });
+  }
+};
+
+export const getMobileCatalogColors = async (req, res) => {
+  try {
+    const { brand, model, memory } = req.query;
+    
+    if (!brand || !model) {
+      return res.status(400).json({ error: req.t('product.brand_model_required') });
+    }
+
+    let conditions = [
+      eq(mobileCatalog.brand, brand),
+      eq(mobileCatalog.name, model)
+    ];
+
+    if (memory) {
+      conditions.push(eq(mobileCatalog.memory, memory));
+    }
+
+    const colors = await db.selectDistinct({ 
+      id: mobileCatalog.id,
+      color: mobileCatalog.color 
+    })
+      .from(mobileCatalog)
+      .where(and(...conditions))
+      .orderBy(mobileCatalog.color);
+
+    res.json({ colors: colors.filter(c => c.color).map(c => ({ id: c.id, color: c.color })) });
+  } catch (error) {
+    console.error('Get mobile catalog colors error:', error);
+    res.status(500).json({ error: req.t('product.catalog_fetch_failed') });
+  }
+};
+
+export const getMobileCatalogItem = async (req, res) => {
+  try {
+    const { brand, model, memory, color } = req.query;
+    
+    if (!brand || !model) {
+      return res.status(400).json({ error: req.t('product.brand_model_required') });
+    }
+
+    let conditions = [
+      eq(mobileCatalog.brand, brand),
+      eq(mobileCatalog.name, model)
+    ];
+
+    if (memory) {
+      conditions.push(eq(mobileCatalog.memory, memory));
+    }
+
+    if (color) {
+      conditions.push(eq(mobileCatalog.color, color));
+    }
+
+    const [catalogItem] = await db.select()
+      .from(mobileCatalog)
+      .where(and(...conditions))
+      .limit(1);
+
+    if (!catalogItem) {
+      return res.status(404).json({ error: req.t('product.catalog_item_not_found') });
+    }
+
+    res.json({ catalogItem });
+  } catch (error) {
+    console.error('Get mobile catalog item error:', error);
+    res.status(500).json({ error: req.t('product.catalog_fetch_failed') });
+  }
+};
+
 export default {
   getProducts,
   getProductById,
@@ -564,5 +674,8 @@ export default {
   getMobileCatalog,
   getAccessoryCatalog,
   getMobileCatalogBrands,
-  getAccessoryCatalogBrands
+  getAccessoryCatalogBrands,
+  getMobileCatalogModels,
+  getMobileCatalogColors,
+  getMobileCatalogItem
 };

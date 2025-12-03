@@ -1,31 +1,19 @@
-// Future notes - when the user returns the stock a reciept should be created
-// ref - first meeting 22:00
-// Different between return stock and wastage product
-/*
-return stock means return the stock to the person from which we have bought
-and wastage means the product is damaged and that person don't want to take it back
-and it's not our use, so we move it to the wastage
-
-The product should be connected to vendor as well, so if someone return the stock, we would know
-from which vendor we bought the phone
-*/
-
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Boxes, Search } from "lucide-react";
+import { Plus, Edit, Search, Loader2, ArrowRightLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import FormPopupModal from "@/components/ui/FormPopupModal";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 import { useTitle } from '@/context/TitleContext';
 import { MobileProductForm, MobileProductPayload } from "@/components/MobileProductForm";
-
+import { api } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   Select,
@@ -36,76 +24,295 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "react-i18next";
 
-interface Products {
-  id: number;
+interface Product {
+  id: string;
+  shopId: string;
+  shopName?: string;
   name: string;
-  imeiOrSerial: string;
+  barcode?: string;
+  price: string;
   stock: number;
-  salePrice: number;
-  store: string;
+  type: string;
+  status: string;
+  imei1?: string;
+  imei2?: string;
+  mobileCatalogId?: string;
+  accessoryCatalogId?: string;
+  categoryId?: string;
+  vendorId?: string;
+  taxId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Shop {
+  id: string;
+  name: string;
+}
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }
 
 export default function Products() {
   useAuth("catalogProducts");
   const { toast } = useToast();
   const { t } = useTranslation();
-  const {setTitle} = useTitle();
+  const { setTitle } = useTitle();
+  const queryClient = useQueryClient();
+
   useEffect(() => {
-    setTitle(t("admin.products.title"));          
-    return () => setTitle('Business Dashboard'); 
-  }, [setTitle]);
+    setTitle(t("admin.products.title"));
+    return () => setTitle('Business Dashboard');
+  }, [setTitle, t]);
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [searchInput, setSearchInput] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [shopFilter, setShopFilter] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isInterStockModalOpen, setIsInterStockModalOpen] = useState(false);
-  const [isPurchaseOrderOpen, setIsPurchaseOrderOpen] = useState(false)
-  const [currentProduct, setCurrentProduct] = useState<any | null>(null);
-  const [formData, setFormData] = useState({ name: "", salePrice: 0 });
-  const [stockSearch, setStockSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"add" | "return" | "wastage">("add");
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
 
-  // Inter-Store Transfer
   const [imeiInput, setImeiInput] = useState("");
-  const [matchedProduct, setMatchedProduct] = useState<any | null>(null);
-  const [transferQty, setTransferQty] = useState<number>(0);
-  const [targetStore, setTargetStore] = useState("store1");
+  const [matchedProduct, setMatchedProduct] = useState<Product | null>(null);
+  const [transferQty, setTransferQty] = useState<number>(1);
+  const [targetShopId, setTargetShopId] = useState("");
+  const [isSearchingImei, setIsSearchingImei] = useState(false);
 
-  // Example product data (with store info)
-  const [products, setProducts] = useState<Products[]>(
-    Array.from({ length: 250 }, (_, i) => ({
-      id: i + 1,
-      name: "iPhone 12",
-      imeiOrSerial: `SN1234${i}`,
-      stock: i % 50,
-      salePrice: 900 + i,
-      store: "Main Store",
-    }))
-  );
+  const debouncedSearch = useDebounce(searchInput, 500);
 
+  const { data: shopsData } = useQuery({
+    queryKey: ['/api/shops/my-shops'],
+    queryFn: () => api.shops.getMyShops(),
+  });
 
+  const shops = useMemo(() => shopsData?.shops || [], [shopsData]);
 
-  // Filtered data
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      const matchesName = !filters.name || p.name.toLowerCase().includes(filters.name.toLowerCase());
-      const matchesImei = !filters.imeiOrSerial || p.imeiOrSerial.toLowerCase().includes(filters.imeiOrSerial.toLowerCase());
-      const matchesStock =
-        !filters.stock ||
-        (filters.stock === "In Stock" && p.stock > 0) ||
-        (filters.stock === "Out of Stock" && p.stock === 0);
-      return matchesName && matchesImei && matchesStock;
+  const { data: productsData, isLoading, refetch } = useQuery({
+    queryKey: ['/api/products', { page, limit, search: debouncedSearch, type: typeFilter, status: statusFilter, shopId: shopFilter }],
+    queryFn: () => api.products.getAll({
+      page,
+      limit,
+      search: debouncedSearch || undefined,
+      type: typeFilter || undefined,
+      status: statusFilter || undefined,
+      shopId: shopFilter || undefined,
+    }),
+  });
+
+  const products = useMemo(() => {
+    const productList = productsData?.products || [];
+    return productList.map(p => {
+      const shop = shops.find(s => s.id === p.shopId);
+      return { ...p, shopName: shop?.name || 'Unknown' };
     });
-  }, [products, filters]);
+  }, [productsData, shops]);
 
-  const paginatedProducts = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredProducts.slice(start, start + limit);
-  }, [filteredProducts, page, limit]);
+  const pagination = productsData?.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 };
 
-  // Columns
+  const createProductMutation = useMutation({
+    mutationFn: (data: Parameters<typeof api.products.create>[0]) => api.products.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({ title: t("products.product_added"), description: t("products.product_added_desc") });
+      setIsModalOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: t("products.error"), description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof api.products.update>[1] }) => 
+      api.products.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({ title: t("products.product_updated"), description: t("products.product_updated_desc") });
+      setIsModalOpen(false);
+      setCurrentProduct(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: t("products.error"), description: error.message, variant: "destructive" });
+    },
+  });
+
+  const stockTransferMutation = useMutation({
+    mutationFn: (data: Parameters<typeof api.stockTransfers.create>[0]) => api.stockTransfers.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({ title: t("products.stock_transferred"), description: t("products.stock_transferred_desc") });
+      setIsInterStockModalOpen(false);
+      resetTransferModal();
+    },
+    onError: (error: Error) => {
+      toast({ title: t("products.error"), description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetTransferModal = () => {
+    setImeiInput("");
+    setMatchedProduct(null);
+    setTransferQty(1);
+    setTargetShopId("");
+  };
+
+  const openCreateModal = () => {
+    setCurrentProduct(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (product: Product) => {
+    setCurrentProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const openInterStockModal = () => {
+    resetTransferModal();
+    setIsInterStockModalOpen(true);
+  };
+
+  const handleMobileProductSubmit = (payload: MobileProductPayload) => {
+    const productName = `${payload.brand} ${payload.model} ${payload.memory ? payload.memory : ''} ${payload.color}`.trim();
+    
+    if (currentProduct) {
+      updateProductMutation.mutate({
+        id: currentProduct.id,
+        data: {
+          name: productName,
+          price: payload.sellingPrice.toString(),
+          imei1: payload.imei,
+          imei2: payload.imei2,
+          taxId: payload.taxId,
+          mobileCatalogId: payload.mobileCatalogId,
+        }
+      });
+    } else {
+      const shopId = shopFilter || shops[0]?.id;
+      if (!shopId) {
+        toast({ title: t("products.error"), description: t("products.no_shop_selected"), variant: "destructive" });
+        return;
+      }
+      
+      createProductMutation.mutate({
+        shopId,
+        name: productName,
+        price: payload.sellingPrice.toString(),
+        stock: 1,
+        type: 'mobile',
+        status: 'active',
+        imei1: payload.imei,
+        imei2: payload.imei2,
+        taxId: payload.taxId,
+        mobileCatalogId: payload.mobileCatalogId,
+      });
+    }
+  };
+
+  const handleImeiSearch = useCallback(async (value: string) => {
+    setImeiInput(value);
+    
+    if (value.trim().length < 5) {
+      setMatchedProduct(null);
+      return;
+    }
+
+    setIsSearchingImei(true);
+    try {
+      const result = await api.stockTransfers.getProductByImei(value.trim());
+      if (result?.product) {
+        const shop = shops.find(s => s.id === result.product.shopId);
+        const productData = result.product;
+        setMatchedProduct({
+          id: productData.id,
+          shopId: productData.shopId,
+          shopName: shop?.name || 'Unknown',
+          name: productData.name || '',
+          barcode: productData.barcode,
+          price: productData.price || '0',
+          stock: productData.stock || 0,
+          type: productData.type || 'mobile',
+          status: productData.status || 'active',
+          imei1: productData.imei1,
+          imei2: productData.imei2,
+          mobileCatalogId: productData.mobileCatalogId,
+          accessoryCatalogId: productData.accessoryCatalogId,
+          categoryId: productData.categoryId,
+          vendorId: productData.vendorId,
+          taxId: productData.taxId,
+          createdAt: productData.createdAt || '',
+          updatedAt: productData.updatedAt || '',
+        });
+      } else {
+        setMatchedProduct(null);
+      }
+    } catch {
+      setMatchedProduct(null);
+    } finally {
+      setIsSearchingImei(false);
+    }
+  }, [shops]);
+
+  const handleTransferSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!matchedProduct) {
+      toast({ title: t("products.error"), description: t("products.no_product_found"), variant: "destructive" });
+      return;
+    }
+
+    if (!targetShopId) {
+      toast({ title: t("products.error"), description: t("products.select_target_shop"), variant: "destructive" });
+      return;
+    }
+
+    if (matchedProduct.shopId === targetShopId) {
+      toast({ title: t("products.error"), description: t("products.same_shop_error"), variant: "destructive" });
+      return;
+    }
+
+    const qty = transferQty > 0 ? transferQty : 1;
+    if (qty > matchedProduct.stock) {
+      toast({ title: t("products.error"), description: t("products.insufficient_stock"), variant: "destructive" });
+      return;
+    }
+
+    stockTransferMutation.mutate({
+      productId: matchedProduct.id,
+      fromShopId: matchedProduct.shopId,
+      toShopId: targetShopId,
+      quantity: qty,
+    });
+  };
+
+  const handlePageSizeChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const availableTargetShops = useMemo(() => {
+    if (!matchedProduct) return shops;
+    return shops.filter(s => s.id !== matchedProduct.shopId);
+  }, [shops, matchedProduct]);
+
   const columns = [
     {
       key: "index",
@@ -113,233 +320,113 @@ export default function Products() {
       filterType: "none",
       render: (_: any, __: any, index: number) => (page - 1) * limit + index + 1,
     },
-    { key: "name", label: t("admin.products.column.product_name"), filterType: "text" },
-    { key: "imeiOrSerial", label: t("admin.products.column.imei"), filterType: "text" },
+    { 
+      key: "name", 
+      label: t("admin.products.column.product_name"), 
+      filterType: "none",
+    },
+    { 
+      key: "imei1", 
+      label: t("admin.products.column.imei"), 
+      filterType: "none",
+      render: (value: string, row: Product) => value || row.imei2 || row.barcode || '-',
+    },
+    {
+      key: "shopName",
+      label: t("admin.products.column.shop"),
+      filterType: "none",
+    },
     {
       key: "stock",
       label: t("admin.products.column.stock"),
-      filterType: "select",
-      filterOptions: ["In Stock", "Out of Stock"],
+      filterType: "none",
       render: (value: number) => (
         <Badge variant={value <= 0 ? "destructive" : "default"}>{value}</Badge>
       ),
     },
     {
-      key: "salePrice",
+      key: "price",
       label: t("admin.products.column.sale_price"),
       filterType: "none",
-      render: (value: number) => `$${value}`,
+      render: (value: string) => `PKR ${parseFloat(value).toLocaleString()}`,
+    },
+    {
+      key: "type",
+      label: t("admin.products.column.type"),
+      filterType: "none",
+      render: (value: string) => (
+        <Badge variant="outline">{value}</Badge>
+      ),
     },
   ];
 
-  // Handlers
-  const openCreateModal = () => {
-    setCurrentProduct(null);
-    setFormData({ name: "", salePrice: 0 });
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (product: any) => {
-    setCurrentProduct(product);
-    setFormData({ name: product.name, salePrice: product.salePrice });
-    setIsModalOpen(true);
-  };
-
-
-  const openManageStockModal = () => {
-    setStockSearch("");
-    setIsStockModalOpen(true);
-  };
-
-  const openInterStockModal = () => {
-    setImeiInput("");
-    setMatchedProduct(null);
-    setTransferQty(0);
-    setTargetStore("store1");
-    setIsInterStockModalOpen(true);
-  };
-
-  const openPurchaseOrderModel = () => {
-    setIsPurchaseOrderOpen(true)
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmitForm = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const { name, salePrice } = formData;
-
-    if (currentProduct) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === currentProduct.id ? { ...p, name, salePrice } : p))
-      );
-      toast({ title: "Product Updated", description: `${name} has been updated.` });
-    } else {
-      const newProduct = {
-        id: products.length + 1,
-        name,
-        imeiOrSerial: "",
-        stock: 0,
-        salePrice,
-        store: "Main Store",
-      };
-      setProducts([...products, newProduct]);
-      toast({ title: "Product Added", description: `${name} has been added.` });
-    }
-
-    setIsModalOpen(false);
-  };
-
-  const handleMobileProductSubmit = (payload: MobileProductPayload) => {
-    // Create a new mobile product from the payload
-    const newProduct = {
-      id: products.length + 1,
-      name: `${payload.brand} ${payload.model} ${payload.color}`,
-      imeiOrSerial: payload.imei,
-      stock: 1, // New mobile always starts with stock of 1
-      salePrice: payload.sellingPrice,
-      store: "Main Store",
-    };
-    
-    setProducts([...products, newProduct]);
-    
-    toast({ 
-      title: "Mobile Added Successfully", 
-      description: `${newProduct.name} has been added to inventory.`,
-    });
-
-    console.log("Mobile Product Payload (API-ready):", payload);
-    setIsModalOpen(false);
-  };
-
-  const handleStockSubmit = (
-    e: React.FormEvent<HTMLFormElement>,
-    action: "add" | "return" | "wastage",
-    product: any
-  ) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const quantity = parseInt((form.elements.namedItem("quantity") as HTMLInputElement).value);
-
-    if (isNaN(quantity) || quantity <= 0) return;
-
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id !== product.id) return p;
-
-        if (action === "add") return { ...p, stock: p.stock + quantity };
-        if (action === "return") return { ...p, stock: Math.max(0, p.stock - quantity) };
-        if (action === "wastage") return { ...p, stock: Math.max(0, p.stock - quantity) };
-
-        return p;
-      })
-    );
-
-    let title = "";
-    let description = "";
-
-    if (action === "add") {
-      title = "Stock Added";
-      description = `${quantity} units added to ${product.name}`;
-    } else if (action === "return") {
-      title = "Stock Returned";
-      description = `${quantity} units returned from ${product.name}`;
-    } else {
-      title = "Moved to Wastage";
-      description = `${quantity} units of ${product.name} marked as wasted.`;
-    }
-
-    toast({ title, description });
-  };
-
-
-  // Filter inside Manage Stock modal
-  const searchedProducts = useMemo(() => {
-    if (!stockSearch.trim()) return [];
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(stockSearch.toLowerCase()) ||
-        p.imeiOrSerial.toLowerCase().includes(stockSearch.toLowerCase())
-    );
-  }, [products, stockSearch]);
-
-  // Handle IMEI search inside Inter-Store Modal
-  const handleImeiSearch = (value: string) => {
-    setImeiInput(value);
-    const found = products.find(
-      (p) => p.imeiOrSerial.toLowerCase() === value.trim().toLowerCase()
-    );
-    setMatchedProduct(found || null);
-  };
-
-  const handleTransferSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!matchedProduct)
-      return toast({ title: "Invalid IMEI", description: "No product found." });
-
-    const qtyToSend = transferQty > 0 ? transferQty : matchedProduct.stock;
-    if (qtyToSend > matchedProduct.stock)
-      return toast({ title: "Error", description: "Not enough stock to transfer." });
-
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === matchedProduct.id)
-          return { ...p, stock: p.stock - qtyToSend };
-        return p;
-      })
-    );
-
-    toast({
-      title: "Stock Transferred",
-      description: `${qtyToSend} units of ${matchedProduct.name} sent to ${targetStore}.`,
-    });
-
-    setIsInterStockModalOpen(false);
-  };
-
-  // Handle page size change (records per page)
-  const handlePageSizeChange = (newLimit: number) => {
-    setLimit(newLimit);
-    setPage(1); // Reset to first page when page size is changed
-  };
-
-  // Handle page change (pagination)
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-  };
-
-  // UI
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-end">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder={t("admin.products.search_placeholder")}
+              value={searchInput}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                setPage(1);
+              }}
+              className="pl-9 w-64"
+              data-testid="input-search-products"
+            />
+          </div>
+          
+          <Select value={shopFilter} onValueChange={(v) => { setShopFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-40" data-testid="select-shop-filter">
+              <SelectValue placeholder={t("admin.products.all_shops")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{t("admin.products.all_shops")}</SelectItem>
+              {shops.map((shop) => (
+                <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-32" data-testid="select-type-filter">
+              <SelectValue placeholder={t("admin.products.all_types")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{t("admin.products.all_types")}</SelectItem>
+              <SelectItem value="mobile">{t("admin.products.type_mobile")}</SelectItem>
+              <SelectItem value="accessory">{t("admin.products.type_accessory")}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-32" data-testid="select-status-filter">
+              <SelectValue placeholder={t("admin.products.all_status")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{t("admin.products.all_status")}</SelectItem>
+              <SelectItem value="active">{t("admin.products.status_active")}</SelectItem>
+              <SelectItem value="inactive">{t("admin.products.status_inactive")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           <Button onClick={openCreateModal} data-testid="button-create-product">
             <Plus className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">{t("admin.products.create_new_product")}</span>
-            <span className="sm:hidden">New Product</span>
-          </Button>
-          <Button variant="outline" onClick={openManageStockModal} data-testid="button-manage-stock">
-            <Boxes className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">{t("admin.products.manage_stock")}</span>
-            <span className="sm:hidden">Stock</span>
+            <span className="sm:hidden">{t("admin.products.new")}</span>
           </Button>
           <Button variant="outline" onClick={openInterStockModal} data-testid="button-inter-stock">
+            <ArrowRightLeft className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">{t("admin.products.inter_stock_transfer")}</span>
-            <span className="sm:hidden">Transfer</span>
-          </Button>
-          <Button variant="outline" onClick={openPurchaseOrderModel} data-testid="button-purchase-order">
-            <span className="hidden sm:inline">Purchase Order</span>
-            <span className="sm:hidden">PO</span>
+            <span className="sm:hidden">{t("admin.products.transfer")}</span>
           </Button>
         </div>
       </div>
 
-      {/* Pagination and Records per Page Dropdown above table */}
       <div className="flex justify-end items-center mb-4">
         <TablePageSizeSelector
           limit={limit}
@@ -347,200 +434,94 @@ export default function Products() {
         />
       </div>
 
-      {/* ✅ DataTable */}
-      <DataTable
-        columns={columns}
-        data={paginatedProducts}
-        showActions
-        renderActions={(row) => (
-          <div className="flex justify-end gap-1 relative z-10">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                openEditModal(row);
-              }}
-              title="Edit"
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
-        onFilterChange={(f) => {
-          setFilters(f);
-          setPage(1);
-        }}
-      />
-      {/* Pagination Controls Below Table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={products}
+          showActions
+          renderActions={(row) => (
+            <div className="flex justify-end gap-1 relative z-10">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEditModal(row);
+                }}
+                title={t("common.edit")}
+                data-testid={`button-edit-product-${row.id}`}
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        />
+      )}
+
       <div className="mt-4">
         <TablePagination
-          page={page}
-          limit={limit}
-          total={filteredProducts.length}
+          page={pagination.page}
+          limit={pagination.limit}
+          total={pagination.total}
           onPageChange={handlePageChange}
         />
       </div>
 
-      {/* Product Modal */}
-      <FormPopupModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <FormPopupModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setCurrentProduct(null); }}>
         <h2 className="text-2xl font-semibold mb-4">
-          {currentProduct ? "Edit Product" : "Add New Mobile"}
+          {currentProduct ? t("admin.products.edit_product") : t("admin.products.add_new_mobile")}
         </h2>
-        {currentProduct ? (
-          <form onSubmit={handleSubmitForm} className="space-y-4">
-            <div>
-              <Label>Product Name</Label>
-              <Input name="name" value={formData.name} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label>Sale Price (PKR)</Label>
-              <Input
-                name="salePrice"
-                type="number"
-                step="0.01"
-                value={formData.salePrice}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                Update Product
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <MobileProductForm
-            onSubmit={handleMobileProductSubmit}
-            onCancel={() => setIsModalOpen(false)}
-          />
-        )}
+        <MobileProductForm
+          onSubmit={handleMobileProductSubmit}
+          onCancel={() => { setIsModalOpen(false); setCurrentProduct(null); }}
+          initialData={currentProduct ? {
+            brand: '',
+            model: currentProduct.name,
+            color: '',
+            imei: currentProduct.imei1 || '',
+            imei2: currentProduct.imei2,
+            sellingPrice: parseFloat(currentProduct.price),
+            taxId: currentProduct.taxId,
+          } : undefined}
+          shopId={shopFilter || shops[0]?.id}
+        />
       </FormPopupModal>
 
-      {/* Manage Stock Modal */}
-      <FormPopupModal isOpen={isStockModalOpen} onClose={() => setIsStockModalOpen(false)}>
-        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-          <Boxes className="w-5 h-5" /> Manage Stock
-        </h2>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4 border-b">
-          {["add", "return", "wastage"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as "add" | "return" | "wastage")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab
-                ? "border-primary text-primary"
-                : "border-transparent text-gray-500 hover:text-primary"
-                }`}
-            >
-              {tab === "add"
-                ? "Add Stock"
-                : tab === "return"
-                  ? "Return Stock"
-                  : "Move to Wastage"}
-            </button>
-          ))}
-        </div>  
-
-        {/* Search Field */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-          <Input
-            placeholder="Search by Product Name or IMEI"
-            value={stockSearch}
-            onChange={(e) => setStockSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        {/* Search Results */}
-        <div className="space-y-4 max-h-80 overflow-y-auto">
-          {searchedProducts.length === 0 && (
-            <p className="text-center text-gray-500 text-sm">Please enter a valid query...</p>
-          )}
-
-          {searchedProducts.map((product) => (
-            <div
-              key={product.id}
-              className="border rounded-md p-4 shadow-sm hover:bg-gray-50 transition"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <p className="font-semibold">{product.name}</p>
-                <Badge variant={product.stock > 0 ? "default" : "destructive"}>
-                  Stock: {product.stock}
-                </Badge>
-              </div>
-
-              <form
-                onSubmit={(e) => handleStockSubmit(e, activeTab, product)}
-                className="flex flex-col gap-2"
-              >
-                <Input
-                  type="number"
-                  name="quantity"
-                  placeholder={
-                    activeTab === "add"
-                      ? "Enter quantity to add"
-                      : activeTab === "return"
-                        ? "Enter quantity to return"
-                        : "Enter quantity to mark as wastage"
-                  }
-                  min="1"
-                />
-                {activeTab !== "wastage" ? (<Textarea 
-                  placeholder="Please enter the reason"
-                
-                />) : ""}
-                <Button
-                  type="submit"
-                  variant={
-                    activeTab === "add"
-                      ? "default"
-                      : activeTab === "return"
-                        ? "outline"
-                        : "destructive"
-                  }
-                >
-                  {activeTab === "add"
-                    ? "Add"
-                    : activeTab === "return"
-                      ? "Return"
-                      : "Move"}
-                </Button>
-              </form>
-            </div>
-          ))}
-        </div>
-      </FormPopupModal>
-
-
-      {/* Inter-Stock Modal */}
       <FormPopupModal isOpen={isInterStockModalOpen} onClose={() => setIsInterStockModalOpen(false)}>
-        <h2 className="text-2xl font-semibold">Inter-Store Stock Movement</h2>
+        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+          <ArrowRightLeft className="w-5 h-5" />
+          {t("admin.products.inter_store_movement")}
+        </h2>
 
         <form onSubmit={handleTransferSubmit} className="space-y-4 mt-4">
           <div>
-            <Label>Enter IMEI or Serial Number</Label>
-            <Input
-              type="text"
-              value={imeiInput}
-              onChange={(e) => handleImeiSearch(e.target.value)}
-              placeholder="Enter IMEI or Serial Number"
-              required
-            />
+            <Label>{t("admin.products.enter_imei")}</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                value={imeiInput}
+                onChange={(e) => handleImeiSearch(e.target.value)}
+                placeholder={t("admin.products.enter_imei_placeholder")}
+                required
+                data-testid="input-transfer-imei"
+              />
+              {isSearchingImei && <Loader2 className="w-4 h-4 animate-spin" />}
+            </div>
           </div>
 
-          {/* Matched Product */}
           {matchedProduct ? (
-            <div className="border p-3 rounded-md">
+            <div className="border p-3 rounded-md bg-muted/50">
               <p className="font-medium">{matchedProduct.name}</p>
-              <p className="text-sm text-gray-500">Current Stock: {matchedProduct.stock}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("admin.products.current_shop")}: {matchedProduct.shopName}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("admin.products.current_stock")}: {matchedProduct.stock}
+              </p>
               <div className="mt-3 flex items-center gap-2">
                 <Input
                   type="number"
@@ -548,52 +529,54 @@ export default function Products() {
                   max={matchedProduct.stock}
                   value={transferQty}
                   onChange={(e) => setTransferQty(Number(e.target.value))}
-                  placeholder="Enter quantity"
+                  placeholder={t("admin.products.enter_quantity")}
                   className="w-32"
+                  data-testid="input-transfer-qty"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setTransferQty(matchedProduct.stock)}
+                  data-testid="button-send-all"
                 >
-                  Send All
+                  {t("admin.products.send_all")}
                 </Button>
               </div>
             </div>
-          ) : imeiInput ? (
-            <p className="text-red-500 text-sm">No product found for this IMEI</p>
+          ) : imeiInput.length >= 5 && !isSearchingImei ? (
+            <p className="text-destructive text-sm">{t("admin.products.no_product_for_imei")}</p>
           ) : null}
 
-          {/* Store dropdown using ShadCN Select */}
           <div>
-            <Label>Send Stock To</Label>
-            <Select value={targetStore} onValueChange={setTargetStore}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Store" />
+            <Label>{t("admin.products.send_stock_to")}</Label>
+            <Select value={targetShopId} onValueChange={setTargetShopId} disabled={!matchedProduct}>
+              <SelectTrigger className="w-full" data-testid="select-target-shop">
+                <SelectValue placeholder={t("admin.products.select_shop")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="store1">Store 1</SelectItem>
-                <SelectItem value="store2">Store 2</SelectItem>
+                {availableTargetShops.map((shop) => (
+                  <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsInterStockModalOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={!matchedProduct}>
-              Transfer Stock
+            <Button 
+              type="submit" 
+              disabled={!matchedProduct || !targetShopId || stockTransferMutation.isPending}
+              data-testid="button-submit-transfer"
+            >
+              {stockTransferMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              {t("admin.products.transfer_stock")}
             </Button>
           </div>
         </form>
-      </FormPopupModal>
-
-      <FormPopupModal isOpen={isPurchaseOrderOpen} onClose={() => setIsPurchaseOrderOpen(false)}>
-          <h2>Create new purchase order</h2>
-          <form>
-            
-          </form>
       </FormPopupModal>
     </div>
   );

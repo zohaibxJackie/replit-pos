@@ -10,6 +10,8 @@ import repairRoutes from './repairs.js';
 import wholesalerRoutes from './wholesaler.js';
 import notificationRoutes from './notifications.js';
 import vendorRoutes from './vendors.js';
+import taxRoutes from './taxes.js';
+import stockTransferRoutes from './stockTransfers.js';
 
 const router = Router();
 
@@ -24,6 +26,8 @@ router.use('/repairs', repairRoutes);
 router.use('/wholesaler', wholesalerRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/vendors', vendorRoutes);
+router.use('/taxes', taxRoutes);
+router.use('/stock-transfers', stockTransferRoutes);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

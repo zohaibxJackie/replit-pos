@@ -53,7 +53,33 @@
     "deleted": "Product deleted successfully",
     "delete_failed": "Failed to delete product",
     "low_stock_fetch_failed": "Failed to fetch low stock products",
-    "product_id_not_found": "Product {{id}} not found"
+    "product_id_not_found": "Product {{id}} not found",
+    "catalog_fetch_failed": "Failed to fetch catalog",
+    "brand_required": "Brand is required",
+    "brand_model_required": "Brand and model are required",
+    "catalog_item_not_found": "Catalog item not found"
+  },
+  "tax": {
+    "fetch_failed": "Failed to fetch taxes",
+    "not_found": "Tax not found",
+    "missing_fields": "Name, type and value are required",
+    "invalid_percent": "Percentage value must be between 0 and 100",
+    "invalid_value": "Value cannot be negative",
+    "create_failed": "Failed to create tax",
+    "update_failed": "Failed to update tax",
+    "deleted": "Tax deleted successfully",
+    "delete_failed": "Failed to delete tax"
+  },
+  "stock_transfer": {
+    "fetch_failed": "Failed to fetch stock transfers",
+    "missing_fields": "Product ID, from shop and to shop are required",
+    "same_shop": "Cannot transfer to the same shop",
+    "unauthorized_from_shop": "You do not have access to the source shop",
+    "unauthorized_to_shop": "You do not have access to the destination shop",
+    "product_not_found": "Product not found in source shop",
+    "insufficient_stock": "Insufficient stock for transfer",
+    "target_shop_not_found": "Target shop not found",
+    "create_failed": "Failed to create stock transfer"
   },
   "sale": {
     "fetch_failed": "Failed to fetch sales",

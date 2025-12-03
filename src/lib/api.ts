@@ -161,23 +161,224 @@ export const api = {
   },
 
   products: {
-    getAll: (shopId?: string) =>
-      request(shopId ? `/api/products?shopId=${shopId}` : '/api/products'),
+    getAll: (params?: { 
+      shopId?: string; 
+      page?: number; 
+      limit?: number; 
+      search?: string; 
+      type?: string;
+      status?: string;
+      categoryId?: string;
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.shopId) searchParams.set('shopId', params.shopId);
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.search) searchParams.set('search', params.search);
+      if (params?.type) searchParams.set('type', params.type);
+      if (params?.status) searchParams.set('status', params.status);
+      if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
+      const query = searchParams.toString();
+      return request<{ 
+        products: Array<{
+          id: string;
+          shopId: string;
+          name: string;
+          barcode?: string;
+          price: string;
+          stock: number;
+          type: string;
+          status: string;
+          imei1?: string;
+          imei2?: string;
+          mobileCatalogId?: string;
+          accessoryCatalogId?: string;
+          categoryId?: string;
+          vendorId?: string;
+          taxId?: string;
+          createdAt: string;
+          updatedAt: string;
+        }>;
+        pagination: { page: number; limit: number; total: number; totalPages: number };
+      }>(query ? `/api/products?${query}` : '/api/products');
+    },
     
     getById: (id: string) =>
-      request(`/api/products/${id}`),
+      request<{ product: {
+        id: string;
+        shopId: string;
+        name: string;
+        barcode?: string;
+        price: string;
+        stock: number;
+        type: string;
+        status: string;
+        imei1?: string;
+        imei2?: string;
+        mobileCatalogId?: string;
+        accessoryCatalogId?: string;
+        categoryId?: string;
+        vendorId?: string;
+        taxId?: string;
+        lowStockThreshold?: number;
+        createdAt: string;
+        updatedAt: string;
+      }}>(`/api/products/${id}`),
     
-    create: (data: { shopId: string; name: string; barcode?: string; categoryId?: string; price: string; stock?: number; lowStockThreshold?: number }) =>
+    getByBarcode: (barcode: string) =>
+      request<{ product: { id: string; name: string; barcode: string; price: string; stock: number } }>(`/api/products/barcode/${barcode}`),
+    
+    getByImei: (imei: string) =>
+      request<{ product: { id: string; name: string; imei1?: string; imei2?: string; price: string; stock: number } }>(`/api/products/imei/${imei}`),
+    
+    create: (data: { 
+      shopId: string; 
+      name: string; 
+      barcode?: string; 
+      categoryId?: string; 
+      price: string; 
+      stock?: number; 
+      lowStockThreshold?: number;
+      type?: string;
+      status?: string;
+      imei1?: string;
+      imei2?: string;
+      mobileCatalogId?: string;
+      accessoryCatalogId?: string;
+      vendorId?: string;
+      taxId?: string;
+    }) =>
       request('/api/products', { method: 'POST', body: data }),
     
-    update: (id: string, data: Partial<{ name: string; barcode: string; categoryId: string; price: string; stock: number; lowStockThreshold: number }>) =>
+    update: (id: string, data: Partial<{ 
+      name: string; 
+      barcode: string; 
+      categoryId: string; 
+      price: string; 
+      stock: number; 
+      lowStockThreshold: number;
+      type: string;
+      status: string;
+      imei1: string;
+      imei2: string;
+      mobileCatalogId: string;
+      accessoryCatalogId: string;
+      vendorId: string;
+      taxId: string;
+    }>) =>
       request(`/api/products/${id}`, { method: 'PUT', body: data }),
+    
+    updateStock: (id: string, data: { type: 'add' | 'subtract' | 'set'; quantity: number }) =>
+      request(`/api/products/${id}/stock`, { method: 'PATCH', body: data }),
     
     delete: (id: string) =>
       request(`/api/products/${id}`, { method: 'DELETE' }),
     
-    getLowStock: (shopId: string) =>
-      request(`/api/products/low-stock?shopId=${shopId}`),
+    getLowStock: (shopId?: string) =>
+      request(shopId ? `/api/products/low-stock?shopId=${shopId}` : '/api/products/low-stock'),
+  },
+
+  mobileCatalog: {
+    getAll: (params?: { page?: number; limit?: number; search?: string; brand?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.search) searchParams.set('search', params.search);
+      if (params?.brand) searchParams.set('brand', params.brand);
+      const query = searchParams.toString();
+      return request<{ 
+        mobiles: Array<{ id: string; brand: string; name: string; memory?: string; color?: string; gsmUrl?: string }>;
+        pagination: { page: number; limit: number; total: number; totalPages: number };
+      }>(query ? `/api/products/catalog/mobiles?${query}` : '/api/products/catalog/mobiles');
+    },
+    
+    getBrands: () =>
+      request<{ brands: string[] }>('/api/products/catalog/mobiles/brands'),
+    
+    getModels: (brand: string) =>
+      request<{ models: Array<{ id: string; name: string; memory?: string; displayName: string }> }>(`/api/products/catalog/mobiles/models?brand=${encodeURIComponent(brand)}`),
+    
+    getColors: (brand: string, model: string, memory?: string) => {
+      const params = new URLSearchParams({ brand, model });
+      if (memory) params.set('memory', memory);
+      return request<{ colors: Array<{ id: string; color: string }> }>(`/api/products/catalog/mobiles/colors?${params.toString()}`);
+    },
+    
+    getItem: (brand: string, model: string, memory?: string, color?: string) => {
+      const params = new URLSearchParams({ brand, model });
+      if (memory) params.set('memory', memory);
+      if (color) params.set('color', color);
+      return request<{ catalogItem: { id: string; brand: string; name: string; memory?: string; color?: string; gsmUrl?: string } }>(`/api/products/catalog/mobiles/item?${params.toString()}`);
+    },
+  },
+
+  accessoryCatalog: {
+    getAll: (params?: { page?: number; limit?: number; search?: string; brand?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.search) searchParams.set('search', params.search);
+      if (params?.brand) searchParams.set('brand', params.brand);
+      const query = searchParams.toString();
+      return request<{ 
+        accessories: Array<{ id: string; brand: string; name: string; category?: string }>;
+        pagination: { page: number; limit: number; total: number; totalPages: number };
+      }>(query ? `/api/products/catalog/accessories?${query}` : '/api/products/catalog/accessories');
+    },
+    
+    getBrands: () =>
+      request<{ brands: string[] }>('/api/products/catalog/accessories/brands'),
+  },
+
+  taxes: {
+    getAll: (params?: { search?: string; isActive?: boolean }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.search) searchParams.set('search', params.search);
+      if (params?.isActive !== undefined) searchParams.set('isActive', params.isActive.toString());
+      const query = searchParams.toString();
+      return request<{ taxes: Array<{ id: string; shopId: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean; createdAt: string; updatedAt: string }> }>(query ? `/api/taxes?${query}` : '/api/taxes');
+    },
+    
+    getById: (id: string) =>
+      request<{ tax: { id: string; shopId: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean } }>(`/api/taxes/${id}`),
+    
+    create: (data: { name: string; type: 'percent' | 'flat'; value: number }) =>
+      request<{ tax: { id: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean } }>('/api/taxes', { method: 'POST', body: data }),
+    
+    update: (id: string, data: Partial<{ name: string; type: 'percent' | 'flat'; value: number; isActive: boolean }>) =>
+      request<{ tax: { id: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean } }>(`/api/taxes/${id}`, { method: 'PUT', body: data }),
+    
+    delete: (id: string) =>
+      request(`/api/taxes/${id}`, { method: 'DELETE' }),
+  },
+
+  stockTransfers: {
+    getAll: () =>
+      request<{ transfers: Array<{ id: string; productId: string; fromShopId: string; toShopId: string; quantity: number; status: string; notes?: string; createdBy: string; createdAt: string }> }>('/api/stock-transfers'),
+    
+    create: (data: { productId: string; fromShopId: string; toShopId: string; quantity?: number; notes?: string }) =>
+      request<{ transfer: { id: string; productId: string; fromShopId: string; toShopId: string; quantity: number; status: string } }>('/api/stock-transfers', { method: 'POST', body: data }),
+    
+    getProductByImei: (imei: string) =>
+      request<{ product: { 
+        id: string; 
+        name: string; 
+        shopId: string; 
+        stock: number; 
+        imei1?: string; 
+        imei2?: string; 
+        barcode?: string;
+        price?: string;
+        type?: string;
+        status?: string;
+        mobileCatalogId?: string;
+        accessoryCatalogId?: string;
+        categoryId?: string;
+        vendorId?: string;
+        taxId?: string;
+        createdAt?: string;
+        updatedAt?: string;
+      } }>(`/api/stock-transfers/product/${imei}`),
   },
 
   categories: {
