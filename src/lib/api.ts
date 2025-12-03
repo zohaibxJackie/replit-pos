@@ -376,17 +376,17 @@ export const api = {
   },
 
   categories: {
-    getAll: (shopId?: string) =>
-      request(shopId ? `/api/categories?shopId=${shopId}` : '/api/categories'),
+    getAll: () =>
+      request<{ categories: Array<{ id: string; name: string }> }>('/api/categories'),
     
     getById: (id: string) =>
-      request(`/api/categories/${id}`),
+      request<{ category: { id: string; name: string }; productCount: number }>(`/api/categories/${id}`),
     
-    create: (data: { shopId: string; name: string; type: string; parentId?: string; level?: number }) =>
-      request('/api/categories', { method: 'POST', body: data }),
+    create: (data: { name: string }) =>
+      request<{ category: { id: string; name: string } }>('/api/categories', { method: 'POST', body: data }),
     
-    update: (id: string, data: Partial<{ name: string; type: string; parentId: string; level: number }>) =>
-      request(`/api/categories/${id}`, { method: 'PUT', body: data }),
+    update: (id: string, data: { name: string }) =>
+      request<{ category: { id: string; name: string } }>(`/api/categories/${id}`, { method: 'PUT', body: data }),
     
     delete: (id: string) =>
       request(`/api/categories/${id}`, { method: 'DELETE' }),
@@ -445,11 +445,29 @@ export const api = {
   },
 
   activityLogs: {
-    getAll: () =>
-      request('/api/activity-logs'),
-    
-    getByUser: (userId: string) =>
-      request(`/api/activity-logs/user/${userId}`),
+    getAll: (params?: { page?: number; limit?: number; entityType?: string; action?: string; userId?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.entityType) searchParams.set('entityType', params.entityType);
+      if (params?.action) searchParams.set('action', params.action);
+      if (params?.userId) searchParams.set('userId', params.userId);
+      const query = searchParams.toString();
+      return request<{
+        activityLogs: Array<{
+          id: string;
+          userId: string;
+          action: string;
+          entityType: string;
+          entityId?: string | null;
+          details?: string | null;
+          ipAddress?: string | null;
+          userAgent?: string | null;
+          createdAt: string;
+        }>;
+        pagination: { page: number; limit: number; total: number; totalPages: number };
+      }>(query ? `/api/notifications/activity-logs?${query}` : '/api/notifications/activity-logs');
+    },
   },
 
   pricingPlans: {

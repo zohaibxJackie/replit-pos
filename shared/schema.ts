@@ -35,15 +35,10 @@ export const vendors = pgTable("vendors", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
-// Categories table
+// Categories table - simplified for hardcoded mobile/accessories categories
 export const categories = pgTable("categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  name: text("name").notNull(),
-  type: text("type").notNull(),
-  parentId: varchar("parent_id"),
-  level: integer("level").notNull().default(1),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  name: text("name").notNull().unique(),
 });
 
 // Products table - actual shop inventory
@@ -499,7 +494,7 @@ export const insertUsedProductSchema = createInsertSchema(usedProducts).omit({ i
 export const insertMobileCatalogSchema = createInsertSchema(mobileCatalog).omit({ id: true, createdAt: true });
 export const insertAccessoryCatalogSchema = createInsertSchema(accessoryCatalog).omit({ id: true, createdAt: true });
 export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTaxSchema = createInsertSchema(taxes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertStockTransferSchema = createInsertSchema(stockTransfers).omit({ id: true, createdAt: true, updatedAt: true });

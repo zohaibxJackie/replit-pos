@@ -331,7 +331,21 @@
         "transfer_button": "Transfer Stock",
         "store1": "Store 1",
         "store2": "Store 2"
-      }
+      },
+      "transfer_from_shop": "From Shop",
+      "transfer_to_shop": "To Shop",
+      "search_products": "Search Products",
+      "search_by_name_imei": "Search by name, IMEI, or barcode...",
+      "select_product": "Select a Product",
+      "no_products_in_stock": "No products with stock available",
+      "selected_product": "Selected Product",
+      "available_stock": "Available Stock",
+      "quantity": "Quantity",
+      "product": "Product",
+      "stock": "Stock",
+      "confirm_transfer": "Confirm Transfer",
+      "confirm_transfer_message": "Are you sure you want to transfer this product?",
+      "confirm": "Confirm"
     },
     "generic": {
       "title": "Generic Products",
@@ -610,7 +624,37 @@
       "title": "Private Wallet"
     },
     "activity_log": {
-      "title": "Activity Log"
+      "title": "Activity Log",
+      "total_entries": "Total {{count}} entries",
+      "fetch_error": "Failed to load activity logs",
+      "no_logs": "No activity logs found",
+      "date": "Date",
+      "action": "Action",
+      "entity_type": "Entity Type",
+      "details": "Details",
+      "ip_address": "IP Address",
+      "filter_entity": "Entity",
+      "filter_action": "Action",
+      "all": "All",
+      "name": "Name",
+      "barcode": "Barcode",
+      "stock": "Stock",
+      "transfer": "Transfer",
+      "quantity": "Quantity",
+      "price": "Price",
+      "no_details": "No details",
+      "actions": {
+        "create": "Create",
+        "update": "Update",
+        "delete": "Delete",
+        "transfer": "Transfer",
+        "stock_update": "Stock Update"
+      },
+      "entity_types": {
+        "product": "Product",
+        "stock_transfer": "Stock Transfer",
+        "user": "User"
+      }
     },
     "subscription": {
       "title": "Subscription",

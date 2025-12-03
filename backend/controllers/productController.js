@@ -2,6 +2,7 @@ import { db } from '../config/database.js';
 import { products, categories, vendors, mobileCatalog, accessoryCatalog } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or, lte, ne } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
+import { logActivity } from './notificationController.js';
 
 export const getProducts = async (req, res) => {
   try {
@@ -263,6 +264,20 @@ export const createProduct = async (req, res) => {
       lowStockThreshold: lowStockThreshold || 5
     }).returning();
 
+    try {
+      await logActivity(req.user?.id, 'create', 'product', newProduct.id, {
+        categoryId,
+        customName: newProduct.customName,
+        barcode: newProduct.barcode,
+        stock: newProduct.stock,
+        salePrice: newProduct.salePrice,
+        imei1: newProduct.imei1,
+        imei2: newProduct.imei2
+      }, req);
+    } catch (logError) {
+      console.error('Activity logging failed:', logError);
+    }
+
     res.status(201).json({ product: newProduct });
   } catch (error) {
     console.error('Create product error:', error);
@@ -371,6 +386,16 @@ export const updateProduct = async (req, res) => {
       .where(eq(products.id, id))
       .returning();
 
+    try {
+      await logActivity(req.user?.id, 'update', 'product', id, {
+        changes: updateData,
+        previousName: existingProduct.customName,
+        newName: updatedProduct.customName
+      }, req);
+    } catch (logError) {
+      console.error('Activity logging failed:', logError);
+    }
+
     res.json({ product: updatedProduct });
   } catch (error) {
     console.error('Update product error:', error);
@@ -414,6 +439,17 @@ export const updateStock = async (req, res) => {
       .where(eq(products.id, id))
       .returning();
 
+    try {
+      await logActivity(req.user?.id, 'stock_update', 'product', id, {
+        type,
+        previousStock: existingProduct.stock,
+        newStock,
+        quantityChanged: quantity
+      }, req);
+    } catch (logError) {
+      console.error('Activity logging failed:', logError);
+    }
+
     res.json({ product: updatedProduct });
   } catch (error) {
     console.error('Update stock error:', error);
@@ -434,6 +470,20 @@ export const deleteProduct = async (req, res) => {
     }
 
     await db.delete(products).where(eq(products.id, id));
+
+    try {
+      await logActivity(req.user?.id, 'delete', 'product', id, {
+        deletedProduct: {
+          customName: existingProduct.customName,
+          barcode: existingProduct.barcode,
+          imei1: existingProduct.imei1,
+          imei2: existingProduct.imei2,
+          categoryId: existingProduct.categoryId
+        }
+      }, req);
+    } catch (logError) {
+      console.error('Activity logging failed:', logError);
+    }
 
     res.json({ message: req.t('product.deleted') });
   } catch (error) {

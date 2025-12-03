@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import FormPopupModal from "@/components/ui/FormPopupModal";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 import { useTitle } from '@/context/TitleContext';
 import { MobileProductForm, MobileProductPayload } from "@/components/MobileProductForm";
+import InterStockTransferModal from "@/components/InterStockTransferModal";
 import { api } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -80,12 +80,6 @@ export default function Products() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInterStockModalOpen, setIsInterStockModalOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
-
-  const [imeiInput, setImeiInput] = useState("");
-  const [matchedProduct, setMatchedProduct] = useState<Product | null>(null);
-  const [transferQty, setTransferQty] = useState<number>(1);
-  const [targetShopId, setTargetShopId] = useState("");
-  const [isSearchingImei, setIsSearchingImei] = useState(false);
   const [selectedShopId, setSelectedShopId] = useState<string>("");
 
   const debouncedSearch = useDebounce(searchInput, 500);
@@ -165,25 +159,6 @@ export default function Products() {
     },
   });
 
-  const stockTransferMutation = useMutation({
-    mutationFn: (data: Parameters<typeof api.stockTransfers.create>[0]) => api.stockTransfers.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      toast({ title: t("admin.products.stock_transferred"), description: t("admin.products.stock_transferred_desc") });
-      setIsInterStockModalOpen(false);
-      resetTransferModal();
-    },
-    onError: (error: Error) => {
-      toast({ title: t("admin.products.error"), description: error.message, variant: "destructive" });
-    },
-  });
-
-  const resetTransferModal = () => {
-    setImeiInput("");
-    setMatchedProduct(null);
-    setTransferQty(1);
-    setTargetShopId("");
-  };
 
   const openCreateModal = () => {
     setCurrentProduct(null);
@@ -197,7 +172,6 @@ export default function Products() {
   };
 
   const openInterStockModal = () => {
-    resetTransferModal();
     setIsInterStockModalOpen(true);
   };
 
@@ -234,80 +208,6 @@ export default function Products() {
     }
   };
 
-  const handleImeiSearch = useCallback(async (value: string) => {
-    setImeiInput(value);
-    
-    if (value.trim().length < 5) {
-      setMatchedProduct(null);
-      return;
-    }
-
-    setIsSearchingImei(true);
-    try {
-      const result = await api.stockTransfers.getProductByImei(value.trim());
-      if (result?.product) {
-        const shop = shops.find(s => s.id === result.product.shopId);
-        const productData = result.product;
-        setMatchedProduct({
-          id: productData.id,
-          shopId: productData.shopId,
-          shopName: shop?.name || 'Unknown',
-          name: productData.customName || `Product ${productData.id.slice(0, 8)}`,
-          barcode: productData.barcode,
-          price: productData.salePrice || '0',
-          stock: productData.stock ?? 0,
-          categoryId: productData.categoryId || 'mobile',
-          status: productData.stock > 0 ? 'active' : 'inactive',
-          imei1: productData.imei1,
-          imei2: productData.imei2,
-          mobileCatalogId: productData.mobileCatalogId,
-          accessoryCatalogId: productData.accessoryCatalogId,
-          vendorId: productData.vendorId,
-          sku: productData.sku,
-          createdAt: productData.createdAt || '',
-          updatedAt: productData.updatedAt || '',
-        });
-      } else {
-        setMatchedProduct(null);
-      }
-    } catch {
-      setMatchedProduct(null);
-    } finally {
-      setIsSearchingImei(false);
-    }
-  }, [shops]);
-
-  const handleTransferSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!matchedProduct) {
-      toast({ title: t("admin.products.error"), description: t("admin.products.no_product_found"), variant: "destructive" });
-      return;
-    }
-
-    if (!targetShopId) {
-      toast({ title: t("admin.products.error"), description: t("admin.products.select_target_shop"), variant: "destructive" });
-      return;
-    }
-
-    if (matchedProduct.shopId === targetShopId) {
-      toast({ title: t("admin.products.error"), description: t("admin.products.same_shop_error"), variant: "destructive" });
-      return;
-    }
-
-    const qty = transferQty > 0 ? transferQty : 1;
-    if (qty > matchedProduct.stock) {
-      toast({ title: t("admin.products.error"), description: t("admin.products.insufficient_stock"), variant: "destructive" });
-      return;
-    }
-
-    stockTransferMutation.mutate({
-      productId: matchedProduct.id,
-      fromShopId: matchedProduct.shopId,
-      toShopId: targetShopId,
-      quantity: qty,
-    });
-  };
 
   const handlePageSizeChange = (newLimit: number) => {
     setLimit(newLimit);
@@ -318,10 +218,6 @@ export default function Products() {
     setPage(newPage);
   };
 
-  const availableTargetShops = useMemo(() => {
-    if (!matchedProduct) return shops;
-    return shops.filter(s => s.id !== matchedProduct.shopId);
-  }, [shops, matchedProduct]);
 
   const handleColumnFilterChange = useCallback((filters: Record<string, string>) => {
     if (filters.name !== undefined) {
@@ -477,93 +373,11 @@ export default function Products() {
         />
       </FormPopupModal>
 
-      <FormPopupModal isOpen={isInterStockModalOpen} onClose={() => setIsInterStockModalOpen(false)}>
-        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-          <ArrowRightLeft className="w-5 h-5" />
-          {t("admin.products.inter_store_movement")}
-        </h2>
-
-        <form onSubmit={handleTransferSubmit} className="space-y-4 mt-4">
-          <div>
-            <Label>{t("admin.products.enter_imei")}</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="text"
-                value={imeiInput}
-                onChange={(e) => handleImeiSearch(e.target.value)}
-                placeholder={t("admin.products.enter_imei_placeholder")}
-                required
-                data-testid="input-transfer-imei"
-              />
-              {isSearchingImei && <Loader2 className="w-4 h-4 animate-spin" />}
-            </div>
-          </div>
-
-          {matchedProduct ? (
-            <div className="border p-3 rounded-md bg-muted/50">
-              <p className="font-medium">{matchedProduct.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {t("admin.products.current_shop")}: {matchedProduct.shopName}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t("admin.products.current_stock")}: {matchedProduct.stock}
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="1"
-                  max={matchedProduct.stock}
-                  value={transferQty}
-                  onChange={(e) => setTransferQty(Number(e.target.value))}
-                  placeholder={t("admin.products.enter_quantity")}
-                  className="w-32"
-                  data-testid="input-transfer-qty"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setTransferQty(matchedProduct.stock)}
-                  data-testid="button-send-all"
-                >
-                  {t("admin.products.send_all")}
-                </Button>
-              </div>
-            </div>
-          ) : imeiInput.length >= 5 && !isSearchingImei ? (
-            <p className="text-destructive text-sm">{t("admin.products.no_product_for_imei")}</p>
-          ) : null}
-
-          <div>
-            <Label>{t("admin.products.send_stock_to")}</Label>
-            <Select value={targetShopId} onValueChange={setTargetShopId} disabled={!matchedProduct}>
-              <SelectTrigger className="w-full" data-testid="select-target-shop">
-                <SelectValue placeholder={t("admin.products.select_shop")} />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTargetShops.map((shop) => (
-                  <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsInterStockModalOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={!matchedProduct || !targetShopId || stockTransferMutation.isPending}
-              data-testid="button-submit-transfer"
-            >
-              {stockTransferMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
-              {t("admin.products.transfer_stock")}
-            </Button>
-          </div>
-        </form>
-      </FormPopupModal>
+      <InterStockTransferModal 
+        isOpen={isInterStockModalOpen}
+        onClose={() => setIsInterStockModalOpen(false)}
+        shops={shops}
+      />
     </div>
   );
 }

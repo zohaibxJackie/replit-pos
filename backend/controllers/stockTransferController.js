@@ -1,6 +1,7 @@
 import { db } from '../config/database.js';
 import { stockTransfers, products, shops } from '../../shared/schema.js';
 import { eq, and, desc, or, inArray } from 'drizzle-orm';
+import { logActivity } from './notificationController.js';
 
 export const getStockTransfers = async (req, res) => {
   try {
@@ -80,6 +81,25 @@ export const createStockTransfer = async (req, res) => {
       notes: notes || null,
       createdBy: userId
     }).returning();
+
+    const [fromShop] = await db.select().from(shops).where(eq(shops.id, fromShopId)).limit(1);
+
+    try {
+      await logActivity(userId, 'transfer', 'stock_transfer', newTransfer.id, {
+        productId,
+        productName: product.customName,
+        productBarcode: product.barcode,
+        imei1: product.imei1,
+        imei2: product.imei2,
+        fromShopId,
+        fromShopName: fromShop?.name,
+        toShopId,
+        toShopName: toShop?.name,
+        quantity: transferQty
+      }, req);
+    } catch (logError) {
+      console.error('Activity logging failed:', logError);
+    }
 
     res.status(201).json({ transfer: newTransfer });
   } catch (error) {

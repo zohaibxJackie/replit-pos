@@ -24,11 +24,11 @@
   "category": {
     "fetch_failed": "Failed to fetch categories",
     "not_found": "Category not found",
-    "parent_not_found": "Parent category not found",
+    "name_required": "Category name is required",
+    "already_exists": "Category with this name already exists",
     "create_failed": "Failed to create category",
     "update_failed": "Failed to update category",
     "has_products": "Cannot delete category with products",
-    "has_subcategories": "Cannot delete category with subcategories",
     "deleted": "Category deleted successfully",
     "delete_failed": "Failed to delete category"
   },
