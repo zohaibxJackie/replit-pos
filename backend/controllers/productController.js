@@ -195,12 +195,13 @@ export const createProduct = async (req, res) => {
     const shopId = requestedShopId || req.userShopIds?.[0];
 
     if (!shopId) {
-      return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
+      return res.status(400).json({ error: 'Shop ID is required' });
     }
 
-    // Validate that user has access to the requested shop
-    if (!req.userShopIds?.includes(shopId)) {
-      return res.status(403).json({ error: req.t('product.shop_access_denied') || 'You do not have access to this shop' });
+    // Super admins have access to all shops, others need to be assigned to the shop
+    const isSuperAdmin = req.user?.role === 'super_admin';
+    if (!isSuperAdmin && req.userShopIds?.length > 0 && !req.userShopIds.includes(shopId)) {
+      return res.status(403).json({ error: 'You do not have access to this shop' });
     }
 
     if (vendorId) {

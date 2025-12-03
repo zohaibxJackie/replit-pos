@@ -23,7 +23,21 @@ function getAuthToken(): string | null {
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = text;
+    
+    // Try to parse JSON error response and extract the error message
+    try {
+      const json = JSON.parse(text);
+      if (json.error) {
+        errorMessage = json.error;
+      } else if (json.message) {
+        errorMessage = json.message;
+      }
+    } catch {
+      // If it's not valid JSON, use the text as-is
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
