@@ -238,8 +238,8 @@ export const api = {
       customName?: string;
       barcode?: string; 
       categoryId?: string; 
-      salePrice: string;
-      purchasePrice?: string;
+      salePrice: number;
+      purchasePrice?: number;
       stock?: number; 
       lowStockThreshold?: number;
       imei1?: string;
@@ -254,8 +254,8 @@ export const api = {
       customName: string;
       barcode: string; 
       categoryId: string; 
-      salePrice: string;
-      purchasePrice: string;
+      salePrice: number;
+      purchasePrice: number;
       stock: number; 
       lowStockThreshold: number;
       imei1: string;

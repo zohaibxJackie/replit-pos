@@ -140,11 +140,11 @@ export default function Products() {
     mutationFn: (data: Parameters<typeof api.products.create>[0]) => api.products.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      toast({ title: t("products.product_added"), description: t("products.product_added_desc") });
+      toast({ title: t("admin.products.product_added"), description: t("admin.products.product_added_desc") });
       setIsModalOpen(false);
     },
     onError: (error: Error) => {
-      toast({ title: t("products.error"), description: error.message, variant: "destructive" });
+      toast({ title: t("admin.products.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -153,12 +153,12 @@ export default function Products() {
       api.products.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      toast({ title: t("products.product_updated"), description: t("products.product_updated_desc") });
+      toast({ title: t("admin.products.product_updated"), description: t("admin.products.product_updated_desc") });
       setIsModalOpen(false);
       setCurrentProduct(null);
     },
     onError: (error: Error) => {
-      toast({ title: t("products.error"), description: error.message, variant: "destructive" });
+      toast({ title: t("admin.products.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -166,12 +166,12 @@ export default function Products() {
     mutationFn: (data: Parameters<typeof api.stockTransfers.create>[0]) => api.stockTransfers.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      toast({ title: t("products.stock_transferred"), description: t("products.stock_transferred_desc") });
+      toast({ title: t("admin.products.stock_transferred"), description: t("admin.products.stock_transferred_desc") });
       setIsInterStockModalOpen(false);
       resetTransferModal();
     },
     onError: (error: Error) => {
-      toast({ title: t("products.error"), description: error.message, variant: "destructive" });
+      toast({ title: t("admin.products.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -205,7 +205,7 @@ export default function Products() {
         id: currentProduct.id,
         data: {
           customName: productName,
-          salePrice: payload.sellingPrice.toString(),
+          salePrice: payload.sellingPrice,
           imei1: payload.imei,
           imei2: payload.imei2,
           mobileCatalogId: payload.mobileCatalogId,
@@ -214,7 +214,7 @@ export default function Products() {
     } else {
       const shopId = shopFilter || shops[0]?.id;
       if (!shopId) {
-        toast({ title: t("products.error"), description: t("products.no_shop_selected"), variant: "destructive" });
+        toast({ title: t("admin.products.error"), description: t("admin.products.no_shop_selected"), variant: "destructive" });
         return;
       }
       
@@ -222,7 +222,7 @@ export default function Products() {
         shopId,
         productType: 'mobile',
         customName: productName,
-        salePrice: payload.sellingPrice.toString(),
+        salePrice: payload.sellingPrice,
         stock: 1,
         imei1: payload.imei,
         imei2: payload.imei2,
@@ -278,23 +278,23 @@ export default function Products() {
     e.preventDefault();
     
     if (!matchedProduct) {
-      toast({ title: t("products.error"), description: t("products.no_product_found"), variant: "destructive" });
+      toast({ title: t("admin.products.error"), description: t("admin.products.no_product_found"), variant: "destructive" });
       return;
     }
 
     if (!targetShopId) {
-      toast({ title: t("products.error"), description: t("products.select_target_shop"), variant: "destructive" });
+      toast({ title: t("admin.products.error"), description: t("admin.products.select_target_shop"), variant: "destructive" });
       return;
     }
 
     if (matchedProduct.shopId === targetShopId) {
-      toast({ title: t("products.error"), description: t("products.same_shop_error"), variant: "destructive" });
+      toast({ title: t("admin.products.error"), description: t("admin.products.same_shop_error"), variant: "destructive" });
       return;
     }
 
     const qty = transferQty > 0 ? transferQty : 1;
     if (qty > matchedProduct.stock) {
-      toast({ title: t("products.error"), description: t("products.insufficient_stock"), variant: "destructive" });
+      toast({ title: t("admin.products.error"), description: t("admin.products.insufficient_stock"), variant: "destructive" });
       return;
     }
 
