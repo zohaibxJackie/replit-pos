@@ -282,6 +282,65 @@
       }
     },
     "super_admin": {},
-    "sales_person": {}
+    "sales_person": {},
+    "products": {
+      "title": "مصنوعات",
+      "column": {
+        "product_name": "مصنوعات کا نام",
+        "imei": "IMEI/سیریل",
+        "stock": "اسٹاک",
+        "sale_price": "فروخت کی قیمت"
+      }
+    },
+    "common": {
+      "showing": "دکھا رہا ہے",
+      "of": "میں سے",
+      "previous": "پچھلا",
+      "next": "اگلا",
+      "actions": "اعمال"
+    }
+  },
+  "products": {
+    "form": {
+      "brand": "برانڈ",
+      "select_brand": "برانڈ منتخب کریں",
+      "brand_required": "برانڈ ضروری ہے",
+      "phone_model": "فون ماڈل",
+      "model_required": "فون ماڈل ضروری ہے",
+      "select_model_from_list": "براہ کرم فہرست سے ماڈل منتخب کریں",
+      "color": "رنگ",
+      "color_required": "رنگ ضروری ہے",
+      "select_color_from_list": "براہ کرم فہرست سے رنگ منتخب کریں",
+      "imei": "IMEI",
+      "imei2": "IMEI 2",
+      "optional": "اختیاری",
+      "imei_required": "IMEI ضروری ہے",
+      "enter_or_scan_imei": "IMEI درج کریں یا اسکین کریں",
+      "enter_or_scan_imei2": "IMEI 2 درج کریں یا اسکین کریں",
+      "purchase_price": "خرید کی قیمت",
+      "purchase_price_required": "درست خرید کی قیمت ضروری ہے",
+      "enter_purchase_price": "خرید کی قیمت درج کریں",
+      "selling_price": "فروخت کی قیمت",
+      "selling_price_required": "درست فروخت کی قیمت ضروری ہے",
+      "enter_selling_price": "فروخت کی قیمت درج کریں",
+      "tax": "ٹیکس",
+      "select_tax": "ٹیکس منتخب کریں (اختیاری)",
+      "final_price_with_tax": "حتمی قیمت (ٹیکس کے ساتھ)",
+      "add_mobile": "موبائل شامل کریں",
+      "update_mobile": "موبائل اپ ڈیٹ کریں"
+    },
+    "no_tax": "کوئی ٹیکس نہیں"
+  },
+  "common": {
+    "cancel": "منسوخ کریں",
+    "save": "محفوظ کریں",
+    "update": "اپ ڈیٹ کریں",
+    "edit": "ترمیم کریں",
+    "delete": "حذف کریں",
+    "add": "شامل کریں",
+    "search": "تلاش کریں",
+    "loading": "لوڈ ہو رہا ہے...",
+    "error": "خرابی",
+    "success": "کامیابی"
   }
 }

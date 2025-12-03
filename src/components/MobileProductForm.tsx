@@ -390,10 +390,14 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
     const newErrors: Record<string, string> = {};
     
     if (!brand) newErrors.brand = t("products.form.brand_required");
-    if (!modelDisplay.trim()) {
-      newErrors.model = t("products.form.model_required");
+    if (!selectedModel) {
+      newErrors.model = t("products.form.select_model_from_list");
     }
-    if (!colorDisplay.trim()) newErrors.color = t("products.form.color_required");
+    if (colors.length > 0 && !selectedColor) {
+      newErrors.color = t("products.form.select_color_from_list");
+    } else if (colors.length === 0 && selectedModel && !colorDisplay.trim()) {
+      newErrors.color = t("products.form.color_required");
+    }
     if (!imei.trim()) newErrors.imei = t("products.form.imei_required");
     if (!purchasePrice || parseFloat(purchasePrice) <= 0) {
       newErrors.purchasePrice = t("products.form.purchase_price_required");
@@ -408,17 +412,21 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
       return;
     }
 
+    if (!selectedModel) {
+      return;
+    }
+
     const payload: MobileProductPayload = {
       brand,
-      model: selectedModel?.name || modelDisplay.trim(),
-      memory: selectedModel?.memory,
-      color: colorDisplay.trim(),
+      model: selectedModel.name,
+      memory: selectedModel.memory,
+      color: selectedColor?.color || colorDisplay.trim(),
       imei: imei.trim(),
       imei2: imei2.trim() || undefined,
       purchasePrice: parseFloat(purchasePrice),
       sellingPrice: parseFloat(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
-      mobileCatalogId: selectedColor?.id || selectedModel?.id,
+      mobileCatalogId: selectedColor?.id || selectedModel.id,
       category: "mobile",
     };
 

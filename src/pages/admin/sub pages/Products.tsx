@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Search, Loader2, ArrowRightLeft } from "lucide-react";
+import { Plus, Edit, Loader2, ArrowRightLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import FormPopupModal from "@/components/ui/FormPopupModal";
@@ -14,7 +14,6 @@ import { useTitle } from '@/context/TitleContext';
 import { MobileProductForm, MobileProductPayload } from "@/components/MobileProductForm";
 import { api } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
 import {
   Select,
   SelectTrigger,
@@ -326,33 +325,42 @@ export default function Products() {
     return shops.filter(s => s.id !== matchedProduct.shopId);
   }, [shops, matchedProduct]);
 
+  const handleColumnFilterChange = useCallback((filters: Record<string, string>) => {
+    if (filters.name !== undefined) {
+      setSearchInput(filters.name);
+    }
+    if (filters.imei1 !== undefined) {
+      setSearchInput(filters.imei1);
+    }
+    if (filters.stock !== undefined) {
+      setStatusFilter(filters.stock === "in_stock" ? "active" : filters.stock === "out_of_stock" ? "inactive" : "");
+    }
+    setPage(1);
+  }, []);
+
   const columns = [
     {
       key: "index",
       label: "#",
-      filterType: "none",
+      filterType: "none" as const,
       render: (_: any, __: any, index: number) => (page - 1) * limit + index + 1,
     },
     { 
       key: "name", 
       label: t("admin.products.column.product_name"), 
-      filterType: "none",
+      filterType: "text" as const,
     },
     { 
       key: "imei1", 
       label: t("admin.products.column.imei"), 
-      filterType: "none",
+      filterType: "text" as const,
       render: (value: string, row: Product) => value || row.imei2 || row.barcode || '-',
-    },
-    {
-      key: "shopName",
-      label: t("admin.products.column.shop"),
-      filterType: "none",
     },
     {
       key: "stock",
       label: t("admin.products.column.stock"),
-      filterType: "none",
+      filterType: "select" as const,
+      filterOptions: ["in_stock", "out_of_stock"],
       render: (value: number) => (
         <Badge variant={value <= 0 ? "destructive" : "default"}>{value}</Badge>
       ),
@@ -360,72 +368,14 @@ export default function Products() {
     {
       key: "price",
       label: t("admin.products.column.sale_price"),
-      filterType: "none",
+      filterType: "none" as const,
       render: (value: string) => `PKR ${parseFloat(value).toLocaleString()}`,
-    },
-    {
-      key: "type",
-      label: t("admin.products.column.type"),
-      filterType: "none",
-      render: (value: string) => (
-        <Badge variant="outline">{value}</Badge>
-      ),
     },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder={t("admin.products.search_placeholder")}
-              value={searchInput}
-              onChange={(e) => {
-                setSearchInput(e.target.value);
-                setPage(1);
-              }}
-              className="pl-9 w-64"
-              data-testid="input-search-products"
-            />
-          </div>
-          
-          <Select value={shopFilter || "__all__"} onValueChange={(v) => { setShopFilter(v === "__all__" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="w-40" data-testid="select-shop-filter">
-              <SelectValue placeholder={t("admin.products.all_shops")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t("admin.products.all_shops")}</SelectItem>
-              {shops.map((shop) => (
-                <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={typeFilter || "__all__"} onValueChange={(v) => { setTypeFilter(v === "__all__" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="w-32" data-testid="select-type-filter">
-              <SelectValue placeholder={t("admin.products.all_types")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t("admin.products.all_types")}</SelectItem>
-              <SelectItem value="mobile">{t("admin.products.type_mobile")}</SelectItem>
-              <SelectItem value="accessory">{t("admin.products.type_accessory")}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter || "__all__"} onValueChange={(v) => { setStatusFilter(v === "__all__" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="w-32" data-testid="select-status-filter">
-              <SelectValue placeholder={t("admin.products.all_status")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t("admin.products.all_status")}</SelectItem>
-              <SelectItem value="active">{t("admin.products.status_active")}</SelectItem>
-              <SelectItem value="inactive">{t("admin.products.status_inactive")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="flex items-center gap-3 flex-wrap">
           <Button onClick={openCreateModal} data-testid="button-create-product">
             <Plus className="w-4 h-4 mr-2" />
@@ -438,9 +388,7 @@ export default function Products() {
             <span className="sm:hidden">{t("admin.products.transfer")}</span>
           </Button>
         </div>
-      </div>
 
-      <div className="flex justify-end items-center mb-4">
         <TablePageSizeSelector
           limit={limit}
           onChange={handlePageSizeChange}
@@ -456,6 +404,7 @@ export default function Products() {
           columns={columns}
           data={products}
           showActions
+          onFilterChange={handleColumnFilterChange}
           renderActions={(row) => (
             <div className="flex justify-end gap-1 relative z-10">
               <Button

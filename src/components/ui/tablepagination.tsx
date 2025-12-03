@@ -18,21 +18,24 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const hasData = total > 0;
+  const startItem = hasData ? (page - 1) * limit + 1 : 0;
+  const endItem = hasData ? Math.min(page * limit, total) : 0;
 
   return (
     <div className="flex justify-between items-center mt-4">
       <p className="text-sm text-muted-foreground">
-        {t("admin.common.showing")} {(page - 1) * limit + 1}–
-        {Math.min(page * limit, total)} {t("admin.common.of")} {total}
+        {t("admin.common.showing")} {startItem}–{endItem} {t("admin.common.of")} {total}
       </p>
 
       <div className="flex gap-2">
         <Button
           variant="outline"
           size="sm"
-          disabled={page === 1}
+          disabled={page <= 1 || !hasData}
           onClick={() => onPageChange(page - 1)}
+          data-testid="button-pagination-prev"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           {t("admin.common.previous")}
@@ -41,8 +44,9 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
         <Button
           variant="outline"
           size="sm"
-          disabled={page === totalPages}
+          disabled={page >= totalPages || !hasData}
           onClick={() => onPageChange(page + 1)}
+          data-testid="button-pagination-next"
         >
           {t("admin.common.next")}
           <ChevronRight className="w-4 h-4 ml-1" />
