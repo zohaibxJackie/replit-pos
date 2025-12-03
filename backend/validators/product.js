@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 // categoryId values: 'mobile' or 'accessories' (hardcoded categories)
 export const createProductSchema = z.object({
+  shopId: z.string().uuid().optional(),
   categoryId: z.enum(['mobile', 'accessories']),
   mobileCatalogId: z.string().uuid().optional().nullable(),
   accessoryCatalogId: z.string().uuid().optional().nullable(),

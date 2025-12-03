@@ -187,13 +187,20 @@ export const createProduct = async (req, res) => {
       purchasePrice,
       salePrice,
       vendorId,
-      lowStockThreshold
+      lowStockThreshold,
+      shopId: requestedShopId
     } = req.validatedBody;
 
-    const shopId = req.userShopIds?.[0];
+    // Use shopId from request body if provided, otherwise fall back to user's first shop
+    const shopId = requestedShopId || req.userShopIds?.[0];
 
     if (!shopId) {
       return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
+    }
+
+    // Validate that user has access to the requested shop
+    if (!req.userShopIds?.includes(shopId)) {
+      return res.status(403).json({ error: req.t('product.shop_access_denied') || 'You do not have access to this shop' });
     }
 
     if (vendorId) {
