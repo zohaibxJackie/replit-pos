@@ -183,19 +183,20 @@ export const api = {
         products: Array<{
           id: string;
           shopId: string;
-          name: string;
+          productType: string;
+          customName?: string;
           barcode?: string;
-          price: string;
+          salePrice: string;
+          purchasePrice?: string;
           stock: number;
-          type: string;
-          status: string;
           imei1?: string;
           imei2?: string;
+          sku?: string;
           mobileCatalogId?: string;
           accessoryCatalogId?: string;
           categoryId?: string;
           vendorId?: string;
-          taxId?: string;
+          lowStockThreshold?: number;
           createdAt: string;
           updatedAt: string;
         }>;
@@ -207,64 +208,61 @@ export const api = {
       request<{ product: {
         id: string;
         shopId: string;
-        name: string;
+        productType: string;
+        customName?: string;
         barcode?: string;
-        price: string;
+        salePrice: string;
+        purchasePrice?: string;
         stock: number;
-        type: string;
-        status: string;
         imei1?: string;
         imei2?: string;
+        sku?: string;
         mobileCatalogId?: string;
         accessoryCatalogId?: string;
         categoryId?: string;
         vendorId?: string;
-        taxId?: string;
         lowStockThreshold?: number;
         createdAt: string;
         updatedAt: string;
       }}>(`/api/products/${id}`),
     
     getByBarcode: (barcode: string) =>
-      request<{ product: { id: string; name: string; barcode: string; price: string; stock: number } }>(`/api/products/barcode/${barcode}`),
+      request<{ product: { id: string; customName?: string; barcode: string; salePrice: string; stock: number } }>(`/api/products/barcode/${barcode}`),
     
     getByImei: (imei: string) =>
-      request<{ product: { id: string; name: string; imei1?: string; imei2?: string; price: string; stock: number } }>(`/api/products/imei/${imei}`),
+      request<{ product: { id: string; customName?: string; imei1?: string; imei2?: string; salePrice: string; stock: number } }>(`/api/products/imei/${imei}`),
     
     create: (data: { 
       shopId: string; 
-      name: string; 
+      productType: string;
+      customName?: string;
       barcode?: string; 
       categoryId?: string; 
-      price: string; 
+      salePrice: string;
+      purchasePrice?: string;
       stock?: number; 
       lowStockThreshold?: number;
-      type?: string;
-      status?: string;
       imei1?: string;
       imei2?: string;
       mobileCatalogId?: string;
       accessoryCatalogId?: string;
       vendorId?: string;
-      taxId?: string;
     }) =>
       request('/api/products', { method: 'POST', body: data }),
     
     update: (id: string, data: Partial<{ 
-      name: string; 
+      customName: string;
       barcode: string; 
       categoryId: string; 
-      price: string; 
+      salePrice: string;
+      purchasePrice: string;
       stock: number; 
       lowStockThreshold: number;
-      type: string;
-      status: string;
       imei1: string;
       imei2: string;
       mobileCatalogId: string;
       accessoryCatalogId: string;
       vendorId: string;
-      taxId: string;
     }>) =>
       request(`/api/products/${id}`, { method: 'PUT', body: data }),
     
@@ -362,20 +360,21 @@ export const api = {
     getProductByImei: (imei: string) =>
       request<{ product: { 
         id: string; 
-        name: string; 
         shopId: string; 
+        productType: string;
+        customName?: string;
         stock: number; 
+        salePrice: string;
+        purchasePrice?: string;
         imei1?: string; 
         imei2?: string; 
         barcode?: string;
-        price?: string;
-        type?: string;
-        status?: string;
         mobileCatalogId?: string;
         accessoryCatalogId?: string;
         categoryId?: string;
         vendorId?: string;
-        taxId?: string;
+        sku?: string;
+        lowStockThreshold?: number;
         createdAt?: string;
         updatedAt?: string;
       } }>(`/api/stock-transfers/product/${imei}`),

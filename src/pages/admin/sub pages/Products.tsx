@@ -40,7 +40,6 @@ interface Product {
   accessoryCatalogId?: string;
   categoryId?: string;
   vendorId?: string;
-  taxId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -119,7 +118,25 @@ export default function Products() {
     const productList = productsData?.products || [];
     return productList.map(p => {
       const shop = shops.find(s => s.id === p.shopId);
-      return { ...p, shopName: shop?.name || 'Unknown' };
+      return {
+        id: p.id,
+        shopId: p.shopId,
+        shopName: shop?.name || 'Unknown',
+        name: p.customName || `Product ${p.id.slice(0, 8)}`,
+        barcode: p.barcode,
+        price: p.salePrice || '0',
+        stock: p.stock ?? 0,
+        type: p.productType || 'mobile',
+        status: p.stock > 0 ? 'active' : 'inactive',
+        imei1: p.imei1,
+        imei2: p.imei2,
+        mobileCatalogId: p.mobileCatalogId,
+        accessoryCatalogId: p.accessoryCatalogId,
+        categoryId: p.categoryId,
+        vendorId: p.vendorId,
+        createdAt: p.createdAt || '',
+        updatedAt: p.updatedAt || '',
+      } as Product;
     });
   }, [productsData, shops]);
 
@@ -193,11 +210,10 @@ export default function Products() {
       updateProductMutation.mutate({
         id: currentProduct.id,
         data: {
-          name: productName,
-          price: payload.sellingPrice.toString(),
+          customName: productName,
+          salePrice: payload.sellingPrice.toString(),
           imei1: payload.imei,
           imei2: payload.imei2,
-          taxId: payload.taxId,
           mobileCatalogId: payload.mobileCatalogId,
         }
       });
@@ -210,14 +226,12 @@ export default function Products() {
       
       createProductMutation.mutate({
         shopId,
-        name: productName,
-        price: payload.sellingPrice.toString(),
+        productType: 'mobile',
+        customName: productName,
+        salePrice: payload.sellingPrice.toString(),
         stock: 1,
-        type: 'mobile',
-        status: 'active',
         imei1: payload.imei,
         imei2: payload.imei2,
-        taxId: payload.taxId,
         mobileCatalogId: payload.mobileCatalogId,
       });
     }
@@ -241,19 +255,18 @@ export default function Products() {
           id: productData.id,
           shopId: productData.shopId,
           shopName: shop?.name || 'Unknown',
-          name: productData.name || '',
+          name: productData.customName || `Product ${productData.id.slice(0, 8)}`,
           barcode: productData.barcode,
-          price: productData.price || '0',
-          stock: productData.stock || 0,
-          type: productData.type || 'mobile',
-          status: productData.status || 'active',
+          price: productData.salePrice || '0',
+          stock: productData.stock ?? 0,
+          type: productData.productType || 'mobile',
+          status: productData.stock > 0 ? 'active' : 'inactive',
           imei1: productData.imei1,
           imei2: productData.imei2,
           mobileCatalogId: productData.mobileCatalogId,
           accessoryCatalogId: productData.accessoryCatalogId,
           categoryId: productData.categoryId,
           vendorId: productData.vendorId,
-          taxId: productData.taxId,
           createdAt: productData.createdAt || '',
           updatedAt: productData.updatedAt || '',
         });
@@ -485,7 +498,6 @@ export default function Products() {
             imei: currentProduct.imei1 || '',
             imei2: currentProduct.imei2,
             sellingPrice: parseFloat(currentProduct.price),
-            taxId: currentProduct.taxId,
           } : undefined}
           shopId={shopFilter || shops[0]?.id}
         />
