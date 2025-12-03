@@ -2,6 +2,72 @@ import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
+// Enums
+export const productTypeEnum = pgEnum("product_type", ["mobile", "accessory"]);
+
+// Master Catalog Tables (hardcoded data - not user-editable)
+export const mobileCatalog = pgTable("mobile_catalog", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brand: text("brand").notNull(),
+  name: text("name").notNull(),
+  memory: text("memory"),
+  color: text("color"),
+  gsmUrl: text("gsm_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const accessoryCatalog = pgTable("accessory_catalog", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brand: text("brand").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// Vendors table - to track where products come from
+export const vendors = pgTable("vendors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Categories table
+export const categories = pgTable("categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  parentId: varchar("parent_id"),
+  level: integer("level").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// Products table - actual shop inventory
+export const products = pgTable("products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  productType: productTypeEnum("product_type").notNull(),
+  mobileCatalogId: varchar("mobile_catalog_id"),
+  accessoryCatalogId: varchar("accessory_catalog_id"),
+  customName: text("custom_name"),
+  categoryId: varchar("category_id"),
+  sku: text("sku"),
+  imei1: text("imei1"),
+  imei2: text("imei2"),
+  barcode: text("barcode"),
+  stock: integer("stock").notNull().default(0),
+  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
+  vendorId: varchar("vendor_id"),
+  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
@@ -402,6 +468,12 @@ export const insertProductModelSchema = createInsertSchema(productModels).omit({
 export const insertShopInventorySchema = createInsertSchema(shopInventory).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUsedProductSchema = createInsertSchema(usedProducts).omit({ id: true, createdAt: true, updatedAt: true });
 
+export const insertMobileCatalogSchema = createInsertSchema(mobileCatalog).omit({ id: true, createdAt: true });
+export const insertAccessoryCatalogSchema = createInsertSchema(accessoryCatalog).omit({ id: true, createdAt: true });
+export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+
 export type InsertUser = typeof users.$inferInsert;
 export type InsertLoginHistory = typeof loginHistory.$inferInsert;
 export type InsertCustomer = typeof customers.$inferInsert;
@@ -454,3 +526,14 @@ export type ProductCategory = typeof productCategories.$inferSelect;
 export type ProductModel = typeof productModels.$inferSelect;
 export type ShopInventory = typeof shopInventory.$inferSelect;
 export type UsedProduct = typeof usedProducts.$inferSelect;
+
+export type MobileCatalog = typeof mobileCatalog.$inferSelect;
+export type InsertMobileCatalog = typeof mobileCatalog.$inferInsert;
+export type AccessoryCatalog = typeof accessoryCatalog.$inferSelect;
+export type InsertAccessoryCatalog = typeof accessoryCatalog.$inferInsert;
+export type Vendor = typeof vendors.$inferSelect;
+export type InsertVendor = typeof vendors.$inferInsert;
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = typeof categories.$inferInsert;
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = typeof products.$inferInsert;
