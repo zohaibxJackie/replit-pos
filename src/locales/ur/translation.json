@@ -286,7 +286,8 @@
     "products": {
       "title": "مصنوعات",
       "subtitle": "اپنی انوینٹری کا انتظام کریں",
-      "create_new_product": "نئی مصنوعات بنائیں",
+      "add_mobile": "موبائل شامل کریں",
+      "create_shop_first": "براہ کرم پہلے دکان بنائیں",
       "inter_stock_transfer": "انٹر اسٹاک ٹرانسفر",
       "manage_stock": "اسٹاک کا انتظام",
       "new": "نیا",

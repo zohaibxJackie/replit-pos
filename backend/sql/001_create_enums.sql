@@ -28,9 +28,4 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- Product type enum
-DO $$ BEGIN
-    CREATE TYPE product_type AS ENUM ('mobile', 'accessory');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- Note: product_type enum removed - now using category_id varchar with values 'mobile' or 'accessories'

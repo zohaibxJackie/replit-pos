@@ -166,7 +166,6 @@ export const api = {
       page?: number; 
       limit?: number; 
       search?: string; 
-      type?: string;
       status?: string;
       categoryId?: string;
     }) => {
@@ -175,7 +174,6 @@ export const api = {
       if (params?.page) searchParams.set('page', params.page.toString());
       if (params?.limit) searchParams.set('limit', params.limit.toString());
       if (params?.search) searchParams.set('search', params.search);
-      if (params?.type) searchParams.set('type', params.type);
       if (params?.status) searchParams.set('status', params.status);
       if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
       const query = searchParams.toString();
@@ -183,7 +181,7 @@ export const api = {
         products: Array<{
           id: string;
           shopId: string;
-          productType: string;
+          categoryId: string;
           customName?: string;
           barcode?: string;
           salePrice: string;
@@ -194,7 +192,6 @@ export const api = {
           sku?: string;
           mobileCatalogId?: string;
           accessoryCatalogId?: string;
-          categoryId?: string;
           vendorId?: string;
           lowStockThreshold?: number;
           createdAt: string;
@@ -208,7 +205,7 @@ export const api = {
       request<{ product: {
         id: string;
         shopId: string;
-        productType: string;
+        categoryId: string;
         customName?: string;
         barcode?: string;
         salePrice: string;
@@ -219,7 +216,6 @@ export const api = {
         sku?: string;
         mobileCatalogId?: string;
         accessoryCatalogId?: string;
-        categoryId?: string;
         vendorId?: string;
         lowStockThreshold?: number;
         createdAt: string;
@@ -234,16 +230,16 @@ export const api = {
     
     create: (data: { 
       shopId: string; 
-      productType: string;
+      categoryId: 'mobile' | 'accessories';
       customName?: string;
       barcode?: string; 
-      categoryId?: string; 
       salePrice: number;
       purchasePrice?: number;
       stock?: number; 
       lowStockThreshold?: number;
       imei1?: string;
       imei2?: string;
+      sku?: string;
       mobileCatalogId?: string;
       accessoryCatalogId?: string;
       vendorId?: string;
@@ -253,13 +249,13 @@ export const api = {
     update: (id: string, data: Partial<{ 
       customName: string;
       barcode: string; 
-      categoryId: string; 
       salePrice: number;
       purchasePrice: number;
       stock: number; 
       lowStockThreshold: number;
       imei1: string;
       imei2: string;
+      sku: string;
       mobileCatalogId: string;
       accessoryCatalogId: string;
       vendorId: string;
@@ -361,7 +357,7 @@ export const api = {
       request<{ product: { 
         id: string; 
         shopId: string; 
-        productType: string;
+        categoryId: string;
         customName?: string;
         stock: number; 
         salePrice: string;
@@ -371,7 +367,6 @@ export const api = {
         barcode?: string;
         mobileCatalogId?: string;
         accessoryCatalogId?: string;
-        categoryId?: string;
         vendorId?: string;
         sku?: string;
         lowStockThreshold?: number;

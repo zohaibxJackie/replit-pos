@@ -31,14 +31,14 @@ interface Product {
   barcode?: string;
   price: string;
   stock: number;
-  type: string;
+  categoryId: string;
   status: string;
   imei1?: string;
   imei2?: string;
   mobileCatalogId?: string;
   accessoryCatalogId?: string;
-  categoryId?: string;
   vendorId?: string;
+  sku?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,7 +74,7 @@ export default function Products() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [searchInput, setSearchInput] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [shopFilter, setShopFilter] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,6 +86,7 @@ export default function Products() {
   const [transferQty, setTransferQty] = useState<number>(1);
   const [targetShopId, setTargetShopId] = useState("");
   const [isSearchingImei, setIsSearchingImei] = useState(false);
+  const [selectedShopId, setSelectedShopId] = useState<string>("");
 
   const debouncedSearch = useDebounce(searchInput, 500);
 
@@ -97,12 +98,12 @@ export default function Products() {
   const shops = useMemo(() => shopsData?.shops || [], [shopsData]);
 
   const { data: productsData, isLoading, refetch } = useQuery({
-    queryKey: ['/api/products', { page, limit, search: debouncedSearch, type: typeFilter, status: statusFilter, shopId: shopFilter }],
+    queryKey: ['/api/products', { page, limit, search: debouncedSearch, categoryId: categoryFilter, status: statusFilter, shopId: shopFilter }],
     queryFn: () => api.products.getAll({
       page,
       limit,
       search: debouncedSearch || undefined,
-      type: typeFilter || undefined,
+      categoryId: categoryFilter || undefined,
       status: statusFilter || undefined,
       shopId: shopFilter || undefined,
     }),
@@ -120,19 +121,21 @@ export default function Products() {
         barcode: p.barcode,
         price: p.salePrice || '0',
         stock: p.stock ?? 0,
-        type: p.productType || 'mobile',
+        categoryId: p.categoryId || 'mobile',
         status: p.stock > 0 ? 'active' : 'inactive',
         imei1: p.imei1,
         imei2: p.imei2,
         mobileCatalogId: p.mobileCatalogId,
         accessoryCatalogId: p.accessoryCatalogId,
-        categoryId: p.categoryId,
         vendorId: p.vendorId,
+        sku: p.sku,
         createdAt: p.createdAt || '',
         updatedAt: p.updatedAt || '',
       } as Product;
     });
   }, [productsData, shops]);
+
+  const hasShops = shops.length > 0;
 
   const pagination = productsData?.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 };
 
@@ -184,6 +187,7 @@ export default function Products() {
 
   const openCreateModal = () => {
     setCurrentProduct(null);
+    setSelectedShopId(shops[0]?.id || "");
     setIsModalOpen(true);
   };
 
@@ -212,15 +216,14 @@ export default function Products() {
         }
       });
     } else {
-      const shopId = shopFilter || shops[0]?.id;
-      if (!shopId) {
+      if (!selectedShopId) {
         toast({ title: t("admin.products.error"), description: t("admin.products.no_shop_selected"), variant: "destructive" });
         return;
       }
       
       createProductMutation.mutate({
-        shopId,
-        productType: 'mobile',
+        shopId: selectedShopId,
+        categoryId: 'mobile',
         customName: productName,
         salePrice: payload.sellingPrice,
         stock: 1,
@@ -253,14 +256,14 @@ export default function Products() {
           barcode: productData.barcode,
           price: productData.salePrice || '0',
           stock: productData.stock ?? 0,
-          type: productData.productType || 'mobile',
+          categoryId: productData.categoryId || 'mobile',
           status: productData.stock > 0 ? 'active' : 'inactive',
           imei1: productData.imei1,
           imei2: productData.imei2,
           mobileCatalogId: productData.mobileCatalogId,
           accessoryCatalogId: productData.accessoryCatalogId,
-          categoryId: productData.categoryId,
           vendorId: productData.vendorId,
+          sku: productData.sku,
           createdAt: productData.createdAt || '',
           updatedAt: productData.updatedAt || '',
         });
@@ -372,12 +375,22 @@ export default function Products() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3 flex-wrap">
-          <Button onClick={openCreateModal} data-testid="button-create-product">
+          <Button 
+            onClick={openCreateModal} 
+            disabled={!hasShops}
+            title={!hasShops ? t("admin.products.create_shop_first") : undefined}
+            data-testid="button-add-mobile"
+          >
             <Plus className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">{t("admin.products.create_new_product")}</span>
+            <span className="hidden sm:inline">{t("admin.products.add_mobile")}</span>
             <span className="sm:hidden">{t("admin.products.new")}</span>
           </Button>
-          <Button variant="outline" onClick={openInterStockModal} data-testid="button-inter-stock">
+          <Button 
+            variant="outline" 
+            onClick={openInterStockModal} 
+            disabled={!hasShops}
+            data-testid="button-inter-stock"
+          >
             <ArrowRightLeft className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">{t("admin.products.inter_stock_transfer")}</span>
             <span className="sm:hidden">{t("admin.products.transfer")}</span>
@@ -430,8 +443,25 @@ export default function Products() {
 
       <FormPopupModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setCurrentProduct(null); }}>
         <h2 className="text-2xl font-semibold mb-4">
-          {currentProduct ? t("admin.products.edit_product") : t("admin.products.add_new_mobile")}
+          {currentProduct ? t("admin.products.edit_product") : t("admin.products.add_mobile")}
         </h2>
+        
+        {!currentProduct && (
+          <div className="mb-4">
+            <Label>{t("admin.products.select_shop")}</Label>
+            <Select value={selectedShopId} onValueChange={setSelectedShopId}>
+              <SelectTrigger className="w-full" data-testid="select-shop-for-mobile">
+                <SelectValue placeholder={t("admin.products.select_shop")} />
+              </SelectTrigger>
+              <SelectContent>
+                {shops.map((shop) => (
+                  <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        
         <MobileProductForm
           onSubmit={handleMobileProductSubmit}
           onCancel={() => { setIsModalOpen(false); setCurrentProduct(null); }}
@@ -443,7 +473,7 @@ export default function Products() {
             imei2: currentProduct.imei2,
             sellingPrice: parseFloat(currentProduct.price),
           } : undefined}
-          shopId={shopFilter || shops[0]?.id}
+          shopId={selectedShopId || shops[0]?.id}
         />
       </FormPopupModal>
 

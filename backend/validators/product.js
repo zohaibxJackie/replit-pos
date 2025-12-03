@@ -1,22 +1,22 @@
 import { z } from 'zod';
 
+// categoryId values: 'mobile' or 'accessories' (hardcoded categories)
 export const createProductSchema = z.object({
-  productType: z.enum(['mobile', 'accessory']),
+  categoryId: z.enum(['mobile', 'accessories']),
   mobileCatalogId: z.string().uuid().optional().nullable(),
   accessoryCatalogId: z.string().uuid().optional().nullable(),
   customName: z.string().min(1).optional().nullable(),
-  categoryId: z.string().uuid().optional().nullable(),
   sku: z.string().optional().nullable(),
   imei1: z.string().min(1).optional().nullable(),
   imei2: z.string().min(1).optional().nullable(),
   barcode: z.string().optional().nullable(),
-  stock: z.number().int().min(0, 'Stock cannot be negative').default(0),
+  stock: z.number().int().min(0, 'Stock cannot be negative').default(1),
   purchasePrice: z.union([z.number().positive('Purchase price must be positive'), z.null()]).optional(),
   salePrice: z.number().positive('Sale price must be positive'),
   vendorId: z.string().uuid().optional().nullable(),
   lowStockThreshold: z.number().int().min(0).default(5)
 }).superRefine((data, ctx) => {
-  if (data.productType === 'mobile') {
+  if (data.categoryId === 'mobile') {
     if (!data.imei1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -40,7 +40,7 @@ export const createProductSchema = z.object({
     }
   }
   
-  if (data.productType === 'accessory') {
+  if (data.categoryId === 'accessories') {
     if (data.imei1 || data.imei2) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -67,7 +67,6 @@ export const createProductSchema = z.object({
 
 export const updateProductSchema = z.object({
   customName: z.string().min(1).optional().nullable(),
-  categoryId: z.string().uuid().optional().nullable(),
   sku: z.string().optional().nullable(),
   imei1: z.string().min(1).optional().nullable(),
   imei2: z.string().min(1).optional().nullable(),

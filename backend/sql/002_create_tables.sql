@@ -72,19 +72,19 @@ CREATE TABLE IF NOT EXISTS shops (
 );
 
 -- Products table (shop inventory)
+-- category_id uses values 'mobile' or 'accessories' (not UUID FK)
 CREATE TABLE IF NOT EXISTS products (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
     shop_id VARCHAR NOT NULL,
-    product_type product_type NOT NULL,
+    category_id VARCHAR NOT NULL, -- 'mobile' or 'accessories'
     mobile_catalog_id VARCHAR REFERENCES mobile_catalog(id),
     accessory_catalog_id VARCHAR REFERENCES accessory_catalog(id),
     custom_name TEXT,
-    category_id VARCHAR,
     sku TEXT,
     imei1 TEXT,
     imei2 TEXT,
     barcode TEXT,
-    stock INTEGER NOT NULL DEFAULT 0,
+    stock INTEGER NOT NULL DEFAULT 1,
     purchase_price DECIMAL(10, 2),
     sale_price DECIMAL(10, 2) NOT NULL,
     vendor_id VARCHAR REFERENCES vendors(id),

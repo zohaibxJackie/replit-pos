@@ -5,7 +5,7 @@ import { paginationHelper } from '../utils/helpers.js';
 
 export const getProducts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, categoryId, lowStock, productType } = req.query;
+    const { page = 1, limit = 10, search, categoryId, lowStock } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
     const shopId = req.userShopIds?.[0];
 
@@ -23,12 +23,9 @@ export const getProducts = async (req, res) => {
       );
     }
 
+    // categoryId is now 'mobile' or 'accessories' (hardcoded values)
     if (categoryId) {
       conditions.push(eq(products.categoryId, categoryId));
-    }
-
-    if (productType) {
-      conditions.push(eq(products.productType, productType));
     }
 
     if (lowStock === 'true') {
@@ -75,12 +72,6 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
-    let category = null;
-    if (product.categoryId) {
-      const [cat] = await db.select().from(categories).where(eq(categories.id, product.categoryId)).limit(1);
-      category = cat;
-    }
-
     let vendor = null;
     if (product.vendorId) {
       const [v] = await db.select().from(vendors).where(eq(vendors.id, product.vendorId)).limit(1);
@@ -88,15 +79,15 @@ export const getProductById = async (req, res) => {
     }
 
     let catalogItem = null;
-    if (product.productType === 'mobile' && product.mobileCatalogId) {
+    if (product.categoryId === 'mobile' && product.mobileCatalogId) {
       const [m] = await db.select().from(mobileCatalog).where(eq(mobileCatalog.id, product.mobileCatalogId)).limit(1);
       catalogItem = m;
-    } else if (product.productType === 'accessory' && product.accessoryCatalogId) {
+    } else if (product.categoryId === 'accessories' && product.accessoryCatalogId) {
       const [a] = await db.select().from(accessoryCatalog).where(eq(accessoryCatalog.id, product.accessoryCatalogId)).limit(1);
       catalogItem = a;
     }
 
-    res.json({ product, category, vendor, catalogItem });
+    res.json({ product, vendor, catalogItem });
   } catch (error) {
     console.error('Get product by id error:', error);
     res.status(500).json({ error: req.t('product.fetch_failed') });
@@ -179,11 +170,10 @@ const checkBarcodeUniqueness = async (barcode, shopId, excludeProductId = null) 
 export const createProduct = async (req, res) => {
   try {
     const { 
-      productType, 
+      categoryId, 
       mobileCatalogId, 
       accessoryCatalogId,
       customName,
-      categoryId,
       sku,
       imei1, 
       imei2,
@@ -240,18 +230,33 @@ export const createProduct = async (req, res) => {
       }
     }
 
+    // Auto-generate barcode if not provided
+    const finalBarcode = barcode || `MB-${shopId.substring(0, 6)}-${Date.now()}`;
+    
+    // Auto-generate SKU based on model if not provided
+    let finalSku = sku;
+    if (!finalSku && categoryId === 'mobile' && mobileCatalogId) {
+      const [catalogItem] = await db.select().from(mobileCatalog).where(eq(mobileCatalog.id, mobileCatalogId)).limit(1);
+      if (catalogItem) {
+        const brandCode = catalogItem.brand.substring(0, 3).toUpperCase();
+        const modelCode = catalogItem.name.replace(/\s+/g, '').substring(0, 6).toUpperCase();
+        const memoryCode = catalogItem.memory ? `-${catalogItem.memory.replace(/\s+/g, '')}` : '';
+        const colorCode = catalogItem.color ? `-${catalogItem.color.substring(0, 3).toUpperCase()}` : '';
+        finalSku = `${brandCode}-${modelCode}${memoryCode}${colorCode}`;
+      }
+    }
+
     const [newProduct] = await db.insert(products).values({
       shopId,
-      productType,
-      mobileCatalogId: productType === 'mobile' ? (mobileCatalogId || null) : null,
-      accessoryCatalogId: productType === 'accessory' ? (accessoryCatalogId || null) : null,
+      categoryId,
+      mobileCatalogId: categoryId === 'mobile' ? (mobileCatalogId || null) : null,
+      accessoryCatalogId: categoryId === 'accessories' ? (accessoryCatalogId || null) : null,
       customName: customName || null,
-      categoryId: categoryId || null,
-      sku: sku || null,
-      imei1: productType === 'mobile' ? (imei1 || null) : null,
-      imei2: productType === 'mobile' ? (imei2 || null) : null,
-      barcode: barcode || null,
-      stock: stock || 0,
+      sku: finalSku || null,
+      imei1: categoryId === 'mobile' ? (imei1 || null) : null,
+      imei2: categoryId === 'mobile' ? (imei2 || null) : null,
+      barcode: finalBarcode,
+      stock: stock || 1,
       purchasePrice: purchasePrice?.toString() || null,
       salePrice: salePrice.toString(),
       vendorId: vendorId || null,
@@ -300,13 +305,13 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    if (existingProduct.productType === 'accessory') {
+    if (existingProduct.categoryId === 'accessories') {
       if (imei1 !== undefined || imei2 !== undefined) {
         return res.status(400).json({ error: req.t('product.imei_not_allowed_for_accessory') });
       }
     }
 
-    if (existingProduct.productType === 'mobile') {
+    if (existingProduct.categoryId === 'mobile') {
       if (imei1 !== undefined && !imei1) {
         return res.status(400).json({ error: req.t('product.imei1_required_for_mobile') });
       }
@@ -316,10 +321,10 @@ export const updateProduct = async (req, res) => {
     const finalMobileCatalogId = existingProduct.mobileCatalogId;
     const finalAccessoryCatalogId = existingProduct.accessoryCatalogId;
     
-    if (existingProduct.productType === 'mobile' && !finalCustomName && !finalMobileCatalogId) {
+    if (existingProduct.categoryId === 'mobile' && !finalCustomName && !finalMobileCatalogId) {
       return res.status(400).json({ error: req.t('product.name_or_catalog_required') });
     }
-    if (existingProduct.productType === 'accessory' && !finalCustomName && !finalAccessoryCatalogId) {
+    if (existingProduct.categoryId === 'accessories' && !finalCustomName && !finalAccessoryCatalogId) {
       return res.status(400).json({ error: req.t('product.name_or_catalog_required') });
     }
 
@@ -350,9 +355,8 @@ export const updateProduct = async (req, res) => {
 
     const updateData = { updatedAt: new Date() };
     if (customName !== undefined) updateData.customName = customName;
-    if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (sku !== undefined) updateData.sku = sku;
-    if (existingProduct.productType === 'mobile') {
+    if (existingProduct.categoryId === 'mobile') {
       if (imei1 !== undefined) updateData.imei1 = imei1;
       if (imei2 !== undefined) updateData.imei2 = imei2;
     }

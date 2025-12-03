@@ -3,7 +3,7 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum } 
 import { createInsertSchema } from "drizzle-zod";
 
 // Enums
-export const productTypeEnum = pgEnum("product_type", ["mobile", "accessory"]);
+// Note: productTypeEnum removed - using categoryId instead with hardcoded categories (mobile, accessories)
 
 // Master Catalog Tables (hardcoded data - not user-editable)
 export const mobileCatalog = pgTable("mobile_catalog", {
@@ -47,19 +47,19 @@ export const categories = pgTable("categories", {
 });
 
 // Products table - actual shop inventory
+// categoryId links to hardcoded categories: 'mobile' or 'accessories'
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   shopId: varchar("shop_id").notNull(),
-  productType: productTypeEnum("product_type").notNull(),
+  categoryId: varchar("category_id").notNull(), // 'mobile' or 'accessories' - now required
   mobileCatalogId: varchar("mobile_catalog_id"),
   accessoryCatalogId: varchar("accessory_catalog_id"),
   customName: text("custom_name"),
-  categoryId: varchar("category_id"),
   sku: text("sku"),
   imei1: text("imei1"),
   imei2: text("imei2"),
   barcode: text("barcode"),
-  stock: integer("stock").notNull().default(0),
+  stock: integer("stock").notNull().default(1),
   purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
   salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
   vendorId: varchar("vendor_id"),

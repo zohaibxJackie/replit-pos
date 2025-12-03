@@ -245,7 +245,8 @@
     "products": {
       "title": "Products",
       "subtitle": "Manage your inventory",
-      "create_new_product": "Create New Product",
+      "add_mobile": "Add Mobile",
+      "create_shop_first": "Please create a shop first",
       "inter_stock_transfer": "Inter Stock Transfer",
       "manage_stock": "Manage Stock",
       "new": "New",
