@@ -196,6 +196,13 @@ export const api = {
           lowStockThreshold?: number;
           createdAt: string;
           updatedAt: string;
+          mobileCatalog?: {
+            id: string;
+            brand: string;
+            name: string;
+            memory?: string;
+            color?: string;
+          };
         }>;
         pagination: { page: number; limit: number; total: number; totalPages: number };
       }>(query ? `/api/products?${query}` : '/api/products');

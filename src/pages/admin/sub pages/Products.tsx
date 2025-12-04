@@ -263,8 +263,15 @@ export default function Products() {
     if (filters.stock !== undefined) {
       setStatusFilter(filters.stock === "in_stock" ? "active" : filters.stock === "out_of_stock" ? "inactive" : "");
     }
+    if (filters.shopName !== undefined) {
+      setShopFilter(filters.shopName);
+    }
     setPage(1);
   }, []);
+
+  const shopFilterOptions = useMemo(() => {
+    return shops.map(shop => ({ value: shop.id, label: shop.name }));
+  }, [shops]);
 
   const columns = [
     {
@@ -281,7 +288,8 @@ export default function Products() {
     {
       key: "shopName",
       label: t("admin.products.column.shop"),
-      filterType: "none" as const,
+      filterType: "select" as const,
+      filterOptions: shopFilterOptions,
     },
     {
       key: "color",
@@ -338,17 +346,6 @@ export default function Products() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <Select value={shopFilter} onValueChange={(val) => { setShopFilter(val === 'all' ? '' : val); setPage(1); }}>
-            <SelectTrigger className="w-[180px]" data-testid="select-shop-filter">
-              <SelectValue placeholder={t("admin.products.filter_by_shop")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("admin.products.all_shops")}</SelectItem>
-              {shops.map((shop) => (
-                <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <TablePageSizeSelector
             limit={limit}
             onChange={handlePageSizeChange}

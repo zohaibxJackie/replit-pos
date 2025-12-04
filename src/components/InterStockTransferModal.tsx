@@ -181,26 +181,26 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-5 w-5" />
-              {t("admin.products.inter_stock_transfer")}
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-4 sm:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="truncate">{t("admin.products.inter_stock_transfer")}</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {t("admin.products.inter_store_movement")}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Store className="h-4 w-4" />
-                  {t("admin.products.transfer_from_shop")}
+          <div className="flex-1 overflow-hidden flex flex-col gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Store className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate">{t("admin.products.transfer_from_shop")}</span>
                 </Label>
                 <Select value={sourceShopId} onValueChange={handleSourceShopChange}>
-                  <SelectTrigger data-testid="select-source-shop">
+                  <SelectTrigger data-testid="select-source-shop" className="text-sm">
                     <SelectValue placeholder={t("admin.products.select_shop")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -211,13 +211,13 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Store className="h-4 w-4" />
-                  {t("admin.products.transfer_to_shop")}
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Store className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate">{t("admin.products.transfer_to_shop")}</span>
                 </Label>
                 <Select value={targetShopId} onValueChange={setTargetShopId} disabled={!selectedProduct}>
-                  <SelectTrigger data-testid="select-target-shop">
+                  <SelectTrigger data-testid="select-target-shop" className="text-sm">
                     <SelectValue placeholder={t("admin.products.select_shop")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,10 +229,10 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Search className="h-4 w-4" />
-                {t("admin.products.search_products")}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-2 text-xs sm:text-sm">
+                <Search className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">{t("admin.products.search_products")}</span>
               </Label>
               <Input
                 type="text"
@@ -240,12 +240,13 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t("admin.products.search_by_name_imei")}
                 data-testid="input-search-products"
+                className="text-sm"
               />
             </div>
 
-            <div className="flex-1 overflow-hidden">
-              <Label className="mb-2 block">{t("admin.products.select_product")}</Label>
-              <ScrollArea className="h-48 border rounded-md">
+            <div className="flex-1 overflow-hidden min-h-0">
+              <Label className="mb-1.5 block text-xs sm:text-sm">{t("admin.products.select_product")}</Label>
+              <ScrollArea className="h-32 sm:h-40 border rounded-md">
                 {isLoadingProducts ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -293,23 +294,20 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
             </div>
 
             {selectedProduct && (
-              <Card className="p-4 bg-muted/50">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold">{t("admin.products.selected_product")}</h4>
-                    <p className="text-sm truncate">{selectedProduct.customName || `Product ${selectedProduct.id.slice(0, 8)}`}</p>
+              <Card className="p-3 sm:p-4 bg-muted/50">
+                <div className="space-y-3">
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-sm sm:text-base">{t("admin.products.selected_product")}</h4>
+                    <p className="text-xs sm:text-sm truncate">{selectedProduct.customName || `Product ${selectedProduct.id.slice(0, 8)}`}</p>
                     {selectedProduct.imei1 && (
                       <p className="text-xs text-muted-foreground truncate">IMEI1: {selectedProduct.imei1}</p>
                     )}
-                    {selectedProduct.imei2 && (
-                      <p className="text-xs text-muted-foreground truncate">IMEI2: {selectedProduct.imei2}</p>
-                    )}
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       {t("admin.products.available_stock")}: <span className="font-medium">{selectedProduct.stock}</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Label htmlFor="transfer-qty" className="whitespace-nowrap">{t("admin.products.quantity")}:</Label>
+                    <Label htmlFor="transfer-qty" className="whitespace-nowrap text-xs sm:text-sm">{t("admin.products.quantity")}:</Label>
                     <Input
                       id="transfer-qty"
                       type="number"
@@ -317,7 +315,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                       max={selectedProduct.stock}
                       value={transferQty}
                       onChange={(e) => setTransferQty(Number(e.target.value))}
-                      className="w-20"
+                      className="w-16 sm:w-20 text-sm"
                       data-testid="input-transfer-qty"
                     />
                     <Button
@@ -335,8 +333,8 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
             )}
           </div>
 
-          <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <DialogFooter className="mt-3 sm:mt-4 flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
               {t("common.cancel")}
             </Button>
             <Button
@@ -344,40 +342,42 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
               onClick={handleInitiateTransfer}
               disabled={!selectedProduct || !targetShopId || stockTransferMutation.isPending}
               data-testid="button-submit-transfer"
+              className="w-full sm:w-auto"
             >
               {stockTransferMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
                 <ArrowRight className="w-4 h-4 mr-2" />
               )}
-              {t("admin.products.transfer_stock")}
+              <span className="truncate">{t("admin.products.transfer_stock")}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[90vw] max-w-md p-4 sm:p-6">
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("admin.products.confirm_transfer")}</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogTitle className="text-base sm:text-lg">{t("admin.products.confirm_transfer")}</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-xs sm:text-sm">
               <p>{t("admin.products.confirm_transfer_message")}</p>
-              <div className="mt-4 p-3 bg-muted rounded-md space-y-1">
-                <p><strong>{t("admin.products.product")}:</strong> {selectedProduct?.customName || `Product ${selectedProduct?.id.slice(0, 8)}`}</p>
+              <div className="mt-3 p-2.5 sm:p-3 bg-muted rounded-md space-y-1 text-xs sm:text-sm">
+                <p className="truncate"><strong>{t("admin.products.product")}:</strong> {selectedProduct?.customName || `Product ${selectedProduct?.id.slice(0, 8)}`}</p>
                 <p><strong>{t("admin.products.quantity")}:</strong> {transferQty}</p>
-                <p className="flex items-center gap-2">
-                  <strong>{sourceShopName}</strong>
-                  <ArrowRight className="h-4 w-4" />
-                  <strong>{targetShopName}</strong>
+                <p className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <strong className="truncate max-w-[100px] sm:max-w-none">{sourceShopName}</strong>
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <strong className="truncate max-w-[100px] sm:max-w-none">{targetShopName}</strong>
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="w-full sm:w-auto">{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmTransfer}
               data-testid="button-confirm-transfer"
+              className="w-full sm:w-auto"
             >
               {stockTransferMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

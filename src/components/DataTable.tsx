@@ -21,12 +21,17 @@ import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
 interface Column {
   key: string;
   label: string;
   render?: (value: any, row: any, index: number) => React.ReactNode;
   filterType?: "text" | "select" | "none";
-  filterOptions?: string[];
+  filterOptions?: string[] | FilterOption[];
 }
 
 interface DataTableProps {
@@ -128,11 +133,16 @@ export default function DataTable({
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="__all__">All</SelectItem>
-                                {(column.filterOptions || []).map((opt) => (
-                                  <SelectItem key={opt} value={opt}>
-                                    {opt}
-                                  </SelectItem>
-                                ))}
+                                {(column.filterOptions || []).map((opt) => {
+                                  const isObject = typeof opt === 'object' && opt !== null;
+                                  const value = isObject ? (opt as FilterOption).value : opt;
+                                  const label = isObject ? (opt as FilterOption).label : opt;
+                                  return (
+                                    <SelectItem key={value} value={value}>
+                                      {label}
+                                    </SelectItem>
+                                  );
+                                })}
                               </SelectContent>
                             </Select>
                           )}

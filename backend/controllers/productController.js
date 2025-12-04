@@ -45,8 +45,35 @@ export const getProducts = async (req, res) => {
 
     const whereClause = and(...conditions);
 
-    const productList = await db.select()
+    // Left join with mobileCatalog to get color and other catalog info
+    const productList = await db.select({
+      id: products.id,
+      shopId: products.shopId,
+      categoryId: products.categoryId,
+      mobileCatalogId: products.mobileCatalogId,
+      accessoryCatalogId: products.accessoryCatalogId,
+      customName: products.customName,
+      sku: products.sku,
+      imei1: products.imei1,
+      imei2: products.imei2,
+      barcode: products.barcode,
+      stock: products.stock,
+      purchasePrice: products.purchasePrice,
+      salePrice: products.salePrice,
+      vendorId: products.vendorId,
+      lowStockThreshold: products.lowStockThreshold,
+      createdAt: products.createdAt,
+      updatedAt: products.updatedAt,
+      mobileCatalog: {
+        id: mobileCatalog.id,
+        brand: mobileCatalog.brand,
+        name: mobileCatalog.name,
+        memory: mobileCatalog.memory,
+        color: mobileCatalog.color,
+      }
+    })
       .from(products)
+      .leftJoin(mobileCatalog, eq(products.mobileCatalogId, mobileCatalog.id))
       .where(whereClause)
       .orderBy(desc(products.createdAt))
       .limit(pageLimit)
