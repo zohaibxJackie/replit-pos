@@ -5,6 +5,9 @@ import { createInsertSchema } from "drizzle-zod";
 // Enums
 // Note: productTypeEnum removed - using categoryId instead with hardcoded categories (mobile, accessories)
 
+// Product condition enum - used for both new and used products
+export const productConditionEnum = pgEnum("product_condition", ["new", "like_new", "good", "fair", "poor"]);
+
 // Master Catalog Tables (hardcoded data - not user-editable)
 export const mobileCatalog = pgTable("mobile_catalog", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -41,8 +44,10 @@ export const categories = pgTable("categories", {
   name: text("name").notNull().unique(),
 });
 
-// Products table - actual shop inventory
+// Products table - represents product SKU (template) for shop inventory
 // categoryId links to hardcoded categories: 'mobile' or 'accessories'
+// For mobiles: individual units are tracked in phoneUnits table
+// For accessories: stock count is used directly here
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   shopId: varchar("shop_id").notNull(),
@@ -51,16 +56,48 @@ export const products = pgTable("products", {
   accessoryCatalogId: varchar("accessory_catalog_id"),
   customName: text("custom_name"),
   sku: text("sku"),
-  imei1: text("imei1"),
-  imei2: text("imei2"),
   barcode: text("barcode"),
-  stock: integer("stock").notNull().default(1),
+  stock: integer("stock").notNull().default(0), // For accessories only; for mobiles, count from phoneUnits
   purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
   salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
   vendorId: varchar("vendor_id"),
   lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Phone unit status enum for tracking individual device lifecycle
+export const phoneUnitStatusEnum = pgEnum("phone_unit_status", ["in_stock", "reserved", "sold", "transferred", "returned", "defective"]);
+
+// Phone Units table - individual physical mobile devices with unique IMEI pairs
+// Each row represents ONE physical phone in inventory
+export const phoneUnits = pgTable("phone_units", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  productId: varchar("product_id").notNull(), // Links to products (SKU)
+  imeiPrimary: text("imei_primary").notNull().unique(), // Primary IMEI (required)
+  imeiSecondary: text("imei_secondary").unique(), // Secondary IMEI for dual SIM (optional)
+  serialNumber: text("serial_number"),
+  condition: productConditionEnum("condition").notNull().default("new"),
+  status: phoneUnitStatusEnum("status").notNull().default("in_stock"),
+  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
+  colorId: varchar("color_id"),
+  storageId: varchar("storage_id"),
+  vendorId: varchar("vendor_id"),
+  notes: text("notes"),
+  soldAt: timestamp("sold_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Sale Item Units - links individual phone units to sale items for traceability
+// This enables tracking which exact phone (by IMEI) was sold to which customer
+export const saleItemUnits = pgTable("sale_item_units", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  saleItemId: varchar("sale_item_id").notNull(), // Links to saleItems
+  phoneUnitId: varchar("phone_unit_id").notNull().unique(), // Links to phoneUnits - unique to prevent double-selling
+  soldPrice: decimal("sold_price", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const users = pgTable("users", {
@@ -373,26 +410,8 @@ export const productModels = pgTable("product_models", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
-export const productConditionEnum = pgEnum("product_condition", ["new", "like_new", "good", "fair", "poor"]);
-
-export const shopInventory = pgTable("shop_inventory", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  productModelId: varchar("product_model_id").notNull(),
-  colorId: varchar("color_id"),
-  storageId: varchar("storage_id"),
-  imei: text("imei"),
-  serialNumber: text("serial_number"),
-  barcode: text("barcode"),
-  condition: productConditionEnum("condition").notNull().default("new"),
-  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
-  sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
-  stock: integer("stock").notNull().default(1),
-  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
-  isAvailable: boolean("is_available").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+// shopInventory table removed - consolidated into phoneUnits table for mobile phones
+// Accessories use the products table stock count directly
 
 export const usedProductStatusEnum = pgEnum("used_product_status", ["available", "sold", "reserved"]);
 
@@ -450,12 +469,12 @@ export const taxes = pgTable("taxes", {
 
 export const stockTransferStatusEnum = pgEnum("stock_transfer_status", ["pending", "completed", "cancelled"]);
 
+// Stock Transfers - for transferring phone units between shops
+// Each transfer record represents a batch transfer request
 export const stockTransfers = pgTable("stock_transfers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  productId: varchar("product_id").notNull(),
   fromShopId: varchar("from_shop_id").notNull(),
   toShopId: varchar("to_shop_id").notNull(),
-  quantity: integer("quantity").notNull().default(1),
   status: stockTransferStatusEnum("status").notNull().default("pending"),
   notes: text("notes"),
   createdBy: varchar("created_by").notNull(),
@@ -463,12 +482,15 @@ export const stockTransfers = pgTable("stock_transfers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
-export const productImeis = pgTable("product_imeis", {
+// Stock Transfer Items - individual phone units being transferred
+export const stockTransferItems = pgTable("stock_transfer_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  productId: varchar("product_id").notNull().references(() => products.id, { onDelete: 'cascade' }),
-  imei: text("imei").notNull().unique(),
+  stockTransferId: varchar("stock_transfer_id").notNull(),
+  phoneUnitId: varchar("phone_unit_id").notNull().unique(), // Individual phone being transferred - unique to prevent duplicate transfers
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+// productImeis table removed - replaced by phoneUnits table which tracks individual devices with IMEI pairs
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true, updatedAt: true });
@@ -495,7 +517,6 @@ export const insertColorSchema = createInsertSchema(colors).omit({ id: true, cre
 export const insertStorageOptionSchema = createInsertSchema(storageOptions).omit({ id: true, createdAt: true });
 export const insertProductCategorySchema = createInsertSchema(productCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductModelSchema = createInsertSchema(productModels).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertShopInventorySchema = createInsertSchema(shopInventory).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUsedProductSchema = createInsertSchema(usedProducts).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertMobileCatalogSchema = createInsertSchema(mobileCatalog).omit({ id: true, createdAt: true });
@@ -505,7 +526,9 @@ export const insertCategorySchema = createInsertSchema(categories).omit({ id: tr
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTaxSchema = createInsertSchema(taxes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertStockTransferSchema = createInsertSchema(stockTransfers).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertProductImeiSchema = createInsertSchema(productImeis).omit({ id: true, createdAt: true });
+export const insertStockTransferItemSchema = createInsertSchema(stockTransferItems).omit({ id: true, createdAt: true });
+export const insertPhoneUnitSchema = createInsertSchema(phoneUnits).omit({ id: true, createdAt: true, updatedAt: true, soldAt: true });
+export const insertSaleItemUnitSchema = createInsertSchema(saleItemUnits).omit({ id: true, createdAt: true });
 
 export type InsertUser = typeof users.$inferInsert;
 export type InsertLoginHistory = typeof loginHistory.$inferInsert;
@@ -528,7 +551,6 @@ export type InsertColor = typeof colors.$inferInsert;
 export type InsertStorageOption = typeof storageOptions.$inferInsert;
 export type InsertProductCategory = typeof productCategories.$inferInsert;
 export type InsertProductModel = typeof productModels.$inferInsert;
-export type InsertShopInventory = typeof shopInventory.$inferInsert;
 export type InsertUsedProduct = typeof usedProducts.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Shop = typeof shops.$inferSelect;
@@ -557,7 +579,6 @@ export type Color = typeof colors.$inferSelect;
 export type StorageOption = typeof storageOptions.$inferSelect;
 export type ProductCategory = typeof productCategories.$inferSelect;
 export type ProductModel = typeof productModels.$inferSelect;
-export type ShopInventory = typeof shopInventory.$inferSelect;
 export type UsedProduct = typeof usedProducts.$inferSelect;
 
 export type MobileCatalog = typeof mobileCatalog.$inferSelect;
@@ -574,5 +595,9 @@ export type Tax = typeof taxes.$inferSelect;
 export type InsertTax = typeof taxes.$inferInsert;
 export type StockTransfer = typeof stockTransfers.$inferSelect;
 export type InsertStockTransfer = typeof stockTransfers.$inferInsert;
-export type ProductImei = typeof productImeis.$inferSelect;
-export type InsertProductImei = typeof productImeis.$inferInsert;
+export type StockTransferItem = typeof stockTransferItems.$inferSelect;
+export type InsertStockTransferItem = typeof stockTransferItems.$inferInsert;
+export type PhoneUnit = typeof phoneUnits.$inferSelect;
+export type InsertPhoneUnit = typeof phoneUnits.$inferInsert;
+export type SaleItemUnit = typeof saleItemUnits.$inferSelect;
+export type InsertSaleItemUnit = typeof saleItemUnits.$inferInsert;

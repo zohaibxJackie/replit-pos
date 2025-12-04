@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { shops, users, userShop, pricingPlans, shopInventory } from '../../shared/schema.js';
+import { shops, users, userShop, pricingPlans, products, phoneUnits } from '../../shared/schema.js';
 import { eq, desc, ilike, sql, and, or, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 
@@ -102,9 +102,10 @@ export const getShopById = async (req, res) => {
       return res.status(404).json({ error: req.t('shop.not_found') });
     }
 
+    // Count products (SKUs) for this shop
     const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
-      .from(shopInventory)
-      .where(eq(shopInventory.shopId, id));
+      .from(products)
+      .where(eq(products.shopId, id));
 
     const [{ staffCount }] = await db.select({ staffCount: sql`count(*)::int` })
       .from(userShop)

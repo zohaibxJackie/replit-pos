@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { products, categories, vendors, mobileCatalog, accessoryCatalog, productImeis } from '../../shared/schema.js';
+import { products, categories, vendors, mobileCatalog, accessoryCatalog, phoneUnits } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 import { logActivity } from './notificationController.js';
@@ -27,9 +27,7 @@ export const getProducts = async (req, res) => {
         or(
           sql`COALESCE(${products.customName}, '') ILIKE ${`%${search}%`}`,
           sql`COALESCE(${products.barcode}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${products.sku}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${products.imei1}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${products.imei2}, '') ILIKE ${`%${search}%`}`
+          sql`COALESCE(${products.sku}, '') ILIKE ${`%${search}%`}`
         )
       );
     }
@@ -54,8 +52,6 @@ export const getProducts = async (req, res) => {
       accessoryCatalogId: products.accessoryCatalogId,
       customName: products.customName,
       sku: products.sku,
-      imei1: products.imei1,
-      imei2: products.imei2,
       barcode: products.barcode,
       stock: products.stock,
       purchasePrice: products.purchasePrice,
@@ -158,37 +154,42 @@ export const getProductByImei = async (req, res) => {
     const { imei } = req.params;
     const userShopIds = req.userShopIds || [];
 
-    const [product] = await db.select().from(products).where(
+    // Search for phone unit by IMEI (primary or secondary)
+    const [phoneUnit] = await db.select().from(phoneUnits).where(
       and(
-        or(eq(products.imei1, imei), eq(products.imei2, imei)),
-        inArray(products.shopId, userShopIds)
+        or(eq(phoneUnits.imeiPrimary, imei), eq(phoneUnits.imeiSecondary, imei)),
+        inArray(phoneUnits.shopId, userShopIds)
       )
     ).limit(1);
 
-    if (!product) {
+    if (!phoneUnit) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
-    res.json({ product });
+    // Get the associated product
+    const [product] = await db.select().from(products).where(
+      eq(products.id, phoneUnit.productId)
+    ).limit(1);
+
+    res.json({ product, phoneUnit });
   } catch (error) {
     console.error('Get product by IMEI error:', error);
     res.status(500).json({ error: req.t('product.fetch_failed') });
   }
 };
 
-const checkImeiUniqueness = async (imei, shopId, excludeProductId = null) => {
+const checkImeiUniqueness = async (imei, shopId, excludePhoneUnitId = null) => {
   if (!imei) return true;
   
   let conditions = [
-    eq(products.shopId, shopId),
-    or(eq(products.imei1, imei), eq(products.imei2, imei))
+    or(eq(phoneUnits.imeiPrimary, imei), eq(phoneUnits.imeiSecondary, imei))
   ];
   
-  if (excludeProductId) {
-    conditions.push(ne(products.id, excludeProductId));
+  if (excludePhoneUnitId) {
+    conditions.push(ne(phoneUnits.id, excludePhoneUnitId));
   }
   
-  const [existing] = await db.select().from(products).where(and(...conditions)).limit(1);
+  const [existing] = await db.select().from(phoneUnits).where(and(...conditions)).limit(1);
   return !existing;
 };
 
@@ -216,15 +217,18 @@ export const createProduct = async (req, res) => {
       accessoryCatalogId,
       customName,
       sku,
-      imei1, 
-      imei2,
+      imeiPrimary, 
+      imeiSecondary,
       barcode,
       stock,
       purchasePrice,
       salePrice,
       vendorId,
       lowStockThreshold,
-      shopId: requestedShopId
+      shopId: requestedShopId,
+      colorId,
+      storageId,
+      condition
     } = req.validatedBody;
 
     // Use shopId from request body if provided, otherwise fall back to user's first shop
@@ -260,16 +264,19 @@ export const createProduct = async (req, res) => {
       return res.status(409).json({ error: req.t ? req.t('product.barcode_exists') : 'Barcode already exists' });
     }
 
-    if (!(await checkImeiUniqueness(imei1, shopId))) {
-      return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
-    }
+    // For mobile phones, check IMEI uniqueness
+    if (categoryId === 'mobile' && imeiPrimary) {
+      if (!(await checkImeiUniqueness(imeiPrimary, shopId))) {
+        return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
+      }
 
-    if (!(await checkImeiUniqueness(imei2, shopId))) {
-      return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
-    }
+      if (imeiSecondary && !(await checkImeiUniqueness(imeiSecondary, shopId))) {
+        return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
+      }
 
-    if (imei1 && imei2 && imei1 === imei2) {
-      return res.status(400).json({ error: req.t ? req.t('product.imei_duplicate') : 'IMEI1 and IMEI2 cannot be the same' });
+      if (imeiPrimary && imeiSecondary && imeiPrimary === imeiSecondary) {
+        return res.status(400).json({ error: req.t ? req.t('product.imei_duplicate') : 'Primary and Secondary IMEI cannot be the same' });
+      }
     }
 
     if (mobileCatalogId) {
@@ -306,6 +313,8 @@ export const createProduct = async (req, res) => {
       }
     }
 
+    // For accessories, use stock count directly
+    // For mobiles, stock is calculated from phone units
     const [newProduct] = await db.insert(products).values({
       shopId,
       categoryId,
@@ -313,31 +322,45 @@ export const createProduct = async (req, res) => {
       accessoryCatalogId: categoryId === 'accessories' ? (accessoryCatalogId || null) : null,
       customName: customName || null,
       sku: finalSku || null,
-      imei1: categoryId === 'mobile' ? (imei1 || null) : null,
-      imei2: categoryId === 'mobile' ? (imei2 || null) : null,
       barcode: finalBarcode,
-      stock: stock || 1,
+      stock: categoryId === 'accessories' ? (stock || 1) : 0, // For mobiles, stock is 0 (calculated from phoneUnits)
       purchasePrice: purchasePrice?.toString() || null,
       salePrice: salePrice.toString(),
       vendorId: vendorId || null,
       lowStockThreshold: lowStockThreshold || 5
     }).returning();
 
+    let newPhoneUnit = null;
+    // For mobile phones with IMEI, create a phone unit
+    if (categoryId === 'mobile' && imeiPrimary) {
+      [newPhoneUnit] = await db.insert(phoneUnits).values({
+        shopId,
+        productId: newProduct.id,
+        imeiPrimary,
+        imeiSecondary: imeiSecondary || null,
+        condition: condition || 'new',
+        status: 'in_stock',
+        purchasePrice: purchasePrice?.toString() || null,
+        colorId: colorId || null,
+        storageId: storageId || null,
+        vendorId: vendorId || null
+      }).returning();
+    }
+
     try {
       await logActivity(req.user?.id, 'create', 'product', newProduct.id, {
         categoryId,
         customName: newProduct.customName,
         barcode: newProduct.barcode,
-        stock: newProduct.stock,
         salePrice: newProduct.salePrice,
-        imei1: newProduct.imei1,
-        imei2: newProduct.imei2
+        imeiPrimary: newPhoneUnit?.imeiPrimary,
+        imeiSecondary: newPhoneUnit?.imeiSecondary
       }, req);
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
-    res.status(201).json({ product: newProduct });
+    res.status(201).json({ product: newProduct, phoneUnit: newPhoneUnit });
   } catch (error) {
     console.error('Create product error:', error);
     res.status(500).json({ error: req.t ? req.t('product.create_failed') : 'Failed to create product' });
@@ -356,7 +379,10 @@ export const bulkCreateProducts = async (req, res) => {
       vendorId,
       lowStockThreshold,
       quantity,
-      imeis
+      imeis,
+      condition,
+      colorId,
+      storageId
     } = req.validatedBody;
 
     const shopId = requestedShopId || req.userShopIds?.[0];
@@ -374,11 +400,13 @@ export const bulkCreateProducts = async (req, res) => {
       return res.status(400).json({ error: req.t ? req.t('product.imei_count_mismatch') : 'IMEI count must match quantity' });
     }
 
+    // Collect all IMEIs for uniqueness check
     const allImeis = [];
     for (const imeiPair of imeis) {
-      allImeis.push(imeiPair.imei1);
-      if (imeiPair.imei2) {
-        allImeis.push(imeiPair.imei2);
+      allImeis.push(imeiPair.imeiPrimary || imeiPair.imei1);
+      const secondary = imeiPair.imeiSecondary || imeiPair.imei2;
+      if (secondary) {
+        allImeis.push(secondary);
       }
     }
 
@@ -387,20 +415,13 @@ export const bulkCreateProducts = async (req, res) => {
       return res.status(400).json({ error: req.t ? req.t('product.duplicate_imei_in_batch') : 'Duplicate IMEIs found in batch' });
     }
 
+    // Check for existing IMEIs in phoneUnits table
     for (const imei of allImeis) {
-      const [existingInProducts] = await db.select().from(products).where(
-        or(eq(products.imei1, imei), eq(products.imei2, imei))
+      const [existingInPhoneUnits] = await db.select().from(phoneUnits).where(
+        or(eq(phoneUnits.imeiPrimary, imei), eq(phoneUnits.imeiSecondary, imei))
       ).limit(1);
       
-      if (existingInProducts) {
-        return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : `IMEI ${imei} already exists` });
-      }
-
-      const [existingInImeiTable] = await db.select().from(productImeis).where(
-        eq(productImeis.imei, imei)
-      ).limit(1);
-      
-      if (existingInImeiTable) {
+      if (existingInPhoneUnits) {
         return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : `IMEI ${imei} already exists` });
       }
     }
@@ -414,12 +435,21 @@ export const bulkCreateProducts = async (req, res) => {
       }
     }
 
-    const createdProducts = [];
-    const createdImeis = [];
+    // Find or create a single product SKU for this model
+    let product = null;
+    const [existingProduct] = await db.select().from(products).where(
+      and(
+        eq(products.shopId, shopId),
+        eq(products.categoryId, categoryId),
+        mobileCatalogId ? eq(products.mobileCatalogId, mobileCatalogId) : sql`true`
+      )
+    ).limit(1);
 
-    for (let i = 0; i < quantity; i++) {
-      const imeiPair = imeis[i];
-      const finalBarcode = `MB-${shopId.substring(0, 6)}-${Date.now()}-${i}`;
+    if (existingProduct) {
+      product = existingProduct;
+    } else {
+      // Create new product SKU
+      const finalBarcode = `MB-${shopId.substring(0, 6)}-${Date.now()}`;
       
       let finalSku = null;
       if (categoryId === 'mobile' && mobileCatalogId) {
@@ -429,7 +459,7 @@ export const bulkCreateProducts = async (req, res) => {
           const modelCode = catalogItem.name.replace(/\s+/g, '').substring(0, 6).toUpperCase();
           const memoryCode = catalogItem.memory ? `-${catalogItem.memory.replace(/\s+/g, '')}` : '';
           const colorCode = catalogItem.color ? `-${catalogItem.color.substring(0, 3).toUpperCase()}` : '';
-          finalSku = `${brandCode}-${modelCode}${memoryCode}${colorCode}-${i + 1}`;
+          finalSku = `${brandCode}-${modelCode}${memoryCode}${colorCode}`;
         }
       }
 
@@ -439,49 +469,57 @@ export const bulkCreateProducts = async (req, res) => {
         mobileCatalogId: categoryId === 'mobile' ? (mobileCatalogId || null) : null,
         customName: customName || null,
         sku: finalSku,
-        imei1: imeiPair.imei1,
-        imei2: imeiPair.imei2 || null,
         barcode: finalBarcode,
-        stock: 1,
+        stock: 0, // Stock calculated from phoneUnits
         purchasePrice: purchasePrice?.toString() || null,
         salePrice: salePrice.toString(),
         vendorId: vendorId || null,
         lowStockThreshold: lowStockThreshold || 5
       }).returning();
 
-      createdProducts.push(newProduct);
+      product = newProduct;
+    }
 
-      const [imei1Record] = await db.insert(productImeis).values({
-        productId: newProduct.id,
-        imei: imeiPair.imei1
+    // Create phone units for each IMEI pair
+    const createdPhoneUnits = [];
+
+    for (let i = 0; i < quantity; i++) {
+      const imeiPair = imeis[i];
+      const primaryImei = imeiPair.imeiPrimary || imeiPair.imei1;
+      const secondaryImei = imeiPair.imeiSecondary || imeiPair.imei2;
+
+      const [newPhoneUnit] = await db.insert(phoneUnits).values({
+        shopId,
+        productId: product.id,
+        imeiPrimary: primaryImei,
+        imeiSecondary: secondaryImei || null,
+        condition: condition || 'new',
+        status: 'in_stock',
+        purchasePrice: purchasePrice?.toString() || null,
+        colorId: colorId || null,
+        storageId: storageId || null,
+        vendorId: vendorId || null
       }).returning();
-      createdImeis.push(imei1Record);
 
-      if (imeiPair.imei2) {
-        const [imei2Record] = await db.insert(productImeis).values({
-          productId: newProduct.id,
-          imei: imeiPair.imei2
-        }).returning();
-        createdImeis.push(imei2Record);
-      }
+      createdPhoneUnits.push(newPhoneUnit);
     }
 
     try {
-      await logActivity(req.user?.id, 'bulk_create', 'product', null, {
+      await logActivity(req.user?.id, 'bulk_create', 'product', product.id, {
         categoryId,
         customName,
         quantity,
-        productIds: createdProducts.map(p => p.id),
-        imeiCount: createdImeis.length
+        productId: product.id,
+        phoneUnitCount: createdPhoneUnits.length
       }, req);
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
     res.status(201).json({ 
-      products: createdProducts,
-      imeis: createdImeis,
-      message: req.t ? req.t('product.bulk_created', { count: quantity }) : `${quantity} products created successfully`
+      product,
+      phoneUnits: createdPhoneUnits,
+      message: req.t ? req.t('product.bulk_created', { count: quantity }) : `${quantity} phone units created successfully`
     });
   } catch (error) {
     console.error('Bulk create products error:', error);
@@ -494,10 +532,7 @@ export const updateProduct = async (req, res) => {
     const { id } = req.params;
     const { 
       customName,
-      categoryId,
       sku,
-      imei1,
-      imei2,
       barcode,
       purchasePrice,
       salePrice,
@@ -528,18 +563,6 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    if (existingProduct.categoryId === 'accessories') {
-      if (imei1 !== undefined || imei2 !== undefined) {
-        return res.status(400).json({ error: req.t('product.imei_not_allowed_for_accessory') });
-      }
-    }
-
-    if (existingProduct.categoryId === 'mobile') {
-      if (imei1 !== undefined && !imei1) {
-        return res.status(400).json({ error: req.t('product.imei1_required_for_mobile') });
-      }
-    }
-
     const finalCustomName = customName !== undefined ? customName : existingProduct.customName;
     const finalMobileCatalogId = existingProduct.mobileCatalogId;
     const finalAccessoryCatalogId = existingProduct.accessoryCatalogId;
@@ -557,32 +580,9 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    if (imei1 !== undefined && imei1 !== null) {
-      if (!(await checkImeiUniqueness(imei1, shopId, id))) {
-        return res.status(409).json({ error: req.t('product.imei_exists') });
-      }
-    }
-
-    if (imei2 !== undefined && imei2 !== null) {
-      if (!(await checkImeiUniqueness(imei2, shopId, id))) {
-        return res.status(409).json({ error: req.t('product.imei_exists') });
-      }
-    }
-
-    const finalImei1 = imei1 !== undefined ? imei1 : existingProduct.imei1;
-    const finalImei2 = imei2 !== undefined ? imei2 : existingProduct.imei2;
-    
-    if (finalImei1 && finalImei2 && finalImei1 === finalImei2) {
-      return res.status(400).json({ error: req.t('product.imei_duplicate') });
-    }
-
     const updateData = { updatedAt: new Date() };
     if (customName !== undefined) updateData.customName = customName;
     if (sku !== undefined) updateData.sku = sku;
-    if (existingProduct.categoryId === 'mobile') {
-      if (imei1 !== undefined) updateData.imei1 = imei1;
-      if (imei2 !== undefined) updateData.imei2 = imei2;
-    }
     if (barcode !== undefined) updateData.barcode = barcode;
     if (purchasePrice !== undefined) updateData.purchasePrice = purchasePrice != null ? purchasePrice.toString() : null;
     if (salePrice !== undefined && salePrice != null) updateData.salePrice = salePrice.toString();
@@ -677,6 +677,11 @@ export const deleteProduct = async (req, res) => {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
+    // For mobile products, also delete associated phone units
+    if (existingProduct.categoryId === 'mobile') {
+      await db.delete(phoneUnits).where(eq(phoneUnits.productId, id));
+    }
+
     await db.delete(products).where(eq(products.id, id));
 
     try {
@@ -684,8 +689,6 @@ export const deleteProduct = async (req, res) => {
         deletedProduct: {
           customName: existingProduct.customName,
           barcode: existingProduct.barcode,
-          imei1: existingProduct.imei1,
-          imei2: existingProduct.imei2,
           categoryId: existingProduct.categoryId
         }
       }, req);

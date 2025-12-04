@@ -46,6 +46,24 @@ The application features a modern, luxurious, and premium design inspired by hig
 - **Auth Middleware Pattern**: The auth middleware sets `req.userShopIds` as an array of shop IDs associated with the authenticated user. Controllers access the primary shop with `req.userShopIds?.[0]`.
 - **Consistent updatedAt Columns**: All mutable tables include `updatedAt` columns. Immutable/audit tables (sales, loginHistory, activityLogs, repairPayments, notifications) intentionally omit them.
 
+### IMEI-Based Inventory Architecture
+The system uses a specialized architecture for tracking mobile phones with unique IMEI numbers:
+
+- **Products Table (SKU Level)**: Represents product templates/SKUs. For mobile phones, this stores model information (linked to mobileCatalog) and pricing. For accessories, it includes stock counts directly.
+- **PhoneUnits Table (Individual Devices)**: Tracks each physical mobile device with:
+  - `imeiPrimary` (required, unique) - Primary IMEI for all phones
+  - `imeiSecondary` (optional, unique) - Secondary IMEI for dual-SIM devices
+  - `status` - Lifecycle tracking: in_stock, reserved, sold, transferred, returned, defective
+  - `condition` - Product condition: new, like_new, good, fair, poor
+  - `shopId` - Current location of the device (changes during transfers)
+- **SaleItemUnits Table**: Links sold phone units to sale items for complete traceability (customer → sale → saleItem → saleItemUnit → phoneUnit with IMEIs)
+- **Stock Calculation**: 
+  - Accessories: Use `products.stock` field directly
+  - Mobile phones: Count of `phoneUnits WHERE status='in_stock'`
+- **Stock Transfers**: 
+  - Accessories: Transfer by productId with quantity
+  - Mobile phones: Transfer individual phoneUnits by phoneUnitId (updates shopId)
+
 ### System Design Choices
 - **API Architecture**: Organized into `config`, `controllers`, `middleware`, `routes`, `validators`, `sql`, `scripts`, `utils` directories.
 - **Role-Based Access Control (RBAC)**: Centralized AccessControl system in `src/config/accessControl.ts`:

@@ -8,23 +8,19 @@ export const createProductSchema = z.object({
   accessoryCatalogId: z.string().uuid().optional().nullable(),
   customName: z.string().min(1).optional().nullable(),
   sku: z.string().optional().nullable(),
-  imei1: z.string().min(1).optional().nullable(),
-  imei2: z.string().min(1).optional().nullable(),
+  imeiPrimary: z.string().min(1).optional().nullable(),
+  imeiSecondary: z.string().min(1).optional().nullable(),
   barcode: z.string().optional().nullable(),
   stock: z.number().int().min(0, 'Stock cannot be negative').default(1),
   purchasePrice: z.union([z.number().positive('Purchase price must be positive'), z.null()]).optional(),
   salePrice: z.number().positive('Sale price must be positive'),
   vendorId: z.string().uuid().optional().nullable(),
-  lowStockThreshold: z.number().int().min(0).default(5)
+  lowStockThreshold: z.number().int().min(0).default(5),
+  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).optional(),
+  colorId: z.string().uuid().optional().nullable(),
+  storageId: z.string().uuid().optional().nullable()
 }).superRefine((data, ctx) => {
   if (data.categoryId === 'mobile') {
-    if (!data.imei1) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'IMEI1 is required for mobile products',
-        path: ['imei1']
-      });
-    }
     if (!data.mobileCatalogId && !data.customName) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -42,11 +38,11 @@ export const createProductSchema = z.object({
   }
   
   if (data.categoryId === 'accessories') {
-    if (data.imei1 || data.imei2) {
+    if (data.imeiPrimary || data.imeiSecondary) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'IMEI fields should not be set for accessory products',
-        path: ['imei1']
+        path: ['imeiPrimary']
       });
     }
     if (!data.accessoryCatalogId && !data.customName) {
@@ -69,8 +65,6 @@ export const createProductSchema = z.object({
 export const updateProductSchema = z.object({
   customName: z.string().min(1).optional().nullable(),
   sku: z.string().optional().nullable(),
-  imei1: z.string().min(1).optional().nullable(),
-  imei2: z.string().min(1).optional().nullable(),
   barcode: z.string().optional().nullable(),
   purchasePrice: z.union([z.number().positive('Purchase price must be positive'), z.null()]).optional(),
   salePrice: z.union([z.number().positive('Sale price must be positive'), z.null()]).optional(),
@@ -94,8 +88,13 @@ export const bulkCreateProductSchema = z.object({
   vendorId: z.string().uuid().optional().nullable(),
   lowStockThreshold: z.number().int().min(0).default(5),
   quantity: z.number().int().min(1).max(100, 'Maximum 100 items per batch'),
+  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).optional(),
+  colorId: z.string().uuid().optional().nullable(),
+  storageId: z.string().uuid().optional().nullable(),
   imeis: z.array(z.object({
-    imei1: z.string().min(1),
+    imeiPrimary: z.string().min(1).optional(),
+    imeiSecondary: z.string().optional().nullable(),
+    imei1: z.string().min(1).optional(),
     imei2: z.string().optional().nullable()
   })).min(1)
 }).superRefine((data, ctx) => {
@@ -117,4 +116,18 @@ export const bulkCreateProductSchema = z.object({
   }
 });
 
-export default { createProductSchema, updateProductSchema, updateStockSchema, bulkCreateProductSchema };
+export const phoneUnitUpdateSchema = z.object({
+  imeiPrimary: z.string().min(15).max(15).optional(),
+  imeiSecondary: z.string().min(15).max(15).optional().nullable(),
+  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).optional(),
+  status: z.enum(['in_stock', 'reserved', 'sold', 'transferred', 'returned', 'defective']).optional(),
+  notes: z.string().optional().nullable()
+}).strict();
+
+export default { 
+  createProductSchema, 
+  updateProductSchema, 
+  updateStockSchema, 
+  bulkCreateProductSchema,
+  phoneUnitUpdateSchema
+};
