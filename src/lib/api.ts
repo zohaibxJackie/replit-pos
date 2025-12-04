@@ -270,6 +270,21 @@ export const api = {
     
     getLowStock: (shopId?: string) =>
       request(shopId ? `/api/products/low-stock?shopId=${shopId}` : '/api/products/low-stock'),
+    
+    bulkCreate: (data: { 
+      shopId: string;
+      categoryId: 'mobile' | 'accessories';
+      customName?: string;
+      salePrice: number;
+      purchasePrice?: number;
+      lowStockThreshold?: number;
+      mobileCatalogId?: string;
+      accessoryCatalogId?: string;
+      vendorId?: string;
+      quantity: number;
+      imeis: Array<{ imei1: string; imei2?: string | null }>;
+    }) =>
+      request<{ products: Array<{ id: string }>; count: number }>('/api/products/bulk', { method: 'POST', body: data }),
   },
 
   mobileCatalog: {

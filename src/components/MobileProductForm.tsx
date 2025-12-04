@@ -251,6 +251,11 @@ function ColorAutocomplete({
   );
 }
 
+export interface ImeiEntry {
+  imei1: string;
+  imei2: string;
+}
+
 export interface MobileProductPayload {
   brand: string;
   model: string;
@@ -263,6 +268,8 @@ export interface MobileProductPayload {
   taxId?: string;
   mobileCatalogId?: string;
   category: string;
+  quantity?: number;
+  imeis?: ImeiEntry[];
 }
 
 interface MobileProductFormProps {
@@ -270,9 +277,10 @@ interface MobileProductFormProps {
   onCancel: () => void;
   initialData?: Partial<MobileProductPayload>;
   shopId?: string;
+  isEditing?: boolean;
 }
 
-export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: MobileProductFormProps) {
+export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isEditing = false }: MobileProductFormProps) {
   const { t } = useTranslation();
 
   const [brand, setBrand] = useState<string>(initialData?.brand || "");
@@ -286,9 +294,46 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
   const [sellingPrice, setSellingPrice] = useState<string>(initialData?.sellingPrice?.toString() || "");
   const [taxId, setTaxId] = useState<string | undefined>(initialData?.taxId);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [quantity, setQuantity] = useState<number>(1);
+  const [imeis, setImeis] = useState<ImeiEntry[]>([{ imei1: "", imei2: "" }]);
 
   const [showScanner, setShowScanner] = useState(false);
   const [showScanner2, setShowScanner2] = useState(false);
+  const [showBulkScanner, setShowBulkScanner] = useState(false);
+  const [activeScannerIndex, setActiveScannerIndex] = useState<number | null>(null);
+  const [activeScannerField, setActiveScannerField] = useState<'imei1' | 'imei2'>('imei1');
+
+  const handleQuantityChange = useCallback((newQty: number) => {
+    const qty = Math.max(1, Math.min(100, newQty));
+    setQuantity(qty);
+    setImeis(prevImeis => {
+      if (qty > prevImeis.length) {
+        return [...prevImeis, ...Array(qty - prevImeis.length).fill(null).map(() => ({ imei1: "", imei2: "" }))];
+      } else {
+        return prevImeis.slice(0, qty);
+      }
+    });
+  }, []);
+
+  const updateImei = useCallback((index: number, field: 'imei1' | 'imei2', value: string) => {
+    setImeis(prev => prev.map((entry, i) => 
+      i === index ? { ...entry, [field]: value } : entry
+    ));
+  }, []);
+
+  const handleBulkImeiScan = useCallback((scannedCode: string) => {
+    if (activeScannerIndex !== null) {
+      updateImei(activeScannerIndex, activeScannerField, scannedCode);
+    }
+    setShowBulkScanner(false);
+    setActiveScannerIndex(null);
+  }, [activeScannerIndex, activeScannerField, updateImei]);
+
+  const openBulkScanner = useCallback((index: number, field: 'imei1' | 'imei2') => {
+    setActiveScannerIndex(index);
+    setActiveScannerField(field);
+    setShowBulkScanner(true);
+  }, []);
 
   const { data: brandsData, isLoading: brandsLoading } = useQuery({
     queryKey: ['/api/products/catalog/mobiles/brands'],
@@ -375,14 +420,18 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
   }, [sellingPrice, taxId, taxes]);
 
   const handleIMEIScan = useCallback((scannedCode: string) => {
-    setImei(scannedCode);
+    if (isEditing || quantity === 1) {
+      setImei(scannedCode);
+    }
     setShowScanner(false);
-  }, []);
+  }, [isEditing, quantity]);
 
   const handleIMEI2Scan = useCallback((scannedCode: string) => {
-    setImei2(scannedCode);
+    if (isEditing || quantity === 1) {
+      setImei2(scannedCode);
+    }
     setShowScanner2(false);
-  }, []);
+  }, [isEditing, quantity]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,12 +447,24 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
     } else if (colors.length === 0 && selectedModel && !colorDisplay.trim()) {
       newErrors.color = t("products.form.color_required");
     }
-    if (!imei.trim()) newErrors.imei = t("products.form.imei_required");
     if (!purchasePrice || parseFloat(purchasePrice) <= 0) {
       newErrors.purchasePrice = t("products.form.purchase_price_required");
     }
     if (!sellingPrice || parseFloat(sellingPrice) <= 0) {
       newErrors.sellingPrice = t("products.form.selling_price_required");
+    }
+
+    if (isEditing || quantity === 1) {
+      if (!imei.trim()) newErrors.imei = t("products.form.imei_required");
+    } else {
+      if (imeis.length !== quantity) {
+        newErrors.quantity = t("products.form.imei_count_mismatch");
+      }
+      imeis.forEach((entry, index) => {
+        if (!entry.imei1.trim()) {
+          newErrors[`imei_${index}`] = t("products.form.imei_required_for_phone", { number: index + 1 });
+        }
+      });
     }
 
     setErrors(newErrors);
@@ -421,13 +482,15 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
       model: selectedModel.name,
       memory: selectedModel.memory,
       color: selectedColor?.color || colorDisplay.trim(),
-      imei: imei.trim(),
-      imei2: imei2.trim() || undefined,
+      imei: isEditing || quantity === 1 ? imei.trim() : imeis[0]?.imei1.trim() || "",
+      imei2: isEditing || quantity === 1 ? (imei2.trim() || undefined) : (imeis[0]?.imei2.trim() || undefined),
       purchasePrice: parseFloat(purchasePrice),
       sellingPrice: parseFloat(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
       mobileCatalogId: selectedColor?.id || selectedModel.id,
       category: "mobile",
+      quantity: !isEditing && quantity > 1 ? quantity : undefined,
+      imeis: !isEditing && quantity > 1 ? imeis : undefined,
     };
 
     onSubmit(payload);
@@ -483,58 +546,146 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
         )}
       </div>
 
-      <div>
-        <Label htmlFor="imei" className="text-sm font-medium">
-          {t("products.form.imei")} <span className="text-destructive">*</span>
-        </Label>
-        <div className="flex gap-2">
+      {!isEditing && (
+        <div>
+          <Label htmlFor="quantity" className="text-sm font-medium">
+            {t("products.form.quantity")} <span className="text-destructive">*</span>
+          </Label>
           <Input
-            id="imei"
-            value={imei}
-            onChange={(e) => setImei(e.target.value)}
-            placeholder={t("products.form.enter_or_scan_imei")}
-            className="flex-1"
-            data-testid="input-imei"
+            id="quantity"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={100}
+            value={quantity}
+            onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
+            placeholder={t("products.form.enter_quantity")}
+            data-testid="input-quantity"
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => setShowScanner(true)}
-            data-testid="button-scan-imei"
-          >
-            <Camera className="w-4 h-4" />
-          </Button>
+          <p className="text-muted-foreground text-xs mt-1">
+            {t("products.form.quantity_hint")}
+          </p>
         </div>
-        {errors.imei && (
-          <p className="text-destructive text-xs mt-1">{errors.imei}</p>
-        )}
-      </div>
+      )}
 
-      <div>
-        <Label htmlFor="imei2" className="text-sm font-medium">
-          {t("products.form.imei2")} <span className="text-muted-foreground text-xs">({t("products.form.optional")})</span>
-        </Label>
-        <div className="flex gap-2">
-          <Input
-            id="imei2"
-            value={imei2}
-            onChange={(e) => setImei2(e.target.value)}
-            placeholder={t("products.form.enter_or_scan_imei2")}
-            className="flex-1"
-            data-testid="input-imei2"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => setShowScanner2(true)}
-            data-testid="button-scan-imei2"
-          >
-            <Camera className="w-4 h-4" />
-          </Button>
+      {(isEditing || quantity === 1) ? (
+        <>
+          <div>
+            <Label htmlFor="imei" className="text-sm font-medium">
+              {t("products.form.imei")} <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="imei"
+                value={imei}
+                onChange={(e) => setImei(e.target.value)}
+                placeholder={t("products.form.enter_or_scan_imei")}
+                className="flex-1"
+                data-testid="input-imei"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setShowScanner(true)}
+                data-testid="button-scan-imei"
+              >
+                <Camera className="w-4 h-4" />
+              </Button>
+            </div>
+            {errors.imei && (
+              <p className="text-destructive text-xs mt-1">{errors.imei}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="imei2" className="text-sm font-medium">
+              {t("products.form.imei2")} <span className="text-muted-foreground text-xs">({t("products.form.optional")})</span>
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="imei2"
+                value={imei2}
+                onChange={(e) => setImei2(e.target.value)}
+                placeholder={t("products.form.enter_or_scan_imei2")}
+                className="flex-1"
+                data-testid="input-imei2"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setShowScanner2(true)}
+                data-testid="button-scan-imei2"
+              >
+                <Camera className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-4">
+          <Label className="text-sm font-medium">
+            {t("products.form.imei_entries")} <span className="text-destructive">*</span>
+          </Label>
+          <div className="max-h-64 overflow-y-auto space-y-3 border rounded-md p-3">
+            {imeis.map((entry, index) => (
+              <div key={index} className="p-3 bg-muted/50 rounded-md space-y-2">
+                <div className="font-medium text-sm text-muted-foreground">
+                  {t("products.form.phone_number", { number: index + 1 })}
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <Label className="text-xs">{t("products.form.imei")} 1 *</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        value={entry.imei1}
+                        onChange={(e) => updateImei(index, 'imei1', e.target.value)}
+                        placeholder={t("products.form.imei")}
+                        className="flex-1"
+                        data-testid={`input-imei1-${index}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => openBulkScanner(index, 'imei1')}
+                        data-testid={`button-scan-imei1-${index}`}
+                      >
+                        <Camera className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {errors[`imei_${index}`] && (
+                      <p className="text-destructive text-xs mt-1">{errors[`imei_${index}`]}</p>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <Label className="text-xs">{t("products.form.imei")} 2</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        value={entry.imei2}
+                        onChange={(e) => updateImei(index, 'imei2', e.target.value)}
+                        placeholder={t("products.form.optional")}
+                        className="flex-1"
+                        data-testid={`input-imei2-${index}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => openBulkScanner(index, 'imei2')}
+                        data-testid={`button-scan-imei2-${index}`}
+                      >
+                        <Camera className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <Label htmlFor="purchasePrice" className="text-sm font-medium">
@@ -622,6 +773,15 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId }: M
         open={showScanner2}
         onOpenChange={setShowScanner2}
         onScanSuccess={handleIMEI2Scan}
+      />
+
+      <BarcodeScannerDialog
+        open={showBulkScanner}
+        onOpenChange={(open) => {
+          setShowBulkScanner(open);
+          if (!open) setActiveScannerIndex(null);
+        }}
+        onScanSuccess={handleBulkImeiScan}
       />
     </form>
   );

@@ -147,6 +147,21 @@ export default function Products() {
     },
   });
 
+  const bulkCreateProductMutation = useMutation({
+    mutationFn: (data: Parameters<typeof api.products.bulkCreate>[0]) => api.products.bulkCreate(data),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({ 
+        title: t("admin.products.bulk_products_added"), 
+        description: t("admin.products.bulk_products_added_desc", { count: result.count }) 
+      });
+      setIsModalOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: t("admin.products.error"), description: error.message, variant: "destructive" });
+    },
+  });
+
   const updateProductMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof api.products.update>[1] }) => 
       api.products.update(id, data),
@@ -197,16 +212,33 @@ export default function Products() {
         return;
       }
       
-      createProductMutation.mutate({
-        shopId: selectedShopId,
-        categoryId: 'mobile',
-        customName: productName,
-        salePrice: payload.sellingPrice,
-        stock: 1,
-        imei1: payload.imei,
-        imei2: payload.imei2,
-        mobileCatalogId: payload.mobileCatalogId,
-      });
+      if (payload.quantity && payload.quantity > 1 && payload.imeis) {
+        bulkCreateProductMutation.mutate({
+          shopId: selectedShopId,
+          categoryId: 'mobile',
+          customName: productName,
+          salePrice: payload.sellingPrice,
+          purchasePrice: payload.purchasePrice,
+          mobileCatalogId: payload.mobileCatalogId,
+          quantity: payload.quantity,
+          imeis: payload.imeis.map(e => ({ 
+            imei1: e.imei1, 
+            imei2: e.imei2 || null 
+          })),
+        });
+      } else {
+        createProductMutation.mutate({
+          shopId: selectedShopId,
+          categoryId: 'mobile',
+          customName: productName,
+          salePrice: payload.sellingPrice,
+          purchasePrice: payload.purchasePrice,
+          stock: 1,
+          imei1: payload.imei,
+          imei2: payload.imei2,
+          mobileCatalogId: payload.mobileCatalogId,
+        });
+      }
     }
   };
 
@@ -395,6 +427,7 @@ export default function Products() {
             sellingPrice: parseFloat(currentProduct.price),
           } : undefined}
           shopId={selectedShopId || shops[0]?.id}
+          isEditing={!!currentProduct}
         />
       </FormPopupModal>
 
