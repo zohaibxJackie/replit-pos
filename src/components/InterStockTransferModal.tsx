@@ -181,7 +181,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-4 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] flex flex-col p-4 sm:p-6">
           <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
@@ -192,7 +192,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex flex-col gap-3 sm:gap-4">
+          <div className="flex-1 flex flex-col gap-3 sm:gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-2 text-xs sm:text-sm">
@@ -244,7 +244,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
               />
             </div>
 
-            <div className="flex-1 overflow-hidden min-h-0">
+            <div className="flex-1 min-h-0">
               <Label className="mb-1.5 block text-xs sm:text-sm">{t("admin.products.select_product")}</Label>
               <ScrollArea className="h-32 sm:h-40 border rounded-md">
                 {isLoadingProducts ? (
@@ -356,7 +356,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
       </Dialog>
 
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <AlertDialogContent className="w-[90vw] max-w-md p-4 sm:p-6">
+        <AlertDialogContent className="w-[90vw] p-4 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">{t("admin.products.confirm_transfer")}</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2 text-xs sm:text-sm">
