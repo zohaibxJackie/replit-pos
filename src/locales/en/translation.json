@@ -290,8 +290,10 @@
         "stock": "Stock",
         "sale_price": "Sale Price",
         "shop": "Shop",
+        "color": "Color",
         "type": "Type"
       },
+      "filter_by_shop": "Filter by shop",
       "modal": {
         "create_title": "Create New Product",
         "edit_title": "Edit Product",

@@ -65,12 +65,65 @@ export const createStockTransfer = async (req, res) => {
       return res.status(404).json({ error: req.t('stock_transfer.target_shop_not_found') });
     }
 
-    await db.update(products)
-      .set({ 
-        stock: product.stock - transferQty,
-        updatedAt: new Date()
-      })
-      .where(eq(products.id, productId));
+    let destinationProductId = null;
+
+    if (product.categoryId === 'mobile') {
+      if (product.stock !== 1) {
+        return res.status(400).json({ error: req.t('stock_transfer.mobile_invalid_stock') || 'Mobile products must have stock of 1 for transfer' });
+      }
+      if (transferQty !== 1) {
+        return res.status(400).json({ error: req.t('stock_transfer.mobile_qty_must_be_one') || 'Mobile products can only be transferred one at a time' });
+      }
+      await db.update(products)
+        .set({ 
+          shopId: toShopId,
+          updatedAt: new Date()
+        })
+        .where(eq(products.id, productId));
+      destinationProductId = productId;
+    } else {
+      await db.update(products)
+        .set({ 
+          stock: product.stock - transferQty,
+          updatedAt: new Date()
+        })
+        .where(eq(products.id, productId));
+
+      const [existingDestProduct] = await db.select().from(products).where(
+        and(
+          eq(products.shopId, toShopId),
+          eq(products.categoryId, product.categoryId),
+          eq(products.accessoryCatalogId, product.accessoryCatalogId),
+          eq(products.barcode, product.barcode)
+        )
+      ).limit(1);
+
+      if (existingDestProduct) {
+        await db.update(products)
+          .set({ 
+            stock: existingDestProduct.stock + transferQty,
+            updatedAt: new Date()
+          })
+          .where(eq(products.id, existingDestProduct.id));
+        destinationProductId = existingDestProduct.id;
+      } else {
+        const [newDestProduct] = await db.insert(products).values({
+          shopId: toShopId,
+          categoryId: product.categoryId,
+          mobileCatalogId: product.mobileCatalogId,
+          accessoryCatalogId: product.accessoryCatalogId,
+          customName: product.customName,
+          sku: product.sku ? `${product.sku}-TR` : null,
+          barcode: product.barcode,
+          stock: transferQty,
+          purchasePrice: product.purchasePrice,
+          salePrice: product.salePrice,
+          vendorId: product.vendorId,
+          lowStockThreshold: product.lowStockThreshold
+        }).returning();
+        destinationProductId = newDestProduct.id;
+      }
+    }
 
     const [newTransfer] = await db.insert(stockTransfers).values({
       productId,

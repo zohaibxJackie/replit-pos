@@ -83,4 +83,38 @@ export const updateStockSchema = z.object({
   type: z.enum(['add', 'subtract', 'set'])
 });
 
-export default { createProductSchema, updateProductSchema, updateStockSchema };
+export const bulkCreateProductSchema = z.object({
+  shopId: z.string().uuid(),
+  categoryId: z.enum(['mobile', 'accessories']),
+  mobileCatalogId: z.string().uuid().optional().nullable(),
+  accessoryCatalogId: z.string().uuid().optional().nullable(),
+  customName: z.string().min(1).optional().nullable(),
+  purchasePrice: z.union([z.number().positive('Purchase price must be positive'), z.null()]).optional(),
+  salePrice: z.number().positive('Sale price must be positive'),
+  vendorId: z.string().uuid().optional().nullable(),
+  lowStockThreshold: z.number().int().min(0).default(5),
+  quantity: z.number().int().min(1).max(100, 'Maximum 100 items per batch'),
+  imeis: z.array(z.object({
+    imei1: z.string().min(1),
+    imei2: z.string().optional().nullable()
+  })).min(1)
+}).superRefine((data, ctx) => {
+  if (data.categoryId === 'mobile') {
+    if (!data.mobileCatalogId && !data.customName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Either mobile catalog ID or custom name is required for mobile products',
+        path: ['mobileCatalogId']
+      });
+    }
+    if (data.quantity !== data.imeis.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Number of IMEI entries must match quantity',
+        path: ['imeis']
+      });
+    }
+  }
+});
+
+export default { createProductSchema, updateProductSchema, updateStockSchema, bulkCreateProductSchema };

@@ -294,21 +294,21 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
 
             {selectedProduct && (
               <Card className="p-4 bg-muted/50">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-semibold">{t("admin.products.selected_product")}</h4>
-                    <p className="text-sm">{selectedProduct.customName || `Product ${selectedProduct.id.slice(0, 8)}`}</p>
+                    <p className="text-sm truncate">{selectedProduct.customName || `Product ${selectedProduct.id.slice(0, 8)}`}</p>
                     {selectedProduct.imei1 && (
-                      <p className="text-xs text-muted-foreground">IMEI1: {selectedProduct.imei1}</p>
+                      <p className="text-xs text-muted-foreground truncate">IMEI1: {selectedProduct.imei1}</p>
                     )}
                     {selectedProduct.imei2 && (
-                      <p className="text-xs text-muted-foreground">IMEI2: {selectedProduct.imei2}</p>
+                      <p className="text-xs text-muted-foreground truncate">IMEI2: {selectedProduct.imei2}</p>
                     )}
                     <p className="text-sm text-muted-foreground mt-1">
                       {t("admin.products.available_stock")}: <span className="font-medium">{selectedProduct.stock}</span>
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Label htmlFor="transfer-qty" className="whitespace-nowrap">{t("admin.products.quantity")}:</Label>
                     <Input
                       id="transfer-qty"

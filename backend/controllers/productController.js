@@ -1,20 +1,26 @@
 import { db } from '../config/database.js';
-import { products, categories, vendors, mobileCatalog, accessoryCatalog } from '../../shared/schema.js';
-import { eq, and, desc, ilike, sql, or, lte, ne } from 'drizzle-orm';
+import { products, categories, vendors, mobileCatalog, accessoryCatalog, productImeis } from '../../shared/schema.js';
+import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 import { logActivity } from './notificationController.js';
 
 export const getProducts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, categoryId, lowStock } = req.query;
+    const { page = 1, limit = 10, search, categoryId, lowStock, shopId: queryShopId } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
-    const shopId = req.userShopIds?.[0];
+    const userShopIds = req.userShopIds || [];
 
-    if (!shopId) {
+    if (userShopIds.length === 0) {
       return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
     }
 
-    let conditions = [eq(products.shopId, shopId)];
+    let conditions = [];
+
+    if (queryShopId && userShopIds.includes(queryShopId)) {
+      conditions.push(eq(products.shopId, queryShopId));
+    } else {
+      conditions.push(inArray(products.shopId, userShopIds));
+    }
 
     if (search) {
       conditions.push(
@@ -68,9 +74,10 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userShopIds = req.userShopIds || [];
 
     const [product] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, req.userShopIds?.[0]))
+      and(eq(products.id, id), inArray(products.shopId, userShopIds))
     ).limit(1);
 
     if (!product) {
@@ -102,9 +109,10 @@ export const getProductById = async (req, res) => {
 export const getProductByBarcode = async (req, res) => {
   try {
     const { barcode } = req.params;
+    const userShopIds = req.userShopIds || [];
 
     const [product] = await db.select().from(products).where(
-      and(eq(products.barcode, barcode), eq(products.shopId, req.userShopIds?.[0]))
+      and(eq(products.barcode, barcode), inArray(products.shopId, userShopIds))
     ).limit(1);
 
     if (!product) {
@@ -121,11 +129,12 @@ export const getProductByBarcode = async (req, res) => {
 export const getProductByImei = async (req, res) => {
   try {
     const { imei } = req.params;
+    const userShopIds = req.userShopIds || [];
 
     const [product] = await db.select().from(products).where(
       and(
         or(eq(products.imei1, imei), eq(products.imei2, imei)),
-        eq(products.shopId, req.userShopIds?.[0])
+        inArray(products.shopId, userShopIds)
       )
     ).limit(1);
 
@@ -305,6 +314,151 @@ export const createProduct = async (req, res) => {
   } catch (error) {
     console.error('Create product error:', error);
     res.status(500).json({ error: req.t ? req.t('product.create_failed') : 'Failed to create product' });
+  }
+};
+
+export const bulkCreateProducts = async (req, res) => {
+  try {
+    const { 
+      shopId: requestedShopId,
+      categoryId, 
+      mobileCatalogId, 
+      customName,
+      purchasePrice,
+      salePrice,
+      vendorId,
+      lowStockThreshold,
+      quantity,
+      imeis
+    } = req.validatedBody;
+
+    const shopId = requestedShopId || req.userShopIds?.[0];
+
+    if (!shopId) {
+      return res.status(400).json({ error: req.t ? req.t('product.shop_required') : 'Shop ID is required' });
+    }
+
+    const hasFullAccess = req.user?.role === 'super_admin' || req.user?.role === 'admin';
+    if (!hasFullAccess && req.userShopIds?.length > 0 && !req.userShopIds.includes(shopId)) {
+      return res.status(403).json({ error: req.t ? req.t('product.shop_access_denied') : 'You do not have access to this shop' });
+    }
+
+    if (quantity !== imeis.length) {
+      return res.status(400).json({ error: req.t ? req.t('product.imei_count_mismatch') : 'IMEI count must match quantity' });
+    }
+
+    const allImeis = [];
+    for (const imeiPair of imeis) {
+      allImeis.push(imeiPair.imei1);
+      if (imeiPair.imei2) {
+        allImeis.push(imeiPair.imei2);
+      }
+    }
+
+    const uniqueImeis = new Set(allImeis);
+    if (uniqueImeis.size !== allImeis.length) {
+      return res.status(400).json({ error: req.t ? req.t('product.duplicate_imei_in_batch') : 'Duplicate IMEIs found in batch' });
+    }
+
+    for (const imei of allImeis) {
+      const [existingInProducts] = await db.select().from(products).where(
+        or(eq(products.imei1, imei), eq(products.imei2, imei))
+      ).limit(1);
+      
+      if (existingInProducts) {
+        return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : `IMEI ${imei} already exists` });
+      }
+
+      const [existingInImeiTable] = await db.select().from(productImeis).where(
+        eq(productImeis.imei, imei)
+      ).limit(1);
+      
+      if (existingInImeiTable) {
+        return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : `IMEI ${imei} already exists` });
+      }
+    }
+
+    if (mobileCatalogId) {
+      const [catalogExists] = await db.select().from(mobileCatalog).where(
+        eq(mobileCatalog.id, mobileCatalogId)
+      ).limit(1);
+      if (!catalogExists) {
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_mobile_catalog') : 'Invalid mobile catalog item' });
+      }
+    }
+
+    const createdProducts = [];
+    const createdImeis = [];
+
+    for (let i = 0; i < quantity; i++) {
+      const imeiPair = imeis[i];
+      const finalBarcode = `MB-${shopId.substring(0, 6)}-${Date.now()}-${i}`;
+      
+      let finalSku = null;
+      if (categoryId === 'mobile' && mobileCatalogId) {
+        const [catalogItem] = await db.select().from(mobileCatalog).where(eq(mobileCatalog.id, mobileCatalogId)).limit(1);
+        if (catalogItem && catalogItem.brand && catalogItem.name) {
+          const brandCode = catalogItem.brand.substring(0, 3).toUpperCase();
+          const modelCode = catalogItem.name.replace(/\s+/g, '').substring(0, 6).toUpperCase();
+          const memoryCode = catalogItem.memory ? `-${catalogItem.memory.replace(/\s+/g, '')}` : '';
+          const colorCode = catalogItem.color ? `-${catalogItem.color.substring(0, 3).toUpperCase()}` : '';
+          finalSku = `${brandCode}-${modelCode}${memoryCode}${colorCode}-${i + 1}`;
+        }
+      }
+
+      const [newProduct] = await db.insert(products).values({
+        shopId,
+        categoryId,
+        mobileCatalogId: categoryId === 'mobile' ? (mobileCatalogId || null) : null,
+        customName: customName || null,
+        sku: finalSku,
+        imei1: imeiPair.imei1,
+        imei2: imeiPair.imei2 || null,
+        barcode: finalBarcode,
+        stock: 1,
+        purchasePrice: purchasePrice?.toString() || null,
+        salePrice: salePrice.toString(),
+        vendorId: vendorId || null,
+        lowStockThreshold: lowStockThreshold || 5
+      }).returning();
+
+      createdProducts.push(newProduct);
+
+      const [imei1Record] = await db.insert(productImeis).values({
+        productId: newProduct.id,
+        imei: imeiPair.imei1
+      }).returning();
+      createdImeis.push(imei1Record);
+
+      if (imeiPair.imei2) {
+        const [imei2Record] = await db.insert(productImeis).values({
+          productId: newProduct.id,
+          imei: imeiPair.imei2
+        }).returning();
+        createdImeis.push(imei2Record);
+      }
+    }
+
+    try {
+      await logActivity(req.user?.id, 'bulk_create', 'product', null, {
+        categoryId,
+        customName,
+        quantity,
+        productIds: createdProducts.map(p => p.id),
+        imeiCount: createdImeis.length
+      }, req);
+    } catch (logError) {
+      console.error('Activity logging failed:', logError);
+    }
+
+    res.status(201).json({ 
+      products: createdProducts,
+      imeis: createdImeis,
+      message: req.t ? req.t('product.bulk_created', { count: quantity }) : `${quantity} products created successfully`
+    });
+  } catch (error) {
+    console.error('Bulk create products error:', error);
+    res.status(500).json({ error: req.t ? req.t('product.bulk_create_failed') : 'Failed to create products' });
   }
 };
 

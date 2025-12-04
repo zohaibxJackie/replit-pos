@@ -39,6 +39,7 @@ interface Product {
   accessoryCatalogId?: string;
   vendorId?: string;
   sku?: string;
+  color?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -123,6 +124,7 @@ export default function Products() {
         accessoryCatalogId: p.accessoryCatalogId,
         vendorId: p.vendorId,
         sku: p.sku,
+        color: p.mobileCatalog?.color || '-',
         createdAt: p.createdAt || '',
         updatedAt: p.updatedAt || '',
       } as Product;
@@ -244,6 +246,16 @@ export default function Products() {
       label: t("admin.products.column.product_name"), 
       filterType: "text" as const,
     },
+    {
+      key: "shopName",
+      label: t("admin.products.column.shop"),
+      filterType: "none" as const,
+    },
+    {
+      key: "color",
+      label: t("admin.products.column.color"),
+      filterType: "none" as const,
+    },
     { 
       key: "imei1", 
       label: t("admin.products.column.imei"), 
@@ -293,10 +305,23 @@ export default function Products() {
           </Button>
         </div>
 
-        <TablePageSizeSelector
-          limit={limit}
-          onChange={handlePageSizeChange}
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select value={shopFilter} onValueChange={(val) => { setShopFilter(val === 'all' ? '' : val); setPage(1); }}>
+            <SelectTrigger className="w-[180px]" data-testid="select-shop-filter">
+              <SelectValue placeholder={t("admin.products.filter_by_shop")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("admin.products.all_shops")}</SelectItem>
+              {shops.map((shop) => (
+                <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <TablePageSizeSelector
+            limit={limit}
+            onChange={handlePageSizeChange}
+          />
+        </div>
       </div>
 
       {isLoading ? (
