@@ -303,6 +303,40 @@ export const api = {
       imeis: Array<{ primaryImei: string; secondaryImei?: string | null }>;
     }) =>
       request<{ products: Array<{ id: string }>; count: number }>('/api/products/bulk', { method: 'POST', body: data }),
+    
+    getBrands: () =>
+      request<{ brands: Array<{ id: string; name: string }> }>('/api/products/brands'),
+    
+    getCategories: () =>
+      request<{ categories: Array<{ id: string; name: string }> }>('/api/products/categories'),
+    
+    getVariants: (params?: { brandId?: string; categoryId?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.brandId) searchParams.set('brandId', params.brandId);
+      if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
+      const query = searchParams.toString();
+      return request<{ variants: Array<{ id: string; name: string; brandId?: string; categoryId?: string }> }>(query ? `/api/products/variants?${query}` : '/api/products/variants');
+    },
+  },
+
+  vendors: {
+    getAll: (shopId?: string) =>
+      request<{ vendors: Array<{ id: string; shopId: string; name: string; phone?: string; email?: string; address?: string; createdAt: string }> }>(shopId ? `/api/vendors?shopId=${shopId}` : '/api/vendors'),
+    
+    getById: (id: string) =>
+      request<{ vendor: { id: string; shopId: string; name: string; phone?: string; email?: string; address?: string; createdAt: string } }>(`/api/vendors/${id}`),
+    
+    getProducts: (id: string) =>
+      request<{ products: Array<{ id: string; variantName?: string; salePrice: string; stockStatus: string }> }>(`/api/vendors/${id}/products`),
+    
+    create: (data: { shopId: string; name: string; phone?: string; email?: string; address?: string }) =>
+      request<{ vendor: { id: string; name: string; phone?: string; email?: string; address?: string } }>('/api/vendors', { method: 'POST', body: data }),
+    
+    update: (id: string, data: Partial<{ name: string; phone: string; email: string; address: string }>) =>
+      request<{ vendor: { id: string; name: string; phone?: string; email?: string; address?: string } }>(`/api/vendors/${id}`, { method: 'PUT', body: data }),
+    
+    delete: (id: string) =>
+      request(`/api/vendors/${id}`, { method: 'DELETE' }),
   },
 
   mobileCatalog: {
