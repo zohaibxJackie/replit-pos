@@ -2,103 +2,98 @@ import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-// Enums
-// Note: productTypeEnum removed - using categoryId instead with hardcoded categories (mobile, accessories)
+// ============================================================================
+// ENUMS
+// ============================================================================
 
-// Product condition enum - used for both new and used products
+// Shop type enum - retail_shop, wholesaler, repair_center
+export const shopTypeEnum = pgEnum("shop_type", ["retail_shop", "wholesaler", "repair_center"]);
+
+// Product condition enum - used for stock items
 export const productConditionEnum = pgEnum("product_condition", ["new", "like_new", "good", "fair", "poor"]);
 
-// Master Catalog Tables (hardcoded data - not user-editable)
-export const mobileCatalog = pgTable("mobile_catalog", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  brand: text("brand").notNull(),
-  name: text("name").notNull(),
-  memory: text("memory"),
-  color: text("color"),
-  gsmUrl: text("gsm_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+// Stock status enum - tracks individual item lifecycle
+export const stockStatusEnum = pgEnum("stock_status", ["in_stock", "out_of_stock", "reserved", "sold", "defective", "returned", "transferred"]);
 
-export const accessoryCatalog = pgTable("accessory_catalog", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  brand: text("brand").notNull(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+// Purchase order status
+export const purchaseOrderStatusEnum = pgEnum("purchase_order_status", ["pending", "approved", "rejected", "fulfilled"]);
 
-// Vendors table - to track where products come from
-export const vendors = pgTable("vendors", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  name: text("name").notNull(),
-  phone: text("phone"),
-  email: text("email"),
-  address: text("address"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+// Deal request status
+export const dealRequestStatusEnum = pgEnum("deal_request_status", ["pending", "approved", "rejected", "negotiating"]);
 
-// Categories table - simplified for hardcoded mobile/accessories categories
-export const categories = pgTable("categories", {
+// Repair enums
+export const repairPriorityEnum = pgEnum("repair_priority", ["normal", "urgent"]);
+export const repairStatusEnum = pgEnum("repair_status", ["pending", "assigned", "in_progress", "waiting_parts", "completed", "delivered", "cancelled"]);
+
+// Password reset status
+export const passwordResetStatusEnum = pgEnum("password_reset_status", ["pending", "approved", "rejected"]);
+
+// Tax type enum
+export const taxTypeEnum = pgEnum("tax_type", ["percent", "flat"]);
+
+// Stock transfer status
+export const stockTransferStatusEnum = pgEnum("stock_transfer_status", ["pending", "completed", "cancelled"]);
+
+// ============================================================================
+// GLOBAL LOOKUP TABLES (Master Data - manually populated, for suggestions)
+// ============================================================================
+
+// Category - global categories for products (e.g., Mobile, Accessories, Parts)
+export const category = pgTable("category", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Products table - represents product SKU (template) for shop inventory
-// categoryId links to hardcoded categories: 'mobile' or 'accessories'
-// For mobiles: individual units are tracked in phoneUnits table
-// For accessories: stock count is used directly here
-export const products = pgTable("products", {
+// Brand - global brands (e.g., Apple, Samsung, Xiaomi)
+export const brand = pgTable("brand", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  categoryId: varchar("category_id").notNull(), // 'mobile' or 'accessories' - now required
-  mobileCatalogId: varchar("mobile_catalog_id"),
-  accessoryCatalogId: varchar("accessory_catalog_id"),
-  customName: text("custom_name"),
+  name: text("name").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Product - global product names (e.g., iPhone 15 Pro, Galaxy S24)
+export const product = pgTable("product", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  categoryId: varchar("category_id").notNull(),
+  brandId: varchar("brand_id").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Variant - global product variants (e.g., iPhone 15 Pro 256GB)
+// variant_name is auto-generated from product name + storage_size
+export const variant = pgTable("variant", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull(),
+  variantName: text("variant_name").notNull(), // Auto-generated: product name + storage
+  color: text("color"), // Free text field
+  storageSize: text("storage_size"), // Free text field (e.g., "256GB", "512GB")
   sku: text("sku"),
-  barcode: text("barcode"),
-  stock: integer("stock").notNull().default(0), // For accessories only; for mobiles, count from phoneUnits
-  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
-  salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
-  vendorId: varchar("vendor_id"),
-  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Phone unit status enum for tracking individual device lifecycle
-export const phoneUnitStatusEnum = pgEnum("phone_unit_status", ["in_stock", "reserved", "sold", "transferred", "returned", "defective"]);
-
-// Phone Units table - individual physical mobile devices with unique IMEI pairs
-// Each row represents ONE physical phone in inventory
-export const phoneUnits = pgTable("phone_units", {
+// Reason - reasons for garbage/disposal (linked to user who created it)
+export const reason = pgTable("reason", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  productId: varchar("product_id").notNull(), // Links to products (SKU)
-  imeiPrimary: text("imei_primary").notNull().unique(), // Primary IMEI (required)
-  imeiSecondary: text("imei_secondary").unique(), // Secondary IMEI for dual SIM (optional)
-  serialNumber: text("serial_number"),
-  condition: productConditionEnum("condition").notNull().default("new"),
-  status: phoneUnitStatusEnum("status").notNull().default("in_stock"),
-  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
-  colorId: varchar("color_id"),
-  storageId: varchar("storage_id"),
-  vendorId: varchar("vendor_id"),
-  notes: text("notes"),
-  soldAt: timestamp("sold_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  text: text("text").notNull(),
+  userId: varchar("user_id").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Sale Item Units - links individual phone units to sale items for traceability
-// This enables tracking which exact phone (by IMEI) was sold to which customer
-export const saleItemUnits = pgTable("sale_item_units", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  saleItemId: varchar("sale_item_id").notNull(), // Links to saleItems
-  phoneUnitId: varchar("phone_unit_id").notNull().unique(), // Links to phoneUnits - unique to prevent double-selling
-  soldPrice: decimal("sold_price", { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+// ============================================================================
+// USER & AUTH TABLES
+// ============================================================================
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -112,8 +107,8 @@ export const users = pgTable("users", {
   address: text("address"),
   refreshToken: text("refresh_token"),
   active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const loginHistory = pgTable("login_history", {
@@ -121,29 +116,99 @@ export const loginHistory = pgTable("login_history", {
   userId: varchar("user_id").notNull(),
   ipAddress: text("ip_address"),
   deviceInfo: text("device_info"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const passwordResetRequests = pgTable("password_reset_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  adminId: varchar("admin_id"),
+  status: passwordResetStatusEnum("status").notNull().default("pending"),
+  requestMessage: text("request_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================================
+// SHOP & BUSINESS TABLES
+// ============================================================================
+
+// Shops - unified table for retail shops, wholesalers, and repair centers
 export const shops = pgTable("shops", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   ownerId: varchar("owner_id").notNull(),
+  shopType: shopTypeEnum("shop_type").notNull().default("retail_shop"),
+  currencyCode: text("currency_code").notNull().default("USD"), // ISO currency code (USD, EUR, GBP, etc.)
   subscriptionTier: text("subscription_tier").notNull().default("silver"),
   subscriptionStatus: text("subscription_status").notNull().default("active"),
   phone: text("phone"),
   whatsapp: text("whatsapp"),
   address: text("address"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const userShop = pgTable("user_shop", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
   shopId: varchar("shop_id").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Vendors - suppliers for a shop
+export const vendors = pgTable("vendors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================================
+// INVENTORY TABLES (Shop-specific)
+// ============================================================================
+
+// Stock - actual inventory per shop (individual items with IMEI/serial)
+export const stock = pgTable("stock", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  variantId: varchar("variant_id").notNull(), // Links to global variant for suggestions
+  shopId: varchar("shop_id").notNull(),
+  saleItemId: varchar("sale_item_id"), // Links to sale_items when sold
+  primaryImei: text("primary_imei"),
+  secondaryImei: text("secondary_imei"),
+  serialNumber: text("serial_number"),
+  barcode: text("barcode"),
+  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
+  stockStatus: stockStatusEnum("stock_status").notNull().default("in_stock"),
+  isSold: boolean("is_sold").notNull().default(false),
+  notes: text("notes"),
+  condition: productConditionEnum("condition").notNull().default("new"),
+  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
+  vendorId: varchar("vendor_id"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Garbage - disposed/damaged stock items (tracks individual items for IMEI tracking)
+export const garbage = pgTable("garbage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  stockId: varchar("stock_id").notNull(), // Links to individual stock item
+  reasonId: varchar("reason_id").notNull(), // Links to reason table
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================================
+// CUSTOMER & SALES TABLES
+// ============================================================================
 
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -153,8 +218,8 @@ export const customers = pgTable("customers", {
   phone: text("phone"),
   address: text("address"),
   totalPurchases: decimal("total_purchases", { precision: 10, scale: 2 }).notNull().default("0"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const sales = pgTable("sales", {
@@ -167,89 +232,96 @@ export const sales = pgTable("sales", {
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   discount: decimal("discount", { precision: 10, scale: 2 }).notNull().default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Sale Items - links sales to stock items
 export const saleItems = pgTable("sale_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   saleId: varchar("sale_id").notNull(),
-  productId: varchar("product_id").notNull(),
-  quantity: integer("quantity").notNull(),
+  stockId: varchar("stock_id").notNull(), // Links to stock table (individual item)
+  quantity: integer("quantity").notNull().default(1),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const pricingPlans = pgTable("pricing_plans", {
+// ============================================================================
+// TAXES TABLE
+// ============================================================================
+
+export const taxes = pgTable("taxes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
   name: text("name").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  maxStaff: integer("max_staff").notNull(),
-  maxProducts: integer("max_products").notNull(),
-  maxShops: integer("max_shops").notNull().default(1),
-  features: text("features").array(),
+  type: taxTypeEnum("type").notNull().default("percent"),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const notifications = pgTable("notifications", {
+// ============================================================================
+// STOCK TRANSFER TABLES
+// ============================================================================
+
+export const stockTransfers = pgTable("stock_transfers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  type: text("type").notNull(),
-  isRead: boolean("is_read").notNull().default(false),
-  actionUrl: text("action_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  fromShopId: varchar("from_shop_id").notNull(),
+  toShopId: varchar("to_shop_id").notNull(),
+  status: stockTransferStatusEnum("status").notNull().default("pending"),
+  notes: text("notes"),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const activityLogs = pgTable("activity_logs", {
+export const stockTransferItems = pgTable("stock_transfer_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  action: text("action").notNull(),
-  entityType: text("entity_type").notNull(),
-  entityId: varchar("entity_id"),
-  details: text("details"),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  stockTransferId: varchar("stock_transfer_id").notNull(),
+  stockId: varchar("stock_id").notNull(), // Links to stock table
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const featureFlags = pgTable("feature_flags", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(),
-  description: text("description"),
-  isEnabled: boolean("is_enabled").notNull().default(false),
-  shopId: varchar("shop_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+// ============================================================================
+// WHOLESALER EXTENSION TABLES
+// ============================================================================
 
-export const wholesalerProducts = pgTable("wholesaler_products", {
+// Wholesaler settings - extra fields for wholesaler-type shops
+export const wholesalerSettings = pgTable("wholesaler_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  wholesalerId: varchar("wholesaler_id").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  category: text("category").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  stock: integer("stock").notNull().default(0),
-  discount: decimal("discount", { precision: 5, scale: 2 }).default("0"),
-  minOrderQuantity: integer("min_order_quantity").notNull().default(1),
-  unit: text("unit").notNull().default("pack"),
-  imageUrl: text("image_url"),
+  shopId: varchar("shop_id").notNull().unique(), // Links to shops where type='wholesaler'
+  minimumOrderAmount: decimal("minimum_order_amount", { precision: 10, scale: 2 }),
+  deliveryTerms: text("delivery_terms"),
+  paymentTerms: text("payment_terms"),
+  returnPolicy: text("return_policy"),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const purchaseOrderStatusEnum = pgEnum("purchase_order_status", ["pending", "approved", "rejected", "fulfilled"]);
+// Wholesaler offers - discounts and promotions
+export const wholesalerOffers = pgTable("wholesaler_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(), // Wholesaler shop
+  variantId: varchar("variant_id"), // Optional - offer on specific variant
+  offerName: text("offer_name").notNull(),
+  discountPercent: decimal("discount_percent", { precision: 5, scale: 2 }),
+  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }),
+  minQuantity: integer("min_quantity").default(1),
+  startDate: timestamp("start_date", { withTimezone: true }),
+  endDate: timestamp("end_date", { withTimezone: true }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
+// Purchase orders from shops to wholesalers
 export const purchaseOrders = pgTable("purchase_orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderNumber: text("order_number").notNull().unique(),
-  shopId: varchar("shop_id").notNull(),
-  wholesalerId: varchar("wholesaler_id").notNull(),
+  shopId: varchar("shop_id").notNull(), // Ordering shop
+  wholesalerId: varchar("wholesaler_id").notNull(), // Wholesaler shop
   shopName: text("shop_name").notNull(),
   shopAddress: text("shop_address"),
   shopPhone: text("shop_phone"),
@@ -261,26 +333,72 @@ export const purchaseOrders = pgTable("purchase_orders", {
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
   wholesalerResponse: text("wholesaler_response"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const purchaseOrderItems = pgTable("purchase_order_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   purchaseOrderId: varchar("purchase_order_id").notNull(),
-  wholesalerProductId: varchar("wholesaler_product_id").notNull(),
+  stockId: varchar("stock_id"), // Links to stock if from inventory
+  variantId: varchar("variant_id"), // Links to variant for reference
   productName: text("product_name").notNull(),
   quantity: integer("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const dealRequestStatusEnum = pgEnum("deal_request_status", ["pending", "approved", "rejected", "negotiating"]);
+// Deal requests between shops and wholesalers
+export const dealRequests = pgTable("deal_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(),
+  wholesalerId: varchar("wholesaler_id").notNull(),
+  shopName: text("shop_name").notNull(),
+  shopPhone: text("shop_phone"),
+  shopEmail: text("shop_email"),
+  variantId: varchar("variant_id"),
+  productName: text("product_name"),
+  requestedDiscount: decimal("requested_discount", { precision: 5, scale: 2 }),
+  requestedPrice: decimal("requested_price", { precision: 10, scale: 2 }),
+  quantity: integer("quantity"),
+  message: text("message").notNull(),
+  status: dealRequestStatusEnum("status").notNull().default("pending"),
+  wholesalerResponse: text("wholesaler_response"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
-export const repairPriorityEnum = pgEnum("repair_priority", ["normal", "urgent"]);
-export const repairStatusEnum = pgEnum("repair_status", ["pending", "assigned", "in_progress", "waiting_parts", "completed", "delivered", "cancelled"]);
+// ============================================================================
+// REPAIR CENTER EXTENSION TABLES
+// ============================================================================
 
+// Repair center settings - extra fields for repair-type shops
+export const repairCenterSettings = pgTable("repair_center_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull().unique(), // Links to shops where type='repair_center'
+  warrantyTerms: text("warranty_terms"),
+  estimatedTurnaround: text("estimated_turnaround"),
+  acceptsWalkIns: boolean("accepts_walk_ins").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Repair services offered
+export const repairServices = pgTable("repair_services", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shopId: varchar("shop_id").notNull(), // Repair center shop
+  serviceName: text("service_name").notNull(),
+  description: text("description"),
+  basePrice: decimal("base_price", { precision: 10, scale: 2 }),
+  estimatedTime: text("estimated_time"), // e.g., "1-2 hours", "1 day"
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Repair persons
 export const repairPersons = pgTable("repair_persons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   shopId: varchar("shop_id").notNull(),
@@ -288,10 +406,11 @@ export const repairPersons = pgTable("repair_persons", {
   phone: text("phone"),
   email: text("email"),
   isAvailable: boolean("is_available").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Repair jobs
 export const repairJobs = pgTable("repair_jobs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   shopId: varchar("shop_id").notNull(),
@@ -321,283 +440,209 @@ export const repairJobs = pgTable("repair_jobs", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Repair payments
 export const repairPayments = pgTable("repair_payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   repairJobId: varchar("repair_job_id").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text("payment_method").notNull().default("cash"),
   note: text("note"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const dealRequests = pgTable("deal_requests", {
+// ============================================================================
+// SUBSCRIPTION & ADMIN TABLES
+// ============================================================================
+
+export const pricingPlans = pgTable("pricing_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  wholesalerId: varchar("wholesaler_id").notNull(),
-  shopName: text("shop_name").notNull(),
-  shopPhone: text("shop_phone"),
-  shopEmail: text("shop_email"),
-  wholesalerProductId: varchar("wholesaler_product_id"),
-  productName: text("product_name"),
-  requestedDiscount: decimal("requested_discount", { precision: 5, scale: 2 }),
-  requestedPrice: decimal("requested_price", { precision: 10, scale: 2 }),
-  quantity: integer("quantity"),
-  message: text("message").notNull(),
-  status: dealRequestStatusEnum("status").notNull().default("pending"),
-  wholesalerResponse: text("wholesaler_response"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  name: text("name").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  maxStaff: integer("max_staff").notNull(),
+  maxProducts: integer("max_products").notNull(),
+  maxShops: integer("max_shops").notNull().default(1),
+  features: text("features").array(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const passwordResetStatusEnum = pgEnum("password_reset_status", ["pending", "approved", "rejected"]);
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  actionUrl: text("action_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
-export const productTypes = pgTable("product_types", {
+export const activityLogs = pgTable("activity_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: varchar("entity_id"),
+  details: text("details"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const featureFlags = pgTable("feature_flags", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),
   description: text("description"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  isEnabled: boolean("is_enabled").notNull().default(false),
+  shopId: varchar("shop_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const brands = pgTable("brands", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(),
-  logo: text("logo"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+// ============================================================================
+// INSERT SCHEMAS (Zod validation)
+// ============================================================================
 
-export const colors = pgTable("colors", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(),
-  hexCode: text("hex_code"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+// Global lookup tables
+export const insertCategorySchema = createInsertSchema(category).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBrandSchema = createInsertSchema(brand).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductSchema = createInsertSchema(product).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertVariantSchema = createInsertSchema(variant).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertReasonSchema = createInsertSchema(reason).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const storageOptions = pgTable("storage_options", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  capacity: text("capacity").notNull().unique(),
-  sortOrder: integer("sort_order").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-export const productCategories = pgTable("product_categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  productTypeId: varchar("product_type_id").notNull(),
-  name: text("name").notNull(),
-  parentId: varchar("parent_id"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-export const productModels = pgTable("product_models", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  productTypeId: varchar("product_type_id").notNull(),
-  brandId: varchar("brand_id").notNull(),
-  categoryId: varchar("category_id"),
-  name: text("name").notNull(),
-  modelNumber: text("model_number"),
-  specifications: text("specifications"),
-  releaseYear: integer("release_year"),
-  imageUrl: text("image_url"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-// shopInventory table removed - consolidated into phoneUnits table for mobile phones
-// Accessories use the products table stock count directly
-
-export const usedProductStatusEnum = pgEnum("used_product_status", ["available", "sold", "reserved"]);
-
-export const usedProducts = pgTable("used_products", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  productModelId: varchar("product_model_id"),
-  brandId: varchar("brand_id"),
-  customBrand: text("custom_brand"),
-  customModel: text("custom_model"),
-  colorId: varchar("color_id"),
-  customColor: text("custom_color"),
-  storageId: varchar("storage_id"),
-  customStorage: text("custom_storage"),
-  imei: text("imei"),
-  serialNumber: text("serial_number"),
-  condition: productConditionEnum("condition").notNull(),
-  conditionNotes: text("condition_notes"),
-  sellerId: varchar("seller_id"),
-  sellerName: text("seller_name").notNull(),
-  sellerPhone: text("seller_phone"),
-  sellerIdNumber: text("seller_id_number"),
-  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }).notNull(),
-  sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }),
-  status: usedProductStatusEnum("status").notNull().default("available"),
-  photos: text("photos").array(),
-  purchaseDate: timestamp("purchase_date", { withTimezone: true }).defaultNow(),
-  soldDate: timestamp("sold_date", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-export const passwordResetRequests = pgTable("password_reset_requests", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  adminId: varchar("admin_id"),
-  status: passwordResetStatusEnum("status").notNull().default("pending"),
-  requestMessage: text("request_message"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-export const taxTypeEnum = pgEnum("tax_type", ["percent", "flat"]);
-
-export const taxes = pgTable("taxes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
-  name: text("name").notNull(),
-  type: taxTypeEnum("type").notNull().default("percent"),
-  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-export const stockTransferStatusEnum = pgEnum("stock_transfer_status", ["pending", "completed", "cancelled"]);
-
-// Stock Transfers - for transferring phone units between shops
-// Each transfer record represents a batch transfer request
-export const stockTransfers = pgTable("stock_transfers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  fromShopId: varchar("from_shop_id").notNull(),
-  toShopId: varchar("to_shop_id").notNull(),
-  status: stockTransferStatusEnum("status").notNull().default("pending"),
-  notes: text("notes"),
-  createdBy: varchar("created_by").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-// Stock Transfer Items - individual phone units being transferred
-export const stockTransferItems = pgTable("stock_transfer_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  stockTransferId: varchar("stock_transfer_id").notNull(),
-  phoneUnitId: varchar("phone_unit_id").notNull().unique(), // Individual phone being transferred - unique to prevent duplicate transfers
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-// productImeis table removed - replaced by phoneUnits table which tracks individual devices with IMEI pairs
-
+// User & auth
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertLoginHistorySchema = createInsertSchema(loginHistory).omit({ id: true, createdAt: true });
+export const insertPasswordResetRequestSchema = createInsertSchema(passwordResetRequests).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Shop & business
 export const insertShopSchema = createInsertSchema(shops).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserShopSchema = createInsertSchema(userShop).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Inventory
+export const insertStockSchema = createInsertSchema(stock).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertGarbageSchema = createInsertSchema(garbage).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Customer & sales
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true, totalPurchases: true });
 export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true });
 export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true, createdAt: true });
+
+// Taxes
+export const insertTaxSchema = createInsertSchema(taxes).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Stock transfers
+export const insertStockTransferSchema = createInsertSchema(stockTransfers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertStockTransferItemSchema = createInsertSchema(stockTransferItems).omit({ id: true, createdAt: true });
+
+// Wholesaler
+export const insertWholesalerSettingsSchema = createInsertSchema(wholesalerSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertWholesalerOfferSchema = createInsertSchema(wholesalerOffers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true, createdAt: true });
+export const insertDealRequestSchema = createInsertSchema(dealRequests).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Repair center
+export const insertRepairCenterSettingsSchema = createInsertSchema(repairCenterSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRepairServiceSchema = createInsertSchema(repairServices).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRepairPersonSchema = createInsertSchema(repairPersons).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRepairJobSchema = createInsertSchema(repairJobs).omit({ id: true, createdAt: true, updatedAt: true, totalPaid: true });
+export const insertRepairPaymentSchema = createInsertSchema(repairPayments).omit({ id: true, createdAt: true });
+
+// Admin
 export const insertPricingPlanSchema = createInsertSchema(pricingPlans).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true, createdAt: true });
 export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertWholesalerProductSchema = createInsertSchema(wholesalerProducts).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true, createdAt: true });
-export const insertDealRequestSchema = createInsertSchema(dealRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertRepairPersonSchema = createInsertSchema(repairPersons).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertRepairJobSchema = createInsertSchema(repairJobs).omit({ id: true, createdAt: true, updatedAt: true, totalPaid: true });
-export const insertRepairPaymentSchema = createInsertSchema(repairPayments).omit({ id: true, createdAt: true });
-export const insertLoginHistorySchema = createInsertSchema(loginHistory).omit({ id: true, createdAt: true });
-export const insertPasswordResetRequestSchema = createInsertSchema(passwordResetRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertProductTypeSchema = createInsertSchema(productTypes).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertBrandSchema = createInsertSchema(brands).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertColorSchema = createInsertSchema(colors).omit({ id: true, createdAt: true });
-export const insertStorageOptionSchema = createInsertSchema(storageOptions).omit({ id: true, createdAt: true });
-export const insertProductCategorySchema = createInsertSchema(productCategories).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertProductModelSchema = createInsertSchema(productModels).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertUsedProductSchema = createInsertSchema(usedProducts).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertMobileCatalogSchema = createInsertSchema(mobileCatalog).omit({ id: true, createdAt: true });
-export const insertAccessoryCatalogSchema = createInsertSchema(accessoryCatalog).omit({ id: true, createdAt: true });
-export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertTaxSchema = createInsertSchema(taxes).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertStockTransferSchema = createInsertSchema(stockTransfers).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertStockTransferItemSchema = createInsertSchema(stockTransferItems).omit({ id: true, createdAt: true });
-export const insertPhoneUnitSchema = createInsertSchema(phoneUnits).omit({ id: true, createdAt: true, updatedAt: true, soldAt: true });
-export const insertSaleItemUnitSchema = createInsertSchema(saleItemUnits).omit({ id: true, createdAt: true });
+// ============================================================================
+// TYPE EXPORTS
+// ============================================================================
 
-export type InsertUser = typeof users.$inferInsert;
-export type InsertLoginHistory = typeof loginHistory.$inferInsert;
-export type InsertCustomer = typeof customers.$inferInsert;
-export type InsertPricingPlan = typeof pricingPlans.$inferInsert;
-export type InsertNotification = typeof notifications.$inferInsert;
-export type InsertActivityLog = typeof activityLogs.$inferInsert;
-export type InsertFeatureFlag = typeof featureFlags.$inferInsert;
-export type InsertWholesalerProduct = typeof wholesalerProducts.$inferInsert;
-export type InsertPurchaseOrder = typeof purchaseOrders.$inferInsert;
-export type InsertPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;
-export type InsertDealRequest = typeof dealRequests.$inferInsert;
-export type InsertRepairPerson = typeof repairPersons.$inferInsert;
-export type InsertRepairJob = typeof repairJobs.$inferInsert;
-export type InsertRepairPayment = typeof repairPayments.$inferInsert;
-export type InsertSaleItem = typeof saleItems.$inferInsert;
-export type InsertProductType = typeof productTypes.$inferInsert;
-export type InsertBrand = typeof brands.$inferInsert;
-export type InsertColor = typeof colors.$inferInsert;
-export type InsertStorageOption = typeof storageOptions.$inferInsert;
-export type InsertProductCategory = typeof productCategories.$inferInsert;
-export type InsertProductModel = typeof productModels.$inferInsert;
-export type InsertUsedProduct = typeof usedProducts.$inferInsert;
+// Global lookup types
+export type Category = typeof category.$inferSelect;
+export type InsertCategory = typeof category.$inferInsert;
+export type Brand = typeof brand.$inferSelect;
+export type InsertBrand = typeof brand.$inferInsert;
+export type Product = typeof product.$inferSelect;
+export type InsertProduct = typeof product.$inferInsert;
+export type Variant = typeof variant.$inferSelect;
+export type InsertVariant = typeof variant.$inferInsert;
+export type Reason = typeof reason.$inferSelect;
+export type InsertReason = typeof reason.$inferInsert;
+
+// User & auth types
 export type User = typeof users.$inferSelect;
-export type Shop = typeof shops.$inferSelect;
-export type UserShop = typeof userShop.$inferSelect;
-export type InsertUserShop = typeof userShop.$inferInsert;
-export type Customer = typeof customers.$inferSelect;
-export type Sale = typeof sales.$inferSelect;
-export type SaleItem = typeof saleItems.$inferSelect;
-export type PricingPlan = typeof pricingPlans.$inferSelect;
-export type Notification = typeof notifications.$inferSelect;
-export type ActivityLog = typeof activityLogs.$inferSelect;
-export type FeatureFlag = typeof featureFlags.$inferSelect;
-export type WholesalerProduct = typeof wholesalerProducts.$inferSelect;
-export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
-export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
-export type DealRequest = typeof dealRequests.$inferSelect;
-export type RepairPerson = typeof repairPersons.$inferSelect;
-export type RepairJob = typeof repairJobs.$inferSelect;
-export type RepairPayment = typeof repairPayments.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
 export type LoginHistory = typeof loginHistory.$inferSelect;
+export type InsertLoginHistory = typeof loginHistory.$inferInsert;
 export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
 export type InsertPasswordResetRequest = typeof passwordResetRequests.$inferInsert;
-export type ProductType = typeof productTypes.$inferSelect;
-export type Brand = typeof brands.$inferSelect;
-export type Color = typeof colors.$inferSelect;
-export type StorageOption = typeof storageOptions.$inferSelect;
-export type ProductCategory = typeof productCategories.$inferSelect;
-export type ProductModel = typeof productModels.$inferSelect;
-export type UsedProduct = typeof usedProducts.$inferSelect;
 
-export type MobileCatalog = typeof mobileCatalog.$inferSelect;
-export type InsertMobileCatalog = typeof mobileCatalog.$inferInsert;
-export type AccessoryCatalog = typeof accessoryCatalog.$inferSelect;
-export type InsertAccessoryCatalog = typeof accessoryCatalog.$inferInsert;
+// Shop & business types
+export type Shop = typeof shops.$inferSelect;
+export type InsertShop = typeof shops.$inferInsert;
+export type UserShop = typeof userShop.$inferSelect;
+export type InsertUserShop = typeof userShop.$inferInsert;
 export type Vendor = typeof vendors.$inferSelect;
 export type InsertVendor = typeof vendors.$inferInsert;
-export type Category = typeof categories.$inferSelect;
-export type InsertCategory = typeof categories.$inferInsert;
-export type Product = typeof products.$inferSelect;
-export type InsertProduct = typeof products.$inferInsert;
+
+// Inventory types
+export type Stock = typeof stock.$inferSelect;
+export type InsertStock = typeof stock.$inferInsert;
+export type Garbage = typeof garbage.$inferSelect;
+export type InsertGarbage = typeof garbage.$inferInsert;
+
+// Customer & sales types
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = typeof customers.$inferInsert;
+export type Sale = typeof sales.$inferSelect;
+export type InsertSale = typeof sales.$inferInsert;
+export type SaleItem = typeof saleItems.$inferSelect;
+export type InsertSaleItem = typeof saleItems.$inferInsert;
+
+// Tax types
 export type Tax = typeof taxes.$inferSelect;
 export type InsertTax = typeof taxes.$inferInsert;
+
+// Stock transfer types
 export type StockTransfer = typeof stockTransfers.$inferSelect;
 export type InsertStockTransfer = typeof stockTransfers.$inferInsert;
 export type StockTransferItem = typeof stockTransferItems.$inferSelect;
 export type InsertStockTransferItem = typeof stockTransferItems.$inferInsert;
-export type PhoneUnit = typeof phoneUnits.$inferSelect;
-export type InsertPhoneUnit = typeof phoneUnits.$inferInsert;
-export type SaleItemUnit = typeof saleItemUnits.$inferSelect;
-export type InsertSaleItemUnit = typeof saleItemUnits.$inferInsert;
+
+// Wholesaler types
+export type WholesalerSettings = typeof wholesalerSettings.$inferSelect;
+export type InsertWholesalerSettings = typeof wholesalerSettings.$inferInsert;
+export type WholesalerOffer = typeof wholesalerOffers.$inferSelect;
+export type InsertWholesalerOffer = typeof wholesalerOffers.$inferInsert;
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+export type InsertPurchaseOrder = typeof purchaseOrders.$inferInsert;
+export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
+export type InsertPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;
+export type DealRequest = typeof dealRequests.$inferSelect;
+export type InsertDealRequest = typeof dealRequests.$inferInsert;
+
+// Repair center types
+export type RepairCenterSettings = typeof repairCenterSettings.$inferSelect;
+export type InsertRepairCenterSettings = typeof repairCenterSettings.$inferInsert;
+export type RepairService = typeof repairServices.$inferSelect;
+export type InsertRepairService = typeof repairServices.$inferInsert;
+export type RepairPerson = typeof repairPersons.$inferSelect;
+export type InsertRepairPerson = typeof repairPersons.$inferInsert;
+export type RepairJob = typeof repairJobs.$inferSelect;
+export type InsertRepairJob = typeof repairJobs.$inferInsert;
+export type RepairPayment = typeof repairPayments.$inferSelect;
+export type InsertRepairPayment = typeof repairPayments.$inferInsert;
+
+// Admin types
+export type PricingPlan = typeof pricingPlans.$inferSelect;
+export type InsertPricingPlan = typeof pricingPlans.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+export type ActivityLog = typeof activityLogs.$inferSelect;
+export type InsertActivityLog = typeof activityLogs.$inferInsert;
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type InsertFeatureFlag = typeof featureFlags.$inferInsert;
