@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { shops, users, userShop, pricingPlans, products, phoneUnits } from '../../shared/schema.js';
+import { shops, users, userShop, pricingPlans, product } from '../../shared/schema.js';
 import { eq, desc, ilike, sql, and, or, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 
