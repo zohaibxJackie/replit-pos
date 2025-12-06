@@ -5,3 +5,5 @@ export * from './sale.js';
 export * from './customer.js';
 export * from './repair.js';
 export * from './wholesaler.js';
+export * from './inventory.js';
+export * from './vendor.js';

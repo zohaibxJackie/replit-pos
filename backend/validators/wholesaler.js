@@ -1,52 +1,174 @@
 import { z } from 'zod';
 
-export const createWholesalerProductSchema = z.object({
-  name: z.string().min(1, 'Product name is required'),
-  description: z.string().optional(),
-  category: z.enum(['mobile', 'accessory']),
-  price: z.number().positive('Price must be positive'),
-  stock: z.number().int().min(0).default(0),
-  discount: z.number().min(0).max(100).default(0),
-  minOrderQuantity: z.number().int().positive().default(1),
-  unit: z.string().default('pack'),
-  imageUrl: z.string().url().optional()
+// ============================================================================
+// WHOLESALER SETTINGS VALIDATORS
+// ============================================================================
+
+export const createWholesalerSettingsSchema = z.object({
+  shopId: z.string().uuid('Invalid shop ID'),
+  minimumOrderAmount: z.union([
+    z.number().min(0, 'Minimum order amount cannot be negative'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  deliveryTerms: z.string().max(2000, 'Delivery terms are too long').optional().nullable(),
+  paymentTerms: z.string().max(2000, 'Payment terms are too long').optional().nullable(),
+  returnPolicy: z.string().max(2000, 'Return policy is too long').optional().nullable(),
+  isActive: z.boolean().optional().default(true)
 });
 
-export const updateWholesalerProductSchema = createWholesalerProductSchema.partial();
+export const updateWholesalerSettingsSchema = z.object({
+  minimumOrderAmount: z.union([
+    z.number().min(0, 'Minimum order amount cannot be negative'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  deliveryTerms: z.string().max(2000, 'Delivery terms are too long').optional().nullable(),
+  paymentTerms: z.string().max(2000, 'Payment terms are too long').optional().nullable(),
+  returnPolicy: z.string().max(2000, 'Return policy is too long').optional().nullable(),
+  isActive: z.boolean().optional()
+}).refine(data => Object.keys(data).length > 0, {
+  message: 'At least one field must be provided for update'
+});
+
+// ============================================================================
+// WHOLESALER OFFERS VALIDATORS
+// ============================================================================
+
+export const createWholesalerOfferSchema = z.object({
+  shopId: z.string().uuid('Invalid shop ID'),
+  variantId: z.string().uuid('Invalid variant ID').optional().nullable(),
+  offerName: z.string().min(1, 'Offer name is required').max(200, 'Offer name is too long'),
+  discountPercent: z.union([
+    z.number().min(0, 'Discount percent cannot be negative').max(100, 'Discount percent cannot exceed 100'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid percent format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  discountAmount: z.union([
+    z.number().min(0, 'Discount amount cannot be negative'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  minQuantity: z.number().int().min(1, 'Minimum quantity must be at least 1').optional().default(1),
+  startDate: z.string().datetime().optional().nullable(),
+  endDate: z.string().datetime().optional().nullable(),
+  isActive: z.boolean().optional().default(true)
+}).superRefine((data, ctx) => {
+  if (!data.discountPercent && !data.discountAmount) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Either discount percent or discount amount must be provided',
+      path: ['discountPercent']
+    });
+  }
+  if (data.discountPercent && data.discountAmount) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Only one of discount percent or discount amount should be provided',
+      path: ['discountPercent']
+    });
+  }
+  if (data.startDate && data.endDate && new Date(data.startDate) > new Date(data.endDate)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Start date must be before end date',
+      path: ['endDate']
+    });
+  }
+});
+
+export const updateWholesalerOfferSchema = z.object({
+  variantId: z.string().uuid('Invalid variant ID').optional().nullable(),
+  offerName: z.string().min(1, 'Offer name is required').max(200, 'Offer name is too long').optional(),
+  discountPercent: z.union([
+    z.number().min(0, 'Discount percent cannot be negative').max(100, 'Discount percent cannot exceed 100'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid percent format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  discountAmount: z.union([
+    z.number().min(0, 'Discount amount cannot be negative'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  minQuantity: z.number().int().min(1, 'Minimum quantity must be at least 1').optional(),
+  startDate: z.string().datetime().optional().nullable(),
+  endDate: z.string().datetime().optional().nullable(),
+  isActive: z.boolean().optional()
+}).refine(data => Object.keys(data).length > 0, {
+  message: 'At least one field must be provided for update'
+});
+
+// ============================================================================
+// PURCHASE ORDER VALIDATORS (Updated for new schema)
+// ============================================================================
 
 export const purchaseOrderItemSchema = z.object({
-  wholesalerProductId: z.string().uuid(),
-  productName: z.string(),
-  quantity: z.number().int().positive(),
-  price: z.number().positive()
+  stockId: z.string().uuid('Invalid stock ID').optional().nullable(),
+  variantId: z.string().uuid('Invalid variant ID').optional().nullable(),
+  productName: z.string().min(1, 'Product name is required'),
+  quantity: z.number().int().positive('Quantity must be positive'),
+  price: z.union([
+    z.number().positive('Price must be positive'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid price format').transform(v => parseFloat(v))
+  ])
 });
 
 export const createPurchaseOrderSchema = z.object({
-  wholesalerId: z.string().uuid(),
-  contactPerson: z.string().min(1, 'Contact person is required'),
+  shopId: z.string().uuid('Invalid shop ID'),
+  wholesalerId: z.string().uuid('Invalid wholesaler ID'),
+  shopName: z.string().min(1, 'Shop name is required').max(100, 'Shop name is too long'),
+  shopAddress: z.string().max(500, 'Shop address is too long').optional().nullable(),
+  shopPhone: z.string().max(20, 'Shop phone is too long').optional().nullable(),
+  shopEmail: z.string().email('Invalid email format').max(100, 'Shop email is too long').optional().nullable(),
+  contactPerson: z.string().min(1, 'Contact person is required').max(100, 'Contact person name is too long'),
   items: z.array(purchaseOrderItemSchema).min(1, 'At least one item is required'),
-  notes: z.string().optional()
+  notes: z.string().max(2000, 'Notes are too long').optional().nullable()
 });
 
 export const updatePurchaseOrderStatusSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected', 'fulfilled']),
-  wholesalerResponse: z.string().optional()
+  wholesalerResponse: z.string().max(2000, 'Response is too long').optional().nullable()
 });
 
+// ============================================================================
+// DEAL REQUEST VALIDATORS (Updated for new schema)
+// ============================================================================
+
 export const createDealRequestSchema = z.object({
-  wholesalerId: z.string().uuid(),
-  wholesalerProductId: z.string().uuid().optional(),
-  productName: z.string().optional(),
-  requestedDiscount: z.number().min(0).max(100).optional(),
-  requestedPrice: z.number().positive().optional(),
-  quantity: z.number().int().positive().optional(),
-  message: z.string().min(1, 'Message is required')
+  shopId: z.string().uuid('Invalid shop ID'),
+  wholesalerId: z.string().uuid('Invalid wholesaler ID'),
+  shopName: z.string().min(1, 'Shop name is required').max(100, 'Shop name is too long'),
+  shopPhone: z.string().max(20, 'Shop phone is too long').optional().nullable(),
+  shopEmail: z.string().email('Invalid email format').max(100, 'Shop email is too long').optional().nullable(),
+  variantId: z.string().uuid('Invalid variant ID').optional().nullable(),
+  productName: z.string().max(200, 'Product name is too long').optional().nullable(),
+  requestedDiscount: z.union([
+    z.number().min(0, 'Discount cannot be negative').max(100, 'Discount cannot exceed 100%'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid discount format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  requestedPrice: z.union([
+    z.number().positive('Price must be positive'),
+    z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid price format').transform(v => parseFloat(v)),
+    z.null()
+  ]).optional().nullable(),
+  quantity: z.number().int().positive('Quantity must be positive').optional().nullable(),
+  message: z.string().min(1, 'Message is required').max(2000, 'Message is too long')
+});
+
+export const updateDealRequestStatusSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected', 'negotiating']),
+  wholesalerResponse: z.string().max(2000, 'Response is too long').optional().nullable()
 });
 
 export default {
-  createWholesalerProductSchema,
-  updateWholesalerProductSchema,
+  createWholesalerSettingsSchema,
+  updateWholesalerSettingsSchema,
+  createWholesalerOfferSchema,
+  updateWholesalerOfferSchema,
+  purchaseOrderItemSchema,
   createPurchaseOrderSchema,
   updatePurchaseOrderStatusSchema,
-  createDealRequestSchema
+  createDealRequestSchema,
+  updateDealRequestStatusSchema
 };
