@@ -335,7 +335,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
     setShowBulkScanner(true);
   }, []);
 
-  const { data: brandsData, isLoading: brandsLoading } = useQuery({
+  const { data: brandsData, isLoading: brandsLoading } = useQuery<{ brands: Array<{ id: string; name: string }> }>({
     queryKey: ['/api/products/brands'],
   });
 
@@ -357,7 +357,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   });
 
   const brands = useMemo(() => {
-    return brandsData?.brands?.map(b => ({ id: b, name: b })) || [];
+    return brandsData?.brands?.map(b => ({ id: b.id, name: b.name })) || [];
   }, [brandsData]);
 
   const models = useMemo(() => {
