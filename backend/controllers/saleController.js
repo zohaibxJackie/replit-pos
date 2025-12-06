@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { sales, saleItems, products, customers } from '../../shared/schema.js';
+import { sales, saleItems, stock, customers, variant, product, brand, category } from '../../shared/schema.js';
 import { eq, and, desc, sql, gte, lte } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 
@@ -70,7 +70,37 @@ export const getSaleById = async (req, res) => {
       return res.status(404).json({ error: req.t('sale.not_found') });
     }
 
-    const items = await db.select().from(saleItems).where(eq(saleItems.saleId, id));
+    const items = await db.select({
+      id: saleItems.id,
+      saleId: saleItems.saleId,
+      stockId: saleItems.stockId,
+      quantity: saleItems.quantity,
+      price: saleItems.price,
+      total: saleItems.total,
+      stock: {
+        id: stock.id,
+        barcode: stock.barcode,
+        primaryImei: stock.primaryImei,
+      },
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      }
+    })
+      .from(saleItems)
+      .leftJoin(stock, eq(saleItems.stockId, stock.id))
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .where(eq(saleItems.saleId, id));
 
     let customer = null;
     if (sale.customerId) {
@@ -95,25 +125,51 @@ export const createSale = async (req, res) => {
     const itemsWithTotal = [];
 
     for (const item of items) {
-      const [product] = await db.select().from(products).where(
-        and(eq(products.id, item.productId), eq(products.shopId, shopId))
-      ).limit(1);
+      const [stockItem] = await db.select({
+        id: stock.id,
+        barcode: stock.barcode,
+        primaryImei: stock.primaryImei,
+        salePrice: stock.salePrice,
+        stockStatus: stock.stockStatus,
+        isSold: stock.isSold,
+        variant: {
+          id: variant.id,
+          variantName: variant.variantName,
+        },
+        product: {
+          id: product.id,
+          name: product.name,
+        }
+      })
+        .from(stock)
+        .leftJoin(variant, eq(stock.variantId, variant.id))
+        .leftJoin(product, eq(variant.productId, product.id))
+        .where(
+          and(
+            eq(stock.id, item.stockId),
+            eq(stock.shopId, shopId),
+            eq(stock.isActive, true)
+          )
+        )
+        .limit(1);
 
-      if (!product) {
-        return res.status(404).json({ error: req.t('product.product_id_not_found', { id: item.productId }) });
+      if (!stockItem) {
+        return res.status(404).json({ error: req.t('product.product_id_not_found', { id: item.stockId }) });
       }
 
-      if (product.stock < item.quantity) {
-        return res.status(400).json({ error: req.t('product.insufficient_stock_for', { name: product.name }) });
+      if (stockItem.isSold || stockItem.stockStatus !== 'in_stock') {
+        const displayName = stockItem.variant?.variantName || stockItem.product?.name || stockItem.barcode;
+        return res.status(400).json({ error: req.t('product.not_available_for_sale', { name: displayName }) });
       }
 
-      const itemTotal = item.price * item.quantity;
+      const itemPrice = item.price || parseFloat(stockItem.salePrice) || 0;
+      const itemTotal = itemPrice * (item.quantity || 1);
       subtotal += itemTotal;
 
       itemsWithTotal.push({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price.toString(),
+        stockId: item.stockId,
+        quantity: item.quantity || 1,
+        price: itemPrice.toString(),
         total: itemTotal.toString()
       });
     }
@@ -134,14 +190,22 @@ export const createSale = async (req, res) => {
     }).returning();
 
     for (const item of itemsWithTotal) {
-      await db.insert(saleItems).values({
+      const [newSaleItem] = await db.insert(saleItems).values({
         saleId: newSale.id,
-        ...item
-      });
+        stockId: item.stockId,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total
+      }).returning();
 
-      await db.update(products)
-        .set({ stock: sql`stock - ${item.quantity}` })
-        .where(eq(products.id, item.productId));
+      await db.update(stock)
+        .set({ 
+          isSold: true, 
+          stockStatus: 'sold',
+          saleItemId: newSaleItem.id,
+          updatedAt: new Date() 
+        })
+        .where(eq(stock.id, item.stockId));
     }
 
     if (customerId) {

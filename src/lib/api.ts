@@ -181,28 +181,32 @@ export const api = {
         products: Array<{
           id: string;
           shopId: string;
-          categoryId: string;
-          customName?: string;
+          variantId: string;
+          variantName: string;
+          productName: string;
+          brandName: string;
+          categoryName: string;
+          color?: string;
+          storageSize?: string;
           barcode?: string;
+          primaryImei?: string;
+          secondaryImei?: string;
+          serialNumber?: string;
           salePrice: string;
           purchasePrice?: string;
-          stock: number;
-          imei1?: string;
-          imei2?: string;
-          sku?: string;
-          mobileCatalogId?: string;
-          accessoryCatalogId?: string;
+          stockStatus: string;
+          isSold: boolean;
+          condition: string;
           vendorId?: string;
+          sku?: string;
           lowStockThreshold?: number;
+          notes?: string;
           createdAt: string;
           updatedAt: string;
-          mobileCatalog?: {
-            id: string;
-            brand: string;
-            name: string;
-            memory?: string;
-            color?: string;
-          };
+          customName?: string;
+          imei1?: string;
+          imei2?: string;
+          stock?: number;
         }>;
         pagination: { page: number; limit: number; total: number; totalPages: number };
       }>(query ? `/api/products?${query}` : '/api/products');
@@ -212,60 +216,68 @@ export const api = {
       request<{ product: {
         id: string;
         shopId: string;
-        categoryId: string;
-        customName?: string;
+        variantId: string;
+        variantName: string;
+        productName: string;
+        brandName: string;
+        categoryName: string;
+        color?: string;
+        storageSize?: string;
         barcode?: string;
+        primaryImei?: string;
+        secondaryImei?: string;
+        serialNumber?: string;
         salePrice: string;
         purchasePrice?: string;
-        stock: number;
-        imei1?: string;
-        imei2?: string;
-        sku?: string;
-        mobileCatalogId?: string;
-        accessoryCatalogId?: string;
+        stockStatus: string;
+        isSold: boolean;
+        condition: string;
         vendorId?: string;
+        sku?: string;
         lowStockThreshold?: number;
+        notes?: string;
         createdAt: string;
         updatedAt: string;
       }}>(`/api/products/${id}`),
     
     getByBarcode: (barcode: string) =>
-      request<{ product: { id: string; customName?: string; barcode: string; salePrice: string; stock: number } }>(`/api/products/barcode/${barcode}`),
+      request<{ product: { id: string; variantName?: string; barcode: string; salePrice: string; stockStatus: string } }>(`/api/products/barcode/${barcode}`),
     
     getByImei: (imei: string) =>
-      request<{ product: { id: string; customName?: string; imei1?: string; imei2?: string; salePrice: string; stock: number } }>(`/api/products/imei/${imei}`),
+      request<{ product: { id: string; variantName?: string; primaryImei?: string; secondaryImei?: string; salePrice: string; stockStatus: string } }>(`/api/products/imei/${imei}`),
     
     create: (data: { 
       shopId: string; 
-      categoryId: 'mobile' | 'accessories';
-      customName?: string;
+      categoryId?: 'mobile' | 'accessories';
+      variantId?: string;
       barcode?: string; 
       salePrice: number;
       purchasePrice?: number;
-      stock?: number; 
       lowStockThreshold?: number;
-      imei1?: string;
-      imei2?: string;
+      primaryImei?: string;
+      secondaryImei?: string;
+      serialNumber?: string;
       sku?: string;
-      mobileCatalogId?: string;
-      accessoryCatalogId?: string;
       vendorId?: string;
+      condition?: string;
+      notes?: string;
     }) =>
       request('/api/products', { method: 'POST', body: data }),
     
     update: (id: string, data: Partial<{ 
-      customName: string;
+      variantId: string;
       barcode: string; 
       salePrice: number;
       purchasePrice: number;
-      stock: number; 
       lowStockThreshold: number;
-      imei1: string;
-      imei2: string;
+      primaryImei: string;
+      secondaryImei: string;
+      serialNumber: string;
       sku: string;
-      mobileCatalogId: string;
-      accessoryCatalogId: string;
       vendorId: string;
+      condition: string;
+      stockStatus: string;
+      notes: string;
     }>) =>
       request(`/api/products/${id}`, { method: 'PUT', body: data }),
     
@@ -280,16 +292,15 @@ export const api = {
     
     bulkCreate: (data: { 
       shopId: string;
-      categoryId: 'mobile' | 'accessories';
-      customName?: string;
+      categoryId?: 'mobile' | 'accessories';
+      variantId?: string;
       salePrice: number;
       purchasePrice?: number;
       lowStockThreshold?: number;
-      mobileCatalogId?: string;
-      accessoryCatalogId?: string;
       vendorId?: string;
+      condition?: string;
       quantity: number;
-      imeis: Array<{ imei1: string; imei2?: string | null }>;
+      imeis: Array<{ primaryImei: string; secondaryImei?: string | null }>;
     }) =>
       request<{ products: Array<{ id: string }>; count: number }>('/api/products/bulk', { method: 'POST', body: data }),
   },
@@ -370,25 +381,31 @@ export const api = {
 
   stockTransfers: {
     getAll: () =>
-      request<{ transfers: Array<{ id: string; productId: string; fromShopId: string; toShopId: string; quantity: number; status: string; notes?: string; createdBy: string; createdAt: string }> }>('/api/stock-transfers'),
+      request<{ transfers: Array<{ id: string; stockId: string; fromShopId: string; toShopId: string; status: string; notes?: string; createdBy: string; createdAt: string }> }>('/api/stock-transfers'),
     
-    create: (data: { productId: string; fromShopId: string; toShopId: string; quantity?: number; notes?: string }) =>
-      request<{ transfer: { id: string; productId: string; fromShopId: string; toShopId: string; quantity: number; status: string } }>('/api/stock-transfers', { method: 'POST', body: data }),
+    create: (data: { stockId: string; fromShopId: string; toShopId: string; notes?: string }) =>
+      request<{ transfer: { id: string; stockId: string; fromShopId: string; toShopId: string; status: string } }>('/api/stock-transfers', { method: 'POST', body: data }),
     
     getProductByImei: (imei: string) =>
       request<{ product: { 
         id: string; 
         shopId: string; 
-        categoryId: string;
-        customName?: string;
-        stock: number; 
+        variantId: string;
+        variantName?: string;
+        productName?: string;
+        brandName?: string;
+        categoryName?: string;
+        color?: string;
+        storageSize?: string;
         salePrice: string;
         purchasePrice?: string;
-        imei1?: string; 
-        imei2?: string; 
+        primaryImei?: string; 
+        secondaryImei?: string; 
         barcode?: string;
-        mobileCatalogId?: string;
-        accessoryCatalogId?: string;
+        serialNumber?: string;
+        stockStatus: string;
+        isSold: boolean;
+        condition: string;
         vendorId?: string;
         sku?: string;
         lowStockThreshold?: number;
@@ -450,7 +467,7 @@ export const api = {
       tax?: string; 
       discount?: string; 
       total: string;
-      items: { productId: string; quantity: number; price: string; total: string }[]
+      items: { stockId: string; price: string; total: string }[]
     }) =>
       request('/api/sales', { method: 'POST', body: data }),
     

@@ -23,23 +23,28 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "react-i18next";
 
-interface Product {
+interface StockItem {
   id: string;
   shopId: string;
   shopName?: string;
-  name: string;
+  variantId: string;
+  variantName: string;
+  productName: string;
+  brandName: string;
+  categoryName: string;
+  color?: string;
+  storageSize?: string;
   barcode?: string;
-  price: string;
-  stock: number;
-  categoryId: string;
-  status: string;
-  imei1?: string;
-  imei2?: string;
-  mobileCatalogId?: string;
-  accessoryCatalogId?: string;
+  primaryImei?: string;
+  secondaryImei?: string;
+  serialNumber?: string;
+  purchasePrice?: string;
+  salePrice: string;
+  stockStatus: string;
+  isSold: boolean;
+  condition: string;
   vendorId?: string;
   sku?: string;
-  color?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -80,7 +85,7 @@ export default function Products() {
   const [shopFilter, setShopFilter] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInterStockModalOpen, setIsInterStockModalOpen] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const [currentStock, setCurrentStock] = useState<StockItem | null>(null);
   const [selectedShopId, setSelectedShopId] = useState<string>("");
 
   const debouncedSearch = useDebounce(searchInput, 500);
@@ -92,7 +97,7 @@ export default function Products() {
 
   const shops = useMemo(() => shopsData?.shops || [], [shopsData]);
 
-  const { data: productsData, isLoading, refetch } = useQuery({
+  const { data: productsData, isLoading } = useQuery({
     queryKey: ['/api/products', { page, limit, search: debouncedSearch, categoryId: categoryFilter, status: statusFilter, shopId: shopFilter }],
     queryFn: () => api.products.getAll({
       page,
@@ -104,7 +109,7 @@ export default function Products() {
     }),
   });
 
-  const products = useMemo(() => {
+  const stockItems = useMemo(() => {
     const productList = productsData?.products || [];
     return productList.map(p => {
       const shop = shops.find(s => s.id === p.shopId);
@@ -112,22 +117,27 @@ export default function Products() {
         id: p.id,
         shopId: p.shopId,
         shopName: shop?.name || 'Unknown',
-        name: p.customName || `Product ${p.id.slice(0, 8)}`,
+        variantId: p.variantId || '',
+        variantName: p.variantName || p.customName || `Stock ${p.id.slice(0, 8)}`,
+        productName: p.productName || '',
+        brandName: p.brandName || '',
+        categoryName: p.categoryName || '',
+        color: p.color || '-',
+        storageSize: p.storageSize || '',
         barcode: p.barcode,
-        price: p.salePrice || '0',
-        stock: p.stock ?? 0,
-        categoryId: p.categoryId || 'mobile',
-        status: p.stock > 0 ? 'active' : 'inactive',
-        imei1: p.imei1,
-        imei2: p.imei2,
-        mobileCatalogId: p.mobileCatalogId,
-        accessoryCatalogId: p.accessoryCatalogId,
+        primaryImei: p.primaryImei || p.imei1,
+        secondaryImei: p.secondaryImei || p.imei2,
+        serialNumber: p.serialNumber,
+        purchasePrice: p.purchasePrice,
+        salePrice: p.salePrice || '0',
+        stockStatus: p.stockStatus || (p.stock > 0 ? 'in_stock' : 'out_of_stock'),
+        isSold: p.isSold || false,
+        condition: p.condition || 'new',
         vendorId: p.vendorId,
         sku: p.sku,
-        color: p.mobileCatalog?.color || '-',
         createdAt: p.createdAt || '',
         updatedAt: p.updatedAt || '',
-      } as Product;
+      } as StockItem;
     });
   }, [productsData, shops]);
 
@@ -169,7 +179,7 @@ export default function Products() {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({ title: t("admin.products.product_updated"), description: t("admin.products.product_updated_desc") });
       setIsModalOpen(false);
-      setCurrentProduct(null);
+      setCurrentStock(null);
     },
     onError: (error: Error) => {
       toast({ title: t("admin.products.error"), description: error.message, variant: "destructive" });
@@ -178,13 +188,13 @@ export default function Products() {
 
 
   const openCreateModal = () => {
-    setCurrentProduct(null);
+    setCurrentStock(null);
     setSelectedShopId(shops[0]?.id || "");
     setIsModalOpen(true);
   };
 
-  const openEditModal = (product: Product) => {
-    setCurrentProduct(product);
+  const openEditModal = (stock: StockItem) => {
+    setCurrentStock(stock);
     setIsModalOpen(true);
   };
 
@@ -195,15 +205,14 @@ export default function Products() {
   const handleMobileProductSubmit = (payload: MobileProductPayload) => {
     const productName = `${payload.brand} ${payload.model} ${payload.memory ? payload.memory : ''} ${payload.color}`.trim();
     
-    if (currentProduct) {
+    if (currentStock) {
       updateProductMutation.mutate({
-        id: currentProduct.id,
+        id: currentStock.id,
         data: {
-          customName: productName,
           salePrice: payload.sellingPrice,
-          imei1: payload.imei,
-          imei2: payload.imei2,
-          mobileCatalogId: payload.mobileCatalogId,
+          primaryImei: payload.imei,
+          secondaryImei: payload.imei2,
+          variantId: payload.variantId,
         }
       });
     } else {
@@ -215,28 +224,25 @@ export default function Products() {
       if (payload.quantity && payload.quantity > 1 && payload.imeis) {
         bulkCreateProductMutation.mutate({
           shopId: selectedShopId,
-          categoryId: 'mobile',
-          customName: productName,
+          categoryId: payload.categoryId || 'mobile',
+          variantId: payload.variantId,
           salePrice: payload.sellingPrice,
           purchasePrice: payload.purchasePrice,
-          mobileCatalogId: payload.mobileCatalogId,
           quantity: payload.quantity,
           imeis: payload.imeis.map(e => ({ 
-            imei1: e.imei1, 
-            imei2: e.imei2 || null 
+            primaryImei: e.imei1, 
+            secondaryImei: e.imei2 || null 
           })),
         });
       } else {
         createProductMutation.mutate({
           shopId: selectedShopId,
-          categoryId: 'mobile',
-          customName: productName,
+          categoryId: payload.categoryId || 'mobile',
+          variantId: payload.variantId,
           salePrice: payload.sellingPrice,
           purchasePrice: payload.purchasePrice,
-          stock: 1,
-          imei1: payload.imei,
-          imei2: payload.imei2,
-          mobileCatalogId: payload.mobileCatalogId,
+          primaryImei: payload.imei,
+          secondaryImei: payload.imei2,
         });
       }
     }
@@ -254,14 +260,14 @@ export default function Products() {
 
 
   const handleColumnFilterChange = useCallback((filters: Record<string, string>) => {
-    if (filters.name !== undefined) {
-      setSearchInput(filters.name);
+    if (filters.variantName !== undefined) {
+      setSearchInput(filters.variantName);
     }
-    if (filters.imei1 !== undefined) {
-      setSearchInput(filters.imei1);
+    if (filters.primaryImei !== undefined) {
+      setSearchInput(filters.primaryImei);
     }
-    if (filters.stock !== undefined) {
-      setStatusFilter(filters.stock === "in_stock" ? "active" : filters.stock === "out_of_stock" ? "inactive" : "");
+    if (filters.stockStatus !== undefined) {
+      setStatusFilter(filters.stockStatus);
     }
     if (filters.shopName !== undefined) {
       setShopFilter(filters.shopName);
@@ -273,15 +279,35 @@ export default function Products() {
     return shops.map(shop => ({ value: shop.id, label: shop.name }));
   }, [shops]);
 
+  const getStatusBadge = (status: string, isSold: boolean) => {
+    if (isSold) {
+      return <Badge variant="secondary" data-testid="badge-sold">Sold</Badge>;
+    }
+    switch (status) {
+      case 'in_stock':
+        return <Badge variant="default" data-testid="badge-in-stock">In Stock</Badge>;
+      case 'out_of_stock':
+        return <Badge variant="destructive" data-testid="badge-out-of-stock">Out of Stock</Badge>;
+      case 'reserved':
+        return <Badge variant="outline" data-testid="badge-reserved">Reserved</Badge>;
+      case 'defective':
+        return <Badge variant="destructive" data-testid="badge-defective">Defective</Badge>;
+      case 'transferred':
+        return <Badge variant="secondary" data-testid="badge-transferred">Transferred</Badge>;
+      default:
+        return <Badge variant="outline" data-testid="badge-unknown">{status}</Badge>;
+    }
+  };
+
   const columns = [
     {
       key: "index",
       label: "#",
       filterType: "none" as const,
-      render: (_: any, __: any, index: number) => (page - 1) * limit + index + 1,
+      render: (_: unknown, __: unknown, index: number) => (page - 1) * limit + index + 1,
     },
     { 
-      key: "name", 
+      key: "variantName", 
       label: t("admin.products.column.product_name"), 
       filterType: "text" as const,
     },
@@ -297,25 +323,23 @@ export default function Products() {
       filterType: "none" as const,
     },
     { 
-      key: "imei1", 
+      key: "primaryImei", 
       label: t("admin.products.column.imei"), 
       filterType: "text" as const,
-      render: (value: string, row: Product) => value || row.imei2 || row.barcode || '-',
+      render: (value: string, row: StockItem) => value || row.secondaryImei || row.barcode || row.serialNumber || '-',
     },
     {
-      key: "stock",
+      key: "stockStatus",
       label: t("admin.products.column.stock"),
       filterType: "select" as const,
-      filterOptions: ["in_stock", "out_of_stock"],
-      render: (value: number) => (
-        <Badge variant={value <= 0 ? "destructive" : "default"}>{value}</Badge>
-      ),
+      filterOptions: ["in_stock", "out_of_stock", "reserved", "sold", "defective"],
+      render: (value: string, row: StockItem) => getStatusBadge(value, row.isSold),
     },
     {
-      key: "price",
+      key: "salePrice",
       label: t("admin.products.column.sale_price"),
       filterType: "none" as const,
-      render: (value: string) => `PKR ${parseFloat(value).toLocaleString()}`,
+      render: (value: string) => `PKR ${parseFloat(value || '0').toLocaleString()}`,
     },
   ];
 
@@ -360,7 +384,7 @@ export default function Products() {
       ) : (
         <DataTable
           columns={columns}
-          data={products}
+          data={stockItems}
           showActions
           onFilterChange={handleColumnFilterChange}
           renderActions={(row) => (
@@ -391,12 +415,12 @@ export default function Products() {
         />
       </div>
 
-      <FormPopupModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setCurrentProduct(null); }}>
+      <FormPopupModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setCurrentStock(null); }}>
         <h2 className="text-2xl font-semibold mb-4">
-          {currentProduct ? t("admin.products.edit_product") : t("admin.products.add_mobile")}
+          {currentStock ? t("admin.products.edit_product") : t("admin.products.add_mobile")}
         </h2>
         
-        {!currentProduct && (
+        {!currentStock && (
           <div className="mb-4">
             <Label>{t("admin.products.select_shop")}</Label>
             <Select value={selectedShopId} onValueChange={setSelectedShopId}>
@@ -414,17 +438,20 @@ export default function Products() {
         
         <MobileProductForm
           onSubmit={handleMobileProductSubmit}
-          onCancel={() => { setIsModalOpen(false); setCurrentProduct(null); }}
-          initialData={currentProduct ? {
-            brand: '',
-            model: currentProduct.name,
-            color: '',
-            imei: currentProduct.imei1 || '',
-            imei2: currentProduct.imei2,
-            sellingPrice: parseFloat(currentProduct.price),
+          onCancel={() => { setIsModalOpen(false); setCurrentStock(null); }}
+          initialData={currentStock ? {
+            brand: currentStock.brandName || '',
+            model: currentStock.variantName,
+            color: currentStock.color || '',
+            memory: currentStock.storageSize,
+            imei: currentStock.primaryImei || '',
+            imei2: currentStock.secondaryImei,
+            sellingPrice: parseFloat(currentStock.salePrice),
+            purchasePrice: currentStock.purchasePrice ? parseFloat(currentStock.purchasePrice) : undefined,
+            variantId: currentStock.variantId,
           } : undefined}
           shopId={selectedShopId || shops[0]?.id}
-          isEditing={!!currentProduct}
+          isEditing={!!currentStock}
         />
       </FormPopupModal>
 

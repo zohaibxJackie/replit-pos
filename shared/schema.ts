@@ -316,6 +316,24 @@ export const wholesalerOffers = pgTable("wholesaler_offers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Wholesaler products - products listed by wholesalers for sale
+export const wholesalerProducts = pgTable("wholesaler_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  wholesalerId: varchar("wholesaler_id").notNull(), // User ID of wholesaler
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  stock: integer("stock").notNull().default(0),
+  discount: decimal("discount", { precision: 5, scale: 2 }).default("0"),
+  minOrderQuantity: integer("min_order_quantity").default(1),
+  unit: text("unit").default("pack"),
+  imageUrl: text("image_url"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Purchase orders from shops to wholesalers
 export const purchaseOrders = pgTable("purchase_orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -540,6 +558,7 @@ export const insertStockTransferItemSchema = createInsertSchema(stockTransferIte
 // Wholesaler
 export const insertWholesalerSettingsSchema = createInsertSchema(wholesalerSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWholesalerOfferSchema = createInsertSchema(wholesalerOffers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertWholesalerProductSchema = createInsertSchema(wholesalerProducts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true, createdAt: true });
 export const insertDealRequestSchema = createInsertSchema(dealRequests).omit({ id: true, createdAt: true, updatedAt: true });
@@ -624,6 +643,8 @@ export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type InsertPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;
 export type DealRequest = typeof dealRequests.$inferSelect;
 export type InsertDealRequest = typeof dealRequests.$inferInsert;
+export type WholesalerProduct = typeof wholesalerProducts.$inferSelect;
+export type InsertWholesalerProduct = typeof wholesalerProducts.$inferInsert;
 
 // Repair center types
 export type RepairCenterSettings = typeof repairCenterSettings.$inferSelect;

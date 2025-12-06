@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { products, categories, vendors, mobileCatalog, accessoryCatalog, phoneUnits } from '../../shared/schema.js';
+import { stock, variant, product, brand, category, vendors } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 import { logActivity } from './notificationController.js';
@@ -14,69 +14,98 @@ export const getProducts = async (req, res) => {
       return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
     }
 
-    let conditions = [];
+    let conditions = [eq(stock.isActive, true)];
 
     if (queryShopId && userShopIds.includes(queryShopId)) {
-      conditions.push(eq(products.shopId, queryShopId));
+      conditions.push(eq(stock.shopId, queryShopId));
     } else {
-      conditions.push(inArray(products.shopId, userShopIds));
+      conditions.push(inArray(stock.shopId, userShopIds));
     }
 
     if (search) {
       conditions.push(
         or(
-          sql`COALESCE(${products.customName}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${products.barcode}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${products.sku}, '') ILIKE ${`%${search}%`}`
+          sql`COALESCE(${stock.barcode}, '') ILIKE ${`%${search}%`}`,
+          sql`COALESCE(${stock.primaryImei}, '') ILIKE ${`%${search}%`}`,
+          sql`COALESCE(${stock.secondaryImei}, '') ILIKE ${`%${search}%`}`,
+          sql`COALESCE(${stock.serialNumber}, '') ILIKE ${`%${search}%`}`,
+          sql`COALESCE(${variant.variantName}, '') ILIKE ${`%${search}%`}`,
+          sql`COALESCE(${product.name}, '') ILIKE ${`%${search}%`}`,
+          sql`COALESCE(${brand.name}, '') ILIKE ${`%${search}%`}`
         )
       );
     }
 
-    // categoryId is now 'mobile' or 'accessories' (hardcoded values)
     if (categoryId) {
-      conditions.push(eq(products.categoryId, categoryId));
+      conditions.push(eq(category.id, categoryId));
     }
 
     if (lowStock === 'true') {
-      conditions.push(lte(products.stock, products.lowStockThreshold));
+      const lowStockVariants = db.select({ variantId: stock.variantId })
+        .from(stock)
+        .where(and(eq(stock.isActive, true), eq(stock.isSold, false), ne(stock.stockStatus, 'sold')))
+        .groupBy(stock.variantId)
+        .having(sql`count(*) <= COALESCE(MIN(${stock.lowStockThreshold}), 5)`);
+      
+      conditions.push(sql`${stock.variantId} IN (${lowStockVariants})`);
     }
 
     const whereClause = and(...conditions);
 
-    // Left join with mobileCatalog to get color and other catalog info
     const productList = await db.select({
-      id: products.id,
-      shopId: products.shopId,
-      categoryId: products.categoryId,
-      mobileCatalogId: products.mobileCatalogId,
-      accessoryCatalogId: products.accessoryCatalogId,
-      customName: products.customName,
-      sku: products.sku,
-      barcode: products.barcode,
-      stock: products.stock,
-      purchasePrice: products.purchasePrice,
-      salePrice: products.salePrice,
-      vendorId: products.vendorId,
-      lowStockThreshold: products.lowStockThreshold,
-      createdAt: products.createdAt,
-      updatedAt: products.updatedAt,
-      mobileCatalog: {
-        id: mobileCatalog.id,
-        brand: mobileCatalog.brand,
-        name: mobileCatalog.name,
-        memory: mobileCatalog.memory,
-        color: mobileCatalog.color,
+      id: stock.id,
+      shopId: stock.shopId,
+      variantId: stock.variantId,
+      primaryImei: stock.primaryImei,
+      secondaryImei: stock.secondaryImei,
+      serialNumber: stock.serialNumber,
+      barcode: stock.barcode,
+      purchasePrice: stock.purchasePrice,
+      salePrice: stock.salePrice,
+      stockStatus: stock.stockStatus,
+      isSold: stock.isSold,
+      notes: stock.notes,
+      condition: stock.condition,
+      lowStockThreshold: stock.lowStockThreshold,
+      vendorId: stock.vendorId,
+      createdAt: stock.createdAt,
+      updatedAt: stock.updatedAt,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+        color: variant.color,
+        storageSize: variant.storageSize,
+        sku: variant.sku,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
       }
     })
-      .from(products)
-      .leftJoin(mobileCatalog, eq(products.mobileCatalogId, mobileCatalog.id))
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
       .where(whereClause)
-      .orderBy(desc(products.createdAt))
+      .orderBy(desc(stock.createdAt))
       .limit(pageLimit)
       .offset(offset);
 
     const [{ count }] = await db.select({ count: sql`count(*)::int` })
-      .from(products)
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
       .where(whereClause);
 
     res.json({
@@ -99,30 +128,63 @@ export const getProductById = async (req, res) => {
     const { id } = req.params;
     const userShopIds = req.userShopIds || [];
 
-    const [product] = await db.select().from(products).where(
-      and(eq(products.id, id), inArray(products.shopId, userShopIds))
-    ).limit(1);
+    const [stockItem] = await db.select({
+      id: stock.id,
+      shopId: stock.shopId,
+      variantId: stock.variantId,
+      primaryImei: stock.primaryImei,
+      secondaryImei: stock.secondaryImei,
+      serialNumber: stock.serialNumber,
+      barcode: stock.barcode,
+      purchasePrice: stock.purchasePrice,
+      salePrice: stock.salePrice,
+      stockStatus: stock.stockStatus,
+      isSold: stock.isSold,
+      notes: stock.notes,
+      condition: stock.condition,
+      lowStockThreshold: stock.lowStockThreshold,
+      vendorId: stock.vendorId,
+      createdAt: stock.createdAt,
+      updatedAt: stock.updatedAt,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+        color: variant.color,
+        storageSize: variant.storageSize,
+        sku: variant.sku,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
+      }
+    })
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(and(eq(stock.id, id), inArray(stock.shopId, userShopIds)))
+      .limit(1);
 
-    if (!product) {
+    if (!stockItem) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
     let vendor = null;
-    if (product.vendorId) {
-      const [v] = await db.select().from(vendors).where(eq(vendors.id, product.vendorId)).limit(1);
+    if (stockItem.vendorId) {
+      const [v] = await db.select().from(vendors).where(eq(vendors.id, stockItem.vendorId)).limit(1);
       vendor = v;
     }
 
-    let catalogItem = null;
-    if (product.categoryId === 'mobile' && product.mobileCatalogId) {
-      const [m] = await db.select().from(mobileCatalog).where(eq(mobileCatalog.id, product.mobileCatalogId)).limit(1);
-      catalogItem = m;
-    } else if (product.categoryId === 'accessories' && product.accessoryCatalogId) {
-      const [a] = await db.select().from(accessoryCatalog).where(eq(accessoryCatalog.id, product.accessoryCatalogId)).limit(1);
-      catalogItem = a;
-    }
-
-    res.json({ product, vendor, catalogItem });
+    res.json({ product: stockItem, vendor });
   } catch (error) {
     console.error('Get product by id error:', error);
     res.status(500).json({ error: req.t('product.fetch_failed') });
@@ -134,15 +196,54 @@ export const getProductByBarcode = async (req, res) => {
     const { barcode } = req.params;
     const userShopIds = req.userShopIds || [];
 
-    const [product] = await db.select().from(products).where(
-      and(eq(products.barcode, barcode), inArray(products.shopId, userShopIds))
-    ).limit(1);
+    const [stockItem] = await db.select({
+      id: stock.id,
+      shopId: stock.shopId,
+      variantId: stock.variantId,
+      primaryImei: stock.primaryImei,
+      secondaryImei: stock.secondaryImei,
+      serialNumber: stock.serialNumber,
+      barcode: stock.barcode,
+      purchasePrice: stock.purchasePrice,
+      salePrice: stock.salePrice,
+      stockStatus: stock.stockStatus,
+      isSold: stock.isSold,
+      notes: stock.notes,
+      condition: stock.condition,
+      vendorId: stock.vendorId,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+        color: variant.color,
+        storageSize: variant.storageSize,
+        sku: variant.sku,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
+      }
+    })
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(and(eq(stock.barcode, barcode), inArray(stock.shopId, userShopIds), eq(stock.isActive, true)))
+      .limit(1);
 
-    if (!product) {
+    if (!stockItem) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
-    res.json({ product });
+    res.json({ product: stockItem });
   } catch (error) {
     console.error('Get product by barcode error:', error);
     res.status(500).json({ error: req.t('product.fetch_failed') });
@@ -154,87 +255,118 @@ export const getProductByImei = async (req, res) => {
     const { imei } = req.params;
     const userShopIds = req.userShopIds || [];
 
-    // Search for phone unit by IMEI (primary or secondary)
-    const [phoneUnit] = await db.select().from(phoneUnits).where(
-      and(
-        or(eq(phoneUnits.imeiPrimary, imei), eq(phoneUnits.imeiSecondary, imei)),
-        inArray(phoneUnits.shopId, userShopIds)
+    const [stockItem] = await db.select({
+      id: stock.id,
+      shopId: stock.shopId,
+      variantId: stock.variantId,
+      primaryImei: stock.primaryImei,
+      secondaryImei: stock.secondaryImei,
+      serialNumber: stock.serialNumber,
+      barcode: stock.barcode,
+      purchasePrice: stock.purchasePrice,
+      salePrice: stock.salePrice,
+      stockStatus: stock.stockStatus,
+      isSold: stock.isSold,
+      notes: stock.notes,
+      condition: stock.condition,
+      vendorId: stock.vendorId,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+        color: variant.color,
+        storageSize: variant.storageSize,
+        sku: variant.sku,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
+      }
+    })
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(
+        and(
+          or(eq(stock.primaryImei, imei), eq(stock.secondaryImei, imei)),
+          inArray(stock.shopId, userShopIds),
+          eq(stock.isActive, true)
+        )
       )
-    ).limit(1);
+      .limit(1);
 
-    if (!phoneUnit) {
+    if (!stockItem) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
-    // Get the associated product
-    const [product] = await db.select().from(products).where(
-      eq(products.id, phoneUnit.productId)
-    ).limit(1);
-
-    res.json({ product, phoneUnit });
+    res.json({ product: stockItem });
   } catch (error) {
     console.error('Get product by IMEI error:', error);
     res.status(500).json({ error: req.t('product.fetch_failed') });
   }
 };
 
-const checkImeiUniqueness = async (imei, shopId, excludePhoneUnitId = null) => {
+const checkImeiUniqueness = async (imei, excludeStockId = null) => {
   if (!imei) return true;
   
   let conditions = [
-    or(eq(phoneUnits.imeiPrimary, imei), eq(phoneUnits.imeiSecondary, imei))
+    or(eq(stock.primaryImei, imei), eq(stock.secondaryImei, imei)),
+    eq(stock.isActive, true)
   ];
   
-  if (excludePhoneUnitId) {
-    conditions.push(ne(phoneUnits.id, excludePhoneUnitId));
+  if (excludeStockId) {
+    conditions.push(ne(stock.id, excludeStockId));
   }
   
-  const [existing] = await db.select().from(phoneUnits).where(and(...conditions)).limit(1);
+  const [existing] = await db.select().from(stock).where(and(...conditions)).limit(1);
   return !existing;
 };
 
-const checkBarcodeUniqueness = async (barcode, shopId, excludeProductId = null) => {
+const checkBarcodeUniqueness = async (barcode, shopId, excludeStockId = null) => {
   if (!barcode) return true;
   
   let conditions = [
-    eq(products.shopId, shopId),
-    eq(products.barcode, barcode)
+    eq(stock.shopId, shopId),
+    eq(stock.barcode, barcode),
+    eq(stock.isActive, true)
   ];
   
-  if (excludeProductId) {
-    conditions.push(ne(products.id, excludeProductId));
+  if (excludeStockId) {
+    conditions.push(ne(stock.id, excludeStockId));
   }
   
-  const [existing] = await db.select().from(products).where(and(...conditions)).limit(1);
+  const [existing] = await db.select().from(stock).where(and(...conditions)).limit(1);
   return !existing;
 };
 
 export const createProduct = async (req, res) => {
   try {
     const { 
-      categoryId, 
-      mobileCatalogId, 
-      accessoryCatalogId,
-      customName,
-      sku,
-      imeiPrimary, 
-      imeiSecondary,
+      variantId,
+      primaryImei,
+      secondaryImei,
+      serialNumber,
       barcode,
-      stock,
       purchasePrice,
       salePrice,
       vendorId,
       lowStockThreshold,
       shopId: requestedShopId,
-      colorId,
-      storageId,
-      condition
+      condition,
+      notes
     } = req.validatedBody;
 
-    // Use shopId from request body if provided, otherwise fall back to user's first shop
     const shopId = requestedShopId || req.userShopIds?.[0];
 
-    // Debug logging
     console.log('Create product - User:', req.user?.username, 'Role:', req.user?.role);
     console.log('Create product - Requested shopId:', requestedShopId);
     console.log('Create product - User shopIds:', req.userShopIds);
@@ -244,11 +376,18 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ error: req.t ? req.t('product.shop_required') : 'Shop ID is required' });
     }
 
-    // Super admins and admins have access to all shops
-    // Regular users (sales_person, etc.) need to be assigned to the shop
+    if (!variantId) {
+      return res.status(400).json({ error: req.t ? req.t('product.variant_required') : 'Variant ID is required' });
+    }
+
     const hasFullAccess = req.user?.role === 'super_admin' || req.user?.role === 'admin';
     if (!hasFullAccess && req.userShopIds?.length > 0 && !req.userShopIds.includes(shopId)) {
       return res.status(403).json({ error: req.t ? req.t('product.shop_access_denied') : 'You do not have access to this shop' });
+    }
+
+    const [variantExists] = await db.select().from(variant).where(eq(variant.id, variantId)).limit(1);
+    if (!variantExists) {
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Invalid variant' });
     }
 
     if (vendorId) {
@@ -264,103 +403,52 @@ export const createProduct = async (req, res) => {
       return res.status(409).json({ error: req.t ? req.t('product.barcode_exists') : 'Barcode already exists' });
     }
 
-    // For mobile phones, check IMEI uniqueness
-    if (categoryId === 'mobile' && imeiPrimary) {
-      if (!(await checkImeiUniqueness(imeiPrimary, shopId))) {
+    if (primaryImei) {
+      if (!(await checkImeiUniqueness(primaryImei))) {
         return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
       }
 
-      if (imeiSecondary && !(await checkImeiUniqueness(imeiSecondary, shopId))) {
+      if (secondaryImei && !(await checkImeiUniqueness(secondaryImei))) {
         return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : 'IMEI already exists' });
       }
 
-      if (imeiPrimary && imeiSecondary && imeiPrimary === imeiSecondary) {
+      if (primaryImei && secondaryImei && primaryImei === secondaryImei) {
         return res.status(400).json({ error: req.t ? req.t('product.imei_duplicate') : 'Primary and Secondary IMEI cannot be the same' });
       }
     }
 
-    if (mobileCatalogId) {
-      const [catalogExists] = await db.select().from(mobileCatalog).where(
-        eq(mobileCatalog.id, mobileCatalogId)
-      ).limit(1);
-      if (!catalogExists) {
-        return res.status(400).json({ error: req.t ? req.t('product.invalid_mobile_catalog') : 'Invalid mobile catalog item' });
-      }
-    }
+    const finalBarcode = barcode || `STK-${shopId.substring(0, 6)}-${Date.now()}`;
 
-    if (accessoryCatalogId) {
-      const [catalogExists] = await db.select().from(accessoryCatalog).where(
-        eq(accessoryCatalog.id, accessoryCatalogId)
-      ).limit(1);
-      if (!catalogExists) {
-        return res.status(400).json({ error: req.t ? req.t('product.invalid_accessory_catalog') : 'Invalid accessory catalog item' });
-      }
-    }
-
-    // Auto-generate barcode if not provided
-    const finalBarcode = barcode || `MB-${shopId.substring(0, 6)}-${Date.now()}`;
-    
-    // Auto-generate SKU based on model if not provided
-    let finalSku = sku;
-    if (!finalSku && categoryId === 'mobile' && mobileCatalogId) {
-      const [catalogItem] = await db.select().from(mobileCatalog).where(eq(mobileCatalog.id, mobileCatalogId)).limit(1);
-      if (catalogItem && catalogItem.brand && catalogItem.name) {
-        const brandCode = catalogItem.brand.substring(0, 3).toUpperCase();
-        const modelCode = catalogItem.name.replace(/\s+/g, '').substring(0, 6).toUpperCase();
-        const memoryCode = catalogItem.memory ? `-${catalogItem.memory.replace(/\s+/g, '')}` : '';
-        const colorCode = catalogItem.color ? `-${catalogItem.color.substring(0, 3).toUpperCase()}` : '';
-        finalSku = `${brandCode}-${modelCode}${memoryCode}${colorCode}`;
-      }
-    }
-
-    // For accessories, use stock count directly
-    // For mobiles, stock is calculated from phone units
-    const [newProduct] = await db.insert(products).values({
+    const [newStock] = await db.insert(stock).values({
       shopId,
-      categoryId,
-      mobileCatalogId: categoryId === 'mobile' ? (mobileCatalogId || null) : null,
-      accessoryCatalogId: categoryId === 'accessories' ? (accessoryCatalogId || null) : null,
-      customName: customName || null,
-      sku: finalSku || null,
+      variantId,
+      primaryImei: primaryImei || null,
+      secondaryImei: secondaryImei || null,
+      serialNumber: serialNumber || null,
       barcode: finalBarcode,
-      stock: categoryId === 'accessories' ? (stock || 1) : 0, // For mobiles, stock is 0 (calculated from phoneUnits)
       purchasePrice: purchasePrice?.toString() || null,
-      salePrice: salePrice.toString(),
-      vendorId: vendorId || null,
-      lowStockThreshold: lowStockThreshold || 5
+      salePrice: salePrice?.toString() || null,
+      condition: condition || 'new',
+      stockStatus: 'in_stock',
+      isSold: false,
+      notes: notes || null,
+      lowStockThreshold: lowStockThreshold || 5,
+      vendorId: vendorId || null
     }).returning();
 
-    let newPhoneUnit = null;
-    // For mobile phones with IMEI, create a phone unit
-    if (categoryId === 'mobile' && imeiPrimary) {
-      [newPhoneUnit] = await db.insert(phoneUnits).values({
-        shopId,
-        productId: newProduct.id,
-        imeiPrimary,
-        imeiSecondary: imeiSecondary || null,
-        condition: condition || 'new',
-        status: 'in_stock',
-        purchasePrice: purchasePrice?.toString() || null,
-        colorId: colorId || null,
-        storageId: storageId || null,
-        vendorId: vendorId || null
-      }).returning();
-    }
-
     try {
-      await logActivity(req.user?.id, 'create', 'product', newProduct.id, {
-        categoryId,
-        customName: newProduct.customName,
-        barcode: newProduct.barcode,
-        salePrice: newProduct.salePrice,
-        imeiPrimary: newPhoneUnit?.imeiPrimary,
-        imeiSecondary: newPhoneUnit?.imeiSecondary
+      await logActivity(req.user?.id, 'create', 'stock', newStock.id, {
+        variantId,
+        barcode: newStock.barcode,
+        salePrice: newStock.salePrice,
+        primaryImei: newStock.primaryImei,
+        secondaryImei: newStock.secondaryImei
       }, req);
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
-    res.status(201).json({ product: newProduct, phoneUnit: newPhoneUnit });
+    res.status(201).json({ product: newStock });
   } catch (error) {
     console.error('Create product error:', error);
     res.status(500).json({ error: req.t ? req.t('product.create_failed') : 'Failed to create product' });
@@ -371,9 +459,7 @@ export const bulkCreateProducts = async (req, res) => {
   try {
     const { 
       shopId: requestedShopId,
-      categoryId, 
-      mobileCatalogId, 
-      customName,
+      variantId,
       purchasePrice,
       salePrice,
       vendorId,
@@ -381,14 +467,17 @@ export const bulkCreateProducts = async (req, res) => {
       quantity,
       imeis,
       condition,
-      colorId,
-      storageId
+      notes
     } = req.validatedBody;
 
     const shopId = requestedShopId || req.userShopIds?.[0];
 
     if (!shopId) {
       return res.status(400).json({ error: req.t ? req.t('product.shop_required') : 'Shop ID is required' });
+    }
+
+    if (!variantId) {
+      return res.status(400).json({ error: req.t ? req.t('product.variant_required') : 'Variant ID is required' });
     }
 
     const hasFullAccess = req.user?.role === 'super_admin' || req.user?.role === 'admin';
@@ -400,7 +489,11 @@ export const bulkCreateProducts = async (req, res) => {
       return res.status(400).json({ error: req.t ? req.t('product.imei_count_mismatch') : 'IMEI count must match quantity' });
     }
 
-    // Collect all IMEIs for uniqueness check
+    const [variantExists] = await db.select().from(variant).where(eq(variant.id, variantId)).limit(1);
+    if (!variantExists) {
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Invalid variant' });
+    }
+
     const allImeis = [];
     for (const imeiPair of imeis) {
       allImeis.push(imeiPair.imeiPrimary || imeiPair.imei1);
@@ -415,111 +508,59 @@ export const bulkCreateProducts = async (req, res) => {
       return res.status(400).json({ error: req.t ? req.t('product.duplicate_imei_in_batch') : 'Duplicate IMEIs found in batch' });
     }
 
-    // Check for existing IMEIs in phoneUnits table
     for (const imei of allImeis) {
-      const [existingInPhoneUnits] = await db.select().from(phoneUnits).where(
-        or(eq(phoneUnits.imeiPrimary, imei), eq(phoneUnits.imeiSecondary, imei))
+      const [existingStock] = await db.select().from(stock).where(
+        and(
+          or(eq(stock.primaryImei, imei), eq(stock.secondaryImei, imei)),
+          eq(stock.isActive, true)
+        )
       ).limit(1);
       
-      if (existingInPhoneUnits) {
+      if (existingStock) {
         return res.status(409).json({ error: req.t ? req.t('product.imei_exists') : `IMEI ${imei} already exists` });
       }
     }
 
-    if (mobileCatalogId) {
-      const [catalogExists] = await db.select().from(mobileCatalog).where(
-        eq(mobileCatalog.id, mobileCatalogId)
-      ).limit(1);
-      if (!catalogExists) {
-        return res.status(400).json({ error: req.t ? req.t('product.invalid_mobile_catalog') : 'Invalid mobile catalog item' });
-      }
-    }
-
-    // Find or create a single product SKU for this model
-    let product = null;
-    const [existingProduct] = await db.select().from(products).where(
-      and(
-        eq(products.shopId, shopId),
-        eq(products.categoryId, categoryId),
-        mobileCatalogId ? eq(products.mobileCatalogId, mobileCatalogId) : sql`true`
-      )
-    ).limit(1);
-
-    if (existingProduct) {
-      product = existingProduct;
-    } else {
-      // Create new product SKU
-      const finalBarcode = `MB-${shopId.substring(0, 6)}-${Date.now()}`;
-      
-      let finalSku = null;
-      if (categoryId === 'mobile' && mobileCatalogId) {
-        const [catalogItem] = await db.select().from(mobileCatalog).where(eq(mobileCatalog.id, mobileCatalogId)).limit(1);
-        if (catalogItem && catalogItem.brand && catalogItem.name) {
-          const brandCode = catalogItem.brand.substring(0, 3).toUpperCase();
-          const modelCode = catalogItem.name.replace(/\s+/g, '').substring(0, 6).toUpperCase();
-          const memoryCode = catalogItem.memory ? `-${catalogItem.memory.replace(/\s+/g, '')}` : '';
-          const colorCode = catalogItem.color ? `-${catalogItem.color.substring(0, 3).toUpperCase()}` : '';
-          finalSku = `${brandCode}-${modelCode}${memoryCode}${colorCode}`;
-        }
-      }
-
-      const [newProduct] = await db.insert(products).values({
-        shopId,
-        categoryId,
-        mobileCatalogId: categoryId === 'mobile' ? (mobileCatalogId || null) : null,
-        customName: customName || null,
-        sku: finalSku,
-        barcode: finalBarcode,
-        stock: 0, // Stock calculated from phoneUnits
-        purchasePrice: purchasePrice?.toString() || null,
-        salePrice: salePrice.toString(),
-        vendorId: vendorId || null,
-        lowStockThreshold: lowStockThreshold || 5
-      }).returning();
-
-      product = newProduct;
-    }
-
-    // Create phone units for each IMEI pair
-    const createdPhoneUnits = [];
+    const createdStockItems = [];
 
     for (let i = 0; i < quantity; i++) {
       const imeiPair = imeis[i];
       const primaryImei = imeiPair.imeiPrimary || imeiPair.imei1;
       const secondaryImei = imeiPair.imeiSecondary || imeiPair.imei2;
+      const finalBarcode = `STK-${shopId.substring(0, 6)}-${Date.now()}-${i}`;
 
-      const [newPhoneUnit] = await db.insert(phoneUnits).values({
+      const [newStock] = await db.insert(stock).values({
         shopId,
-        productId: product.id,
-        imeiPrimary: primaryImei,
-        imeiSecondary: secondaryImei || null,
-        condition: condition || 'new',
-        status: 'in_stock',
+        variantId,
+        primaryImei,
+        secondaryImei: secondaryImei || null,
+        barcode: finalBarcode,
         purchasePrice: purchasePrice?.toString() || null,
-        colorId: colorId || null,
-        storageId: storageId || null,
+        salePrice: salePrice?.toString() || null,
+        condition: condition || 'new',
+        stockStatus: 'in_stock',
+        isSold: false,
+        notes: notes || null,
+        lowStockThreshold: lowStockThreshold || 5,
         vendorId: vendorId || null
       }).returning();
 
-      createdPhoneUnits.push(newPhoneUnit);
+      createdStockItems.push(newStock);
     }
 
     try {
-      await logActivity(req.user?.id, 'bulk_create', 'product', product.id, {
-        categoryId,
-        customName,
+      await logActivity(req.user?.id, 'bulk_create', 'stock', createdStockItems[0]?.id, {
+        variantId,
         quantity,
-        productId: product.id,
-        phoneUnitCount: createdPhoneUnits.length
+        stockCount: createdStockItems.length
       }, req);
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
     res.status(201).json({ 
-      product,
-      phoneUnits: createdPhoneUnits,
-      message: req.t ? req.t('product.bulk_created', { count: quantity }) : `${quantity} phone units created successfully`
+      products: createdStockItems,
+      message: req.t ? req.t('product.bulk_created', { count: quantity }) : `${quantity} stock items created successfully`
     });
   } catch (error) {
     console.error('Bulk create products error:', error);
@@ -531,136 +572,100 @@ export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { 
-      customName,
-      sku,
       barcode,
       purchasePrice,
       salePrice,
       vendorId,
-      lowStockThreshold
+      lowStockThreshold,
+      notes,
+      condition
     } = req.validatedBody;
 
-    const shopId = req.userShopIds?.[0];
+    const userShopIds = req.userShopIds || [];
 
-    if (!shopId) {
-      return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
-    }
-
-    const [existingProduct] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, shopId))
+    const [existingStock] = await db.select().from(stock).where(
+      and(eq(stock.id, id), inArray(stock.shopId, userShopIds))
     ).limit(1);
 
-    if (!existingProduct) {
+    if (!existingStock) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
     if (vendorId !== undefined && vendorId !== null) {
       const [vendorExists] = await db.select().from(vendors).where(
-        and(eq(vendors.id, vendorId), eq(vendors.shopId, shopId))
+        and(eq(vendors.id, vendorId), eq(vendors.shopId, existingStock.shopId))
       ).limit(1);
       if (!vendorExists) {
         return res.status(400).json({ error: req.t('product.invalid_vendor') });
       }
     }
 
-    const finalCustomName = customName !== undefined ? customName : existingProduct.customName;
-    const finalMobileCatalogId = existingProduct.mobileCatalogId;
-    const finalAccessoryCatalogId = existingProduct.accessoryCatalogId;
-    
-    if (existingProduct.categoryId === 'mobile' && !finalCustomName && !finalMobileCatalogId) {
-      return res.status(400).json({ error: req.t('product.name_or_catalog_required') });
-    }
-    if (existingProduct.categoryId === 'accessories' && !finalCustomName && !finalAccessoryCatalogId) {
-      return res.status(400).json({ error: req.t('product.name_or_catalog_required') });
-    }
-
     if (barcode !== undefined && barcode !== null) {
-      if (!(await checkBarcodeUniqueness(barcode, shopId, id))) {
+      if (!(await checkBarcodeUniqueness(barcode, existingStock.shopId, id))) {
         return res.status(409).json({ error: req.t('product.barcode_exists') });
       }
     }
 
     const updateData = { updatedAt: new Date() };
-    if (customName !== undefined) updateData.customName = customName;
-    if (sku !== undefined) updateData.sku = sku;
     if (barcode !== undefined) updateData.barcode = barcode;
     if (purchasePrice !== undefined) updateData.purchasePrice = purchasePrice != null ? purchasePrice.toString() : null;
     if (salePrice !== undefined && salePrice != null) updateData.salePrice = salePrice.toString();
     if (vendorId !== undefined) updateData.vendorId = vendorId;
     if (lowStockThreshold !== undefined) updateData.lowStockThreshold = lowStockThreshold;
+    if (notes !== undefined) updateData.notes = notes;
+    if (condition !== undefined) updateData.condition = condition;
 
-    const [updatedProduct] = await db.update(products)
+    const [updatedStock] = await db.update(stock)
       .set(updateData)
-      .where(eq(products.id, id))
+      .where(eq(stock.id, id))
       .returning();
 
     try {
-      await logActivity(req.user?.id, 'update', 'product', id, {
-        changes: updateData,
-        previousName: existingProduct.customName,
-        newName: updatedProduct.customName
+      await logActivity(req.user?.id, 'update', 'stock', id, {
+        changes: updateData
       }, req);
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
-    res.json({ product: updatedProduct });
+    res.json({ product: updatedStock });
   } catch (error) {
     console.error('Update product error:', error);
     res.status(500).json({ error: req.t('product.update_failed') });
   }
 };
 
-export const updateStock = async (req, res) => {
+export const updateStockStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity, type } = req.validatedBody;
+    const { stockStatus } = req.validatedBody;
+    const userShopIds = req.userShopIds || [];
 
-    const [existingProduct] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, req.userShopIds?.[0]))
+    const [existingStock] = await db.select().from(stock).where(
+      and(eq(stock.id, id), inArray(stock.shopId, userShopIds))
     ).limit(1);
 
-    if (!existingProduct) {
+    if (!existingStock) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
-    let newStock;
-    switch (type) {
-      case 'add':
-        newStock = existingProduct.stock + quantity;
-        break;
-      case 'subtract':
-        newStock = existingProduct.stock - quantity;
-        if (newStock < 0) {
-          return res.status(400).json({ error: req.t('product.insufficient_stock') });
-        }
-        break;
-      case 'set':
-        newStock = quantity;
-        break;
-      default:
-        return res.status(400).json({ error: req.t('product.invalid_stock_type') });
-    }
-
-    const [updatedProduct] = await db.update(products)
-      .set({ stock: newStock, updatedAt: new Date() })
-      .where(eq(products.id, id))
+    const [updatedStock] = await db.update(stock)
+      .set({ stockStatus, updatedAt: new Date() })
+      .where(eq(stock.id, id))
       .returning();
 
     try {
-      await logActivity(req.user?.id, 'stock_update', 'product', id, {
-        type,
-        previousStock: existingProduct.stock,
-        newStock,
-        quantityChanged: quantity
+      await logActivity(req.user?.id, 'status_update', 'stock', id, {
+        previousStatus: existingStock.stockStatus,
+        newStatus: stockStatus
       }, req);
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
-    res.json({ product: updatedProduct });
+    res.json({ product: updatedStock });
   } catch (error) {
-    console.error('Update stock error:', error);
+    console.error('Update stock status error:', error);
     res.status(500).json({ error: req.t('product.stock_update_failed') });
   }
 };
@@ -668,28 +673,25 @@ export const updateStock = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
+    const userShopIds = req.userShopIds || [];
 
-    const [existingProduct] = await db.select().from(products).where(
-      and(eq(products.id, id), eq(products.shopId, req.userShopIds?.[0]))
+    const [existingStock] = await db.select().from(stock).where(
+      and(eq(stock.id, id), inArray(stock.shopId, userShopIds))
     ).limit(1);
 
-    if (!existingProduct) {
+    if (!existingStock) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
-    // For mobile products, also delete associated phone units
-    if (existingProduct.categoryId === 'mobile') {
-      await db.delete(phoneUnits).where(eq(phoneUnits.productId, id));
-    }
-
-    await db.delete(products).where(eq(products.id, id));
+    await db.update(stock)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(stock.id, id));
 
     try {
-      await logActivity(req.user?.id, 'delete', 'product', id, {
-        deletedProduct: {
-          customName: existingProduct.customName,
-          barcode: existingProduct.barcode,
-          categoryId: existingProduct.categoryId
+      await logActivity(req.user?.id, 'delete', 'stock', id, {
+        deletedStock: {
+          barcode: existingStock.barcode,
+          primaryImei: existingStock.primaryImei
         }
       }, req);
     } catch (logError) {
@@ -711,48 +713,227 @@ export const getLowStockProducts = async (req, res) => {
       return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
     }
 
-    const lowStockProducts = await db.select()
-      .from(products)
+    const lowStockItems = await db.select({
+      variantId: stock.variantId,
+      count: sql`count(*)::int`,
+      lowStockThreshold: sql`min(${stock.lowStockThreshold})::int`,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+        color: variant.color,
+        storageSize: variant.storageSize,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
+      }
+    })
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
       .where(
         and(
-          eq(products.shopId, shopId),
-          lte(products.stock, products.lowStockThreshold)
+          eq(stock.shopId, shopId),
+          eq(stock.isActive, true),
+          eq(stock.isSold, false),
+          eq(stock.stockStatus, 'in_stock')
         )
       )
-      .orderBy(products.stock);
+      .groupBy(stock.variantId, variant.id, variant.variantName, variant.color, variant.storageSize, product.id, product.name, brand.id, brand.name, category.id, category.name)
+      .having(sql`count(*) <= min(${stock.lowStockThreshold})`);
 
-    res.json({ products: lowStockProducts });
+    res.json({ products: lowStockItems });
   } catch (error) {
     console.error('Get low stock products error:', error);
     res.status(500).json({ error: req.t('product.low_stock_fetch_failed') });
   }
 };
 
+export const getCategories = async (req, res) => {
+  try {
+    const categories = await db.select()
+      .from(category)
+      .where(eq(category.isActive, true))
+      .orderBy(category.name);
+
+    res.json({ categories });
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({ error: req.t('product.categories_fetch_failed') });
+  }
+};
+
+export const getBrands = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+    
+    let query = db.select({
+      id: brand.id,
+      name: brand.name,
+    })
+      .from(brand)
+      .where(eq(brand.isActive, true))
+      .orderBy(brand.name);
+
+    if (categoryId) {
+      query = db.selectDistinct({
+        id: brand.id,
+        name: brand.name,
+      })
+        .from(brand)
+        .innerJoin(product, eq(brand.id, product.brandId))
+        .where(and(eq(brand.isActive, true), eq(product.categoryId, categoryId)))
+        .orderBy(brand.name);
+    }
+
+    const brands = await query;
+
+    res.json({ brands });
+  } catch (error) {
+    console.error('Get brands error:', error);
+    res.status(500).json({ error: req.t('product.brands_fetch_failed') });
+  }
+};
+
+export const getProducts_Global = async (req, res) => {
+  try {
+    const { brandId, categoryId, search } = req.query;
+    
+    let conditions = [eq(product.isActive, true)];
+    
+    if (brandId) {
+      conditions.push(eq(product.brandId, brandId));
+    }
+    
+    if (categoryId) {
+      conditions.push(eq(product.categoryId, categoryId));
+    }
+    
+    if (search) {
+      conditions.push(ilike(product.name, `%${search}%`));
+    }
+
+    const products = await db.select({
+      id: product.id,
+      name: product.name,
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
+      }
+    })
+      .from(product)
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(and(...conditions))
+      .orderBy(product.name);
+
+    res.json({ products });
+  } catch (error) {
+    console.error('Get global products error:', error);
+    res.status(500).json({ error: req.t('product.products_fetch_failed') });
+  }
+};
+
+export const getVariants = async (req, res) => {
+  try {
+    const { productId, search } = req.query;
+    
+    let conditions = [eq(variant.isActive, true)];
+    
+    if (productId) {
+      conditions.push(eq(variant.productId, productId));
+    }
+    
+    if (search) {
+      conditions.push(ilike(variant.variantName, `%${search}%`));
+    }
+
+    const variants = await db.select({
+      id: variant.id,
+      variantName: variant.variantName,
+      color: variant.color,
+      storageSize: variant.storageSize,
+      sku: variant.sku,
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
+      }
+    })
+      .from(variant)
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(and(...conditions))
+      .orderBy(variant.variantName);
+
+    res.json({ variants });
+  } catch (error) {
+    console.error('Get variants error:', error);
+    res.status(500).json({ error: req.t('product.variants_fetch_failed') });
+  }
+};
+
 export const getMobileCatalog = async (req, res) => {
   try {
-    const { search, brand } = req.query;
+    const { search, brand: brandName } = req.query;
     
-    let conditions = [];
+    let conditions = [eq(variant.isActive, true)];
+    
+    const [mobileCategory] = await db.select().from(category).where(ilike(category.name, 'mobile%')).limit(1);
+    if (mobileCategory) {
+      conditions.push(eq(product.categoryId, mobileCategory.id));
+    }
     
     if (search) {
       conditions.push(
         or(
-          ilike(mobileCatalog.name, `%${search}%`),
-          ilike(mobileCatalog.brand, `%${search}%`)
+          ilike(variant.variantName, `%${search}%`),
+          ilike(product.name, `%${search}%`),
+          ilike(brand.name, `%${search}%`)
         )
       );
     }
     
-    if (brand) {
-      conditions.push(eq(mobileCatalog.brand, brand));
+    if (brandName) {
+      conditions.push(eq(brand.name, brandName));
     }
 
-    let query = db.select().from(mobileCatalog);
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-    
-    const catalog = await query.orderBy(mobileCatalog.brand, mobileCatalog.name);
+    const catalog = await db.select({
+      id: variant.id,
+      name: product.name,
+      brand: brand.name,
+      memory: variant.storageSize,
+      color: variant.color,
+      variantName: variant.variantName,
+    })
+      .from(variant)
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(and(...conditions))
+      .orderBy(brand.name, product.name);
 
     res.json({ catalog });
   } catch (error) {
@@ -763,29 +944,41 @@ export const getMobileCatalog = async (req, res) => {
 
 export const getAccessoryCatalog = async (req, res) => {
   try {
-    const { search, brand } = req.query;
+    const { search, brand: brandName } = req.query;
     
-    let conditions = [];
+    let conditions = [eq(variant.isActive, true)];
+    
+    const [accessoryCategory] = await db.select().from(category).where(ilike(category.name, 'accessor%')).limit(1);
+    if (accessoryCategory) {
+      conditions.push(eq(product.categoryId, accessoryCategory.id));
+    }
     
     if (search) {
       conditions.push(
         or(
-          ilike(accessoryCatalog.name, `%${search}%`),
-          ilike(accessoryCatalog.brand, `%${search}%`)
+          ilike(variant.variantName, `%${search}%`),
+          ilike(product.name, `%${search}%`),
+          ilike(brand.name, `%${search}%`)
         )
       );
     }
     
-    if (brand) {
-      conditions.push(eq(accessoryCatalog.brand, brand));
+    if (brandName) {
+      conditions.push(eq(brand.name, brandName));
     }
 
-    let query = db.select().from(accessoryCatalog);
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-    
-    const catalog = await query.orderBy(accessoryCatalog.brand, accessoryCatalog.name);
+    const catalog = await db.select({
+      id: variant.id,
+      name: product.name,
+      brand: brand.name,
+      variantName: variant.variantName,
+    })
+      .from(variant)
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(and(...conditions))
+      .orderBy(brand.name, product.name);
 
     res.json({ catalog });
   } catch (error) {
@@ -796,9 +989,18 @@ export const getAccessoryCatalog = async (req, res) => {
 
 export const getMobileCatalogBrands = async (req, res) => {
   try {
-    const brands = await db.selectDistinct({ brand: mobileCatalog.brand })
-      .from(mobileCatalog)
-      .orderBy(mobileCatalog.brand);
+    const [mobileCategory] = await db.select().from(category).where(ilike(category.name, 'mobile%')).limit(1);
+    
+    let conditions = [eq(brand.isActive, true)];
+    if (mobileCategory) {
+      conditions.push(eq(product.categoryId, mobileCategory.id));
+    }
+
+    const brands = await db.selectDistinct({ brand: brand.name })
+      .from(brand)
+      .innerJoin(product, eq(brand.id, product.brandId))
+      .where(and(...conditions))
+      .orderBy(brand.name);
 
     res.json({ brands: brands.map(b => b.brand) });
   } catch (error) {
@@ -809,9 +1011,18 @@ export const getMobileCatalogBrands = async (req, res) => {
 
 export const getAccessoryCatalogBrands = async (req, res) => {
   try {
-    const brands = await db.selectDistinct({ brand: accessoryCatalog.brand })
-      .from(accessoryCatalog)
-      .orderBy(accessoryCatalog.brand);
+    const [accessoryCategory] = await db.select().from(category).where(ilike(category.name, 'accessor%')).limit(1);
+    
+    let conditions = [eq(brand.isActive, true)];
+    if (accessoryCategory) {
+      conditions.push(eq(product.categoryId, accessoryCategory.id));
+    }
+
+    const brands = await db.selectDistinct({ brand: brand.name })
+      .from(brand)
+      .innerJoin(product, eq(brand.id, product.brandId))
+      .where(and(...conditions))
+      .orderBy(brand.name);
 
     res.json({ brands: brands.map(b => b.brand) });
   } catch (error) {
@@ -822,39 +1033,29 @@ export const getAccessoryCatalogBrands = async (req, res) => {
 
 export const getMobileCatalogModels = async (req, res) => {
   try {
-    const { brand } = req.query;
+    const { brand: brandName } = req.query;
     
-    if (!brand) {
+    if (!brandName) {
       return res.status(400).json({ error: req.t('product.brand_required') });
     }
 
-    const models = await db.select({
-      id: mobileCatalog.id,
-      name: mobileCatalog.name,
-      memory: mobileCatalog.memory,
-      color: mobileCatalog.color
-    })
-      .from(mobileCatalog)
-      .where(eq(mobileCatalog.brand, brand))
-      .orderBy(mobileCatalog.name);
+    const [mobileCategory] = await db.select().from(category).where(ilike(category.name, 'mobile%')).limit(1);
 
-    const uniqueModels = [];
-    const modelSet = new Set();
-
-    for (const model of models) {
-      const modelKey = `${model.name}-${model.memory || ''}`;
-      if (!modelSet.has(modelKey)) {
-        modelSet.add(modelKey);
-        uniqueModels.push({
-          id: model.id,
-          name: model.name,
-          memory: model.memory,
-          displayName: model.memory ? `${model.name} ${model.memory}` : model.name
-        });
-      }
+    let conditions = [eq(product.isActive, true), eq(brand.name, brandName)];
+    if (mobileCategory) {
+      conditions.push(eq(product.categoryId, mobileCategory.id));
     }
 
-    res.json({ models: uniqueModels });
+    const models = await db.select({
+      id: product.id,
+      name: product.name,
+    })
+      .from(product)
+      .innerJoin(brand, eq(product.brandId, brand.id))
+      .where(and(...conditions))
+      .orderBy(product.name);
+
+    res.json({ models: models.map(m => ({ id: m.id, name: m.name, displayName: m.name })) });
   } catch (error) {
     console.error('Get mobile catalog models error:', error);
     res.status(500).json({ error: req.t('product.catalog_fetch_failed') });
@@ -863,28 +1064,31 @@ export const getMobileCatalogModels = async (req, res) => {
 
 export const getMobileCatalogColors = async (req, res) => {
   try {
-    const { brand, model, memory } = req.query;
+    const { brand: brandName, model, memory } = req.query;
     
-    if (!brand || !model) {
+    if (!brandName || !model) {
       return res.status(400).json({ error: req.t('product.brand_model_required') });
     }
 
     let conditions = [
-      eq(mobileCatalog.brand, brand),
-      eq(mobileCatalog.name, model)
+      eq(variant.isActive, true),
+      eq(brand.name, brandName),
+      eq(product.name, model)
     ];
 
     if (memory) {
-      conditions.push(eq(mobileCatalog.memory, memory));
+      conditions.push(eq(variant.storageSize, memory));
     }
 
     const colors = await db.selectDistinct({ 
-      id: mobileCatalog.id,
-      color: mobileCatalog.color 
+      id: variant.id,
+      color: variant.color 
     })
-      .from(mobileCatalog)
+      .from(variant)
+      .innerJoin(product, eq(variant.productId, product.id))
+      .innerJoin(brand, eq(product.brandId, brand.id))
       .where(and(...conditions))
-      .orderBy(mobileCatalog.color);
+      .orderBy(variant.color);
 
     res.json({ colors: colors.filter(c => c.color).map(c => ({ id: c.id, color: c.color })) });
   } catch (error) {
@@ -895,27 +1099,38 @@ export const getMobileCatalogColors = async (req, res) => {
 
 export const getMobileCatalogItem = async (req, res) => {
   try {
-    const { brand, model, memory, color } = req.query;
+    const { brand: brandName, model, memory, color } = req.query;
     
-    if (!brand || !model) {
+    if (!brandName || !model) {
       return res.status(400).json({ error: req.t('product.brand_model_required') });
     }
 
     let conditions = [
-      eq(mobileCatalog.brand, brand),
-      eq(mobileCatalog.name, model)
+      eq(variant.isActive, true),
+      eq(brand.name, brandName),
+      eq(product.name, model)
     ];
 
     if (memory) {
-      conditions.push(eq(mobileCatalog.memory, memory));
+      conditions.push(eq(variant.storageSize, memory));
     }
 
     if (color) {
-      conditions.push(eq(mobileCatalog.color, color));
+      conditions.push(eq(variant.color, color));
     }
 
-    const [catalogItem] = await db.select()
-      .from(mobileCatalog)
+    const [catalogItem] = await db.select({
+      id: variant.id,
+      name: product.name,
+      brand: brand.name,
+      memory: variant.storageSize,
+      color: variant.color,
+      variantName: variant.variantName,
+      sku: variant.sku,
+    })
+      .from(variant)
+      .innerJoin(product, eq(variant.productId, product.id))
+      .innerJoin(brand, eq(product.brandId, brand.id))
       .where(and(...conditions))
       .limit(1);
 
@@ -936,10 +1151,15 @@ export default {
   getProductByBarcode,
   getProductByImei,
   createProduct,
+  bulkCreateProducts,
   updateProduct,
-  updateStock,
+  updateStockStatus,
   deleteProduct,
   getLowStockProducts,
+  getCategories,
+  getBrands,
+  getProducts_Global,
+  getVariants,
   getMobileCatalog,
   getAccessoryCatalog,
   getMobileCatalogBrands,

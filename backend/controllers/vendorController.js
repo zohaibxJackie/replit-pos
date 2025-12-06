@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { vendors, products } from '../../shared/schema.js';
+import { vendors, stock, variant, product, brand } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 
@@ -62,8 +62,8 @@ export const getVendorById = async (req, res) => {
     }
 
     const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
-      .from(products)
-      .where(eq(products.vendorId, id));
+      .from(stock)
+      .where(and(eq(stock.vendorId, id), eq(stock.isActive, true)));
 
     res.json({ vendor, productCount });
   } catch (error) {
@@ -135,8 +135,8 @@ export const deleteVendor = async (req, res) => {
     }
 
     const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
-      .from(products)
-      .where(eq(products.vendorId, id));
+      .from(stock)
+      .where(and(eq(stock.vendorId, id), eq(stock.isActive, true)));
 
     if (productCount > 0) {
       return res.status(400).json({ error: req.t('vendor.has_products') });
@@ -163,10 +163,37 @@ export const getVendorProducts = async (req, res) => {
       return res.status(404).json({ error: req.t('vendor.not_found') });
     }
 
-    const vendorProducts = await db.select()
-      .from(products)
-      .where(eq(products.vendorId, id))
-      .orderBy(desc(products.createdAt));
+    const vendorProducts = await db.select({
+      id: stock.id,
+      barcode: stock.barcode,
+      primaryImei: stock.primaryImei,
+      secondaryImei: stock.secondaryImei,
+      purchasePrice: stock.purchasePrice,
+      salePrice: stock.salePrice,
+      stockStatus: stock.stockStatus,
+      condition: stock.condition,
+      createdAt: stock.createdAt,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+        color: variant.color,
+        storageSize: variant.storageSize,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      }
+    })
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .where(and(eq(stock.vendorId, id), eq(stock.isActive, true)))
+      .orderBy(desc(stock.createdAt));
 
     res.json({ vendor, products: vendorProducts });
   } catch (error) {

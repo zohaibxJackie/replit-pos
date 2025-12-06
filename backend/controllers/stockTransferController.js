@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { stockTransfers, products, shops, phoneUnits } from '../../shared/schema.js';
+import { stockTransfers, stockTransferItems, stock, shops, variant, product, brand, category } from '../../shared/schema.js';
 import { eq, and, desc, or, inArray } from 'drizzle-orm';
 import { logActivity } from './notificationController.js';
 
@@ -26,7 +26,7 @@ export const getStockTransfers = async (req, res) => {
 
 export const createStockTransfer = async (req, res) => {
   try {
-    const { phoneUnitId, productId, fromShopId, toShopId, quantity, notes } = req.body;
+    const { stockId, fromShopId, toShopId, notes } = req.body;
     const userId = req.user.id;
     const userShopIds = req.userShopIds || [];
 
@@ -53,166 +53,90 @@ export const createStockTransfer = async (req, res) => {
 
     const [fromShop] = await db.select().from(shops).where(eq(shops.id, fromShopId)).limit(1);
 
-    let destinationProductId = null;
-    let transferredPhoneUnit = null;
-    let transferredProduct = null;
+    if (!stockId) {
+      return res.status(400).json({ error: req.t('stock_transfer.missing_fields') || 'Stock ID is required' });
+    }
 
-    // For mobile phones, we transfer individual phone units by their ID
-    if (phoneUnitId) {
-      const [phoneUnit] = await db.select().from(phoneUnits).where(
+    const [stockItem] = await db.select({
+      id: stock.id,
+      shopId: stock.shopId,
+      variantId: stock.variantId,
+      primaryImei: stock.primaryImei,
+      secondaryImei: stock.secondaryImei,
+      barcode: stock.barcode,
+      stockStatus: stock.stockStatus,
+      isSold: stock.isSold,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      }
+    })
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .where(
         and(
-          eq(phoneUnits.id, phoneUnitId),
-          eq(phoneUnits.shopId, fromShopId),
-          eq(phoneUnits.status, 'in_stock')
+          eq(stock.id, stockId),
+          eq(stock.shopId, fromShopId),
+          eq(stock.stockStatus, 'in_stock'),
+          eq(stock.isActive, true),
+          eq(stock.isSold, false)
         )
-      ).limit(1);
+      )
+      .limit(1);
 
-      if (!phoneUnit) {
-        return res.status(404).json({ error: req.t('stock_transfer.phone_unit_not_found') || 'Phone unit not found or not available for transfer' });
-      }
-
-      // Get associated product for logging
-      const [product] = await db.select().from(products).where(eq(products.id, phoneUnit.productId)).limit(1);
-      transferredProduct = product;
-
-      // Update phone unit to new shop and mark as transferred temporarily
-      await db.update(phoneUnits)
-        .set({ 
-          shopId: toShopId,
-          status: 'in_stock',
-          updatedAt: new Date()
-        })
-        .where(eq(phoneUnits.id, phoneUnitId));
-
-      transferredPhoneUnit = phoneUnit;
-      destinationProductId = phoneUnit.productId;
-
-      // Create transfer record
-      const [newTransfer] = await db.insert(stockTransfers).values({
-        phoneUnitId,
-        productId: phoneUnit.productId,
-        fromShopId,
-        toShopId,
-        quantity: 1,
-        status: 'completed',
-        notes: notes || null,
-        createdBy: userId
-      }).returning();
-
-      try {
-        await logActivity(userId, 'transfer', 'stock_transfer', newTransfer.id, {
-          phoneUnitId,
-          productId: phoneUnit.productId,
-          productName: product?.customName,
-          imeiPrimary: phoneUnit.imeiPrimary,
-          imeiSecondary: phoneUnit.imeiSecondary,
-          fromShopId,
-          fromShopName: fromShop?.name,
-          toShopId,
-          toShopName: toShop?.name,
-          quantity: 1
-        }, req);
-      } catch (logError) {
-        console.error('Activity logging failed:', logError);
-      }
-
-      return res.status(201).json({ transfer: newTransfer, phoneUnit: transferredPhoneUnit });
+    if (!stockItem) {
+      return res.status(404).json({ error: req.t('stock_transfer.stock_not_found') || 'Stock item not found or not available for transfer' });
     }
 
-    // For accessories, we transfer by product ID and quantity
-    if (!productId) {
-      return res.status(400).json({ error: req.t('stock_transfer.missing_fields') || 'Either phoneUnitId or productId is required' });
-    }
-
-    const [product] = await db.select().from(products).where(
-      and(eq(products.id, productId), eq(products.shopId, fromShopId))
-    ).limit(1);
-
-    if (!product) {
-      return res.status(404).json({ error: req.t('stock_transfer.product_not_found') });
-    }
-
-    // Only allow accessories to be transferred by quantity
-    if (product.categoryId === 'mobile') {
-      return res.status(400).json({ error: req.t('stock_transfer.mobile_use_phone_unit') || 'Use phoneUnitId to transfer mobile phones' });
-    }
-
-    const transferQty = quantity || 1;
-
-    if (product.stock < transferQty) {
-      return res.status(400).json({ error: req.t('stock_transfer.insufficient_stock') });
-    }
-
-    // Deduct from source
-    await db.update(products)
+    await db.update(stock)
       .set({ 
-        stock: product.stock - transferQty,
+        shopId: toShopId,
+        stockStatus: 'in_stock',
         updatedAt: new Date()
       })
-      .where(eq(products.id, productId));
-
-    // Find or create product at destination
-    const [existingDestProduct] = await db.select().from(products).where(
-      and(
-        eq(products.shopId, toShopId),
-        eq(products.categoryId, product.categoryId),
-        eq(products.accessoryCatalogId, product.accessoryCatalogId),
-        eq(products.barcode, product.barcode)
-      )
-    ).limit(1);
-
-    if (existingDestProduct) {
-      await db.update(products)
-        .set({ 
-          stock: existingDestProduct.stock + transferQty,
-          updatedAt: new Date()
-        })
-        .where(eq(products.id, existingDestProduct.id));
-      destinationProductId = existingDestProduct.id;
-    } else {
-      const [newDestProduct] = await db.insert(products).values({
-        shopId: toShopId,
-        categoryId: product.categoryId,
-        mobileCatalogId: product.mobileCatalogId,
-        accessoryCatalogId: product.accessoryCatalogId,
-        customName: product.customName,
-        sku: product.sku ? `${product.sku}-TR` : null,
-        barcode: product.barcode,
-        stock: transferQty,
-        purchasePrice: product.purchasePrice,
-        salePrice: product.salePrice,
-        vendorId: product.vendorId,
-        lowStockThreshold: product.lowStockThreshold
-      }).returning();
-      destinationProductId = newDestProduct.id;
-    }
+      .where(eq(stock.id, stockId));
 
     const [newTransfer] = await db.insert(stockTransfers).values({
-      productId,
       fromShopId,
       toShopId,
-      quantity: transferQty,
       status: 'completed',
       notes: notes || null,
       createdBy: userId
     }).returning();
 
+    await db.insert(stockTransferItems).values({
+      stockTransferId: newTransfer.id,
+      stockId
+    });
+
     try {
       await logActivity(userId, 'transfer', 'stock_transfer', newTransfer.id, {
-        productId,
-        productName: product.customName,
-        productBarcode: product.barcode,
+        stockId,
+        variantName: stockItem.variant?.variantName,
+        productName: stockItem.product?.name,
+        primaryImei: stockItem.primaryImei,
+        secondaryImei: stockItem.secondaryImei,
+        barcode: stockItem.barcode,
         fromShopId,
         fromShopName: fromShop?.name,
         toShopId,
-        toShopName: toShop?.name,
-        quantity: transferQty
+        toShopName: toShop?.name
       }, req);
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
-    res.status(201).json({ transfer: newTransfer });
+    res.status(201).json({ transfer: newTransfer, stockItem });
   } catch (error) {
     console.error('Create stock transfer error:', error);
     res.status(500).json({ error: req.t('stock_transfer.create_failed') });
@@ -224,25 +148,58 @@ export const getProductByImeiForTransfer = async (req, res) => {
     const { imei } = req.params;
     const userShopIds = req.userShopIds || [];
 
-    // Search for phone unit by IMEI
-    const [phoneUnit] = await db.select().from(phoneUnits).where(
-      and(
-        or(eq(phoneUnits.imeiPrimary, imei), eq(phoneUnits.imeiSecondary, imei)),
-        inArray(phoneUnits.shopId, userShopIds),
-        eq(phoneUnits.status, 'in_stock')
+    const [stockItem] = await db.select({
+      id: stock.id,
+      shopId: stock.shopId,
+      variantId: stock.variantId,
+      primaryImei: stock.primaryImei,
+      secondaryImei: stock.secondaryImei,
+      barcode: stock.barcode,
+      purchasePrice: stock.purchasePrice,
+      salePrice: stock.salePrice,
+      stockStatus: stock.stockStatus,
+      isSold: stock.isSold,
+      condition: stock.condition,
+      variant: {
+        id: variant.id,
+        variantName: variant.variantName,
+        color: variant.color,
+        storageSize: variant.storageSize,
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      category: {
+        id: category.id,
+        name: category.name,
+      }
+    })
+      .from(stock)
+      .leftJoin(variant, eq(stock.variantId, variant.id))
+      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(brand, eq(product.brandId, brand.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(
+        and(
+          or(eq(stock.primaryImei, imei), eq(stock.secondaryImei, imei)),
+          inArray(stock.shopId, userShopIds),
+          eq(stock.stockStatus, 'in_stock'),
+          eq(stock.isActive, true),
+          eq(stock.isSold, false)
+        )
       )
-    ).limit(1);
+      .limit(1);
 
-    if (!phoneUnit) {
+    if (!stockItem) {
       return res.status(404).json({ error: req.t('product.not_found') });
     }
 
-    // Get associated product
-    const [product] = await db.select().from(products).where(
-      eq(products.id, phoneUnit.productId)
-    ).limit(1);
-
-    res.json({ product, phoneUnit });
+    res.json({ product: stockItem });
   } catch (error) {
     console.error('Get product by IMEI for transfer error:', error);
     res.status(500).json({ error: req.t('product.fetch_failed') });
