@@ -336,8 +336,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   }, []);
 
   const { data: brandsData, isLoading: brandsLoading } = useQuery({
-    queryKey: ['/api/products/catalog/mobiles/brands'],
-    queryFn: () => api.mobileCatalog.getBrands(),
+    queryKey: ['/api/products/brands'],
   });
 
   const { data: modelsData, isLoading: modelsLoading } = useQuery({
