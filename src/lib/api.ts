@@ -359,9 +359,9 @@ export const api = {
     getModels: (brand: string) =>
       request<{ models: Array<{ id: string; name: string; memory?: string; displayName: string }> }>(`/api/products/catalog/mobiles/models?brand=${encodeURIComponent(brand)}`),
     
-    getColors: (brand: string, model: string, memory?: string) => {
-      const params = new URLSearchParams({ brand, model });
-      if (memory) params.set('memory', memory);
+    getColors: (selectedModel: object) => {
+      const productId:string = selectedModel?.productId;
+      const params = new URLSearchParams({ productId });
       return request<{ colors: Array<{ id: string; color: string }> }>(`/api/products/catalog/mobiles/colors?${params.toString()}`);
     },
     

@@ -24,10 +24,10 @@ router.get('/catalog/accessories/brands', productController.getAccessoryCatalogB
 router.get('/barcode/:barcode', productController.getProductByBarcode);
 router.get('/imei/:imei', productController.getProductByImei);
 router.get('/:id', productController.getProductById);
-router.post('/', requireRole('admin', 'super_admin'), validate(createStockSchema), productController.createProduct);
-router.post('/bulk', requireRole('admin', 'super_admin'), validate(bulkCreateStockSchema), productController.bulkCreateProducts);
-router.put('/:id', requireRole('admin', 'super_admin'), validate(updateStockItemSchema), productController.updateProduct);
-router.patch('/:id/status', requireRole('admin', 'super_admin', 'sales_person'), productController.updateStockStatus);
+router.post('/', requireRole('admin'), validate(createStockSchema), productController.createProduct);
+router.post('/bulk', requireRole('admin'), validate(bulkCreateStockSchema), productController.bulkCreateProducts);
+router.put('/:id', requireRole('admin'), validate(updateStockItemSchema), productController.updateProduct);
+router.patch('/:id/status', requireRole('admin', 'sales_person'), productController.updateStockStatus);
 router.delete('/:id', requireRole('admin', 'super_admin'), productController.deleteProduct);
 
 export default router;

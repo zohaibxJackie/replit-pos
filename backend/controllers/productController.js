@@ -61,7 +61,7 @@ export const getProducts = async (req, res) => {
       serialNumber: stock.serialNumber,
       barcode: stock.barcode,
       purchasePrice: stock.purchasePrice,
-      salePrice: stock.salePrice,
+      // salePrice: stock.salePrice,
       stockStatus: stock.stockStatus,
       isSold: stock.isSold,
       notes: stock.notes,
@@ -1039,6 +1039,7 @@ export const getMobileCatalogModels = async (req, res) => {
       return res.status(400).json({ error: req.t('product.brand_required') });
     }
 
+    // this query check if the mobile category exists or not
     const [mobileCategory] = await db.select().from(category).where(ilike(category.name, 'mobile%')).limit(1);
 
     let conditions = [eq(product.isActive, true), eq(brand.name, brandName)];
@@ -1047,15 +1048,16 @@ export const getMobileCatalogModels = async (req, res) => {
     }
 
     const models = await db.select({
-      id: product.id,
-      name: product.name,
+      id: variant.id,
+      name: variant.variantName,
+      productId: variant.productId
     })
-      .from(product)
-      .innerJoin(brand, eq(product.brandId, brand.id))
-      .where(and(...conditions))
-      .orderBy(product.name);
+    .from(product)
+    .innerJoin(variant, eq(variant.productId, product.id))
+    .where(eq(product.brandId, brandName))
+    .orderBy(product.name);
 
-    res.json({ models: models.map(m => ({ id: m.id, name: m.name, displayName: m.name })) });
+    res.json({ models: models.map(m => ({ id: m.id, name: m.name, displayName: m.name, productId: m.productId})) });
   } catch (error) {
     console.error('Get mobile catalog models error:', error);
     res.status(500).json({ error: req.t('product.catalog_fetch_failed') });
@@ -1064,31 +1066,24 @@ export const getMobileCatalogModels = async (req, res) => {
 
 export const getMobileCatalogColors = async (req, res) => {
   try {
-    const { brand: brandName, model, memory } = req.query;
+    // model is product ic that is coming from frontend
+    const { productId } = req.query;
     
-    if (!brandName || !model) {
-      return res.status(400).json({ error: req.t('product.brand_model_required') });
+    if (!productId) {
+      return res.status(400).json(productId);
+      // return res.status(400).json({ error: req.t('product.brand_model_required') });
     }
 
     let conditions = [
-      eq(variant.isActive, true),
-      eq(brand.name, brandName),
-      eq(product.name, model)
+      eq(product.id, productId)
     ];
-
-    if (memory) {
-      conditions.push(eq(variant.storageSize, memory));
-    }
 
     const colors = await db.selectDistinct({ 
       id: variant.id,
       color: variant.color 
     })
       .from(variant)
-      .innerJoin(product, eq(variant.productId, product.id))
-      .innerJoin(brand, eq(product.brandId, brand.id))
-      .where(and(...conditions))
-      .orderBy(variant.color);
+      .where(eq(variant.productId, productId))
 
     res.json({ colors: colors.filter(c => c.color).map(c => ({ id: c.id, color: c.color })) });
   } catch (error) {

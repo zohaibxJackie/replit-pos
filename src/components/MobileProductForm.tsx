@@ -28,6 +28,7 @@ interface MobileModel {
   name: string;
   memory?: string;
   displayName: string;
+  productId: string;
 }
 
 interface MobileColor {
@@ -296,7 +297,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState<number>(1);
   const [imeis, setImeis] = useState<ImeiEntry[]>([{ imei1: "", imei2: "" }]);
-
+  console.log(selectedModel)
   const [showScanner, setShowScanner] = useState(false);
   const [showScanner2, setShowScanner2] = useState(false);
   const [showBulkScanner, setShowBulkScanner] = useState(false);
@@ -347,7 +348,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
 
   const { data: colorsData, isLoading: colorsLoading } = useQuery({
     queryKey: ['/api/products/catalog/mobiles/colors', brand, selectedModel?.name, selectedModel?.memory],
-    queryFn: () => api.mobileCatalog.getColors(brand, selectedModel!.name, selectedModel?.memory),
+    queryFn: () => api.mobileCatalog.getColors(selectedModel),
     enabled: !!brand && !!selectedModel,
   });
 
