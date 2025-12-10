@@ -34,6 +34,9 @@ export const taxTypeEnum = pgEnum("tax_type", ["percent", "flat"]);
 // Stock transfer status
 export const stockTransferStatusEnum = pgEnum("stock_transfer_status", ["pending", "completed", "cancelled"]);
 
+// Tracking mode enum - determines how inventory is tracked for a variant
+export const trackingModeEnum = pgEnum("tracking_mode", ["serialized", "bulk"]);
+
 // ============================================================================
 // GLOBAL LOOKUP TABLES (Master Data - manually populated, for suggestions)
 // ============================================================================
@@ -69,6 +72,7 @@ export const product = pgTable("product", {
 
 // Variant - global product variants (e.g., iPhone 15 Pro 256GB)
 // variant_name is auto-generated from product name + storage_size
+// trackingMode determines if inventory is tracked per-unit (serialized) or by quantity (bulk)
 export const variant = pgTable("variant", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar("product_id").notNull(),
@@ -76,6 +80,7 @@ export const variant = pgTable("variant", {
   color: text("color"), // Free text field
   storageSize: text("storage_size"), // Free text field (e.g., "256GB", "512GB")
   sku: text("sku"),
+  trackingMode: trackingModeEnum("tracking_mode").notNull().default("serialized"), // serialized = IMEI/serial tracking, bulk = quantity tracking
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -196,6 +201,24 @@ export const stock = pgTable("stock", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Stock Batches - bulk inventory per shop (accessories, parts with quantity tracking)
+// Used when variant.trackingMode = 'bulk'
+export const stockBatches = pgTable("stock_batches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  variantId: varchar("variant_id").notNull(), // Links to variant with trackingMode='bulk'
+  shopId: varchar("shop_id").notNull(),
+  barcode: text("barcode"),
+  quantity: integer("quantity").notNull().default(0), // Current quantity in stock
+  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
+  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
+  vendorId: varchar("vendor_id"),
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Garbage - disposed/damaged stock items (tracks individual items for IMEI tracking)
 export const garbage = pgTable("garbage", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -279,7 +302,16 @@ export const stockTransfers = pgTable("stock_transfers", {
 export const stockTransferItems = pgTable("stock_transfer_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   stockTransferId: varchar("stock_transfer_id").notNull(),
-  stockId: varchar("stock_id").notNull(), // Links to stock table
+  stockId: varchar("stock_id").notNull(), // Links to stock table (serialized items)
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Stock Transfer Batch Items - for bulk inventory transfers (accessories, parts)
+export const stockTransferBatchItems = pgTable("stock_transfer_batch_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  stockTransferId: varchar("stock_transfer_id").notNull(),
+  stockBatchId: varchar("stock_batch_id").notNull(), // Links to stock_batches table
+  quantity: integer("quantity").notNull(), // Quantity transferred
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -541,6 +573,7 @@ export const insertVendorSchema = createInsertSchema(vendors).omit({ id: true, c
 
 // Inventory
 export const insertStockSchema = createInsertSchema(stock).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertStockBatchSchema = createInsertSchema(stockBatches).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertGarbageSchema = createInsertSchema(garbage).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Customer & sales
@@ -554,6 +587,7 @@ export const insertTaxSchema = createInsertSchema(taxes).omit({ id: true, create
 // Stock transfers
 export const insertStockTransferSchema = createInsertSchema(stockTransfers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertStockTransferItemSchema = createInsertSchema(stockTransferItems).omit({ id: true, createdAt: true });
+export const insertStockTransferBatchItemSchema = createInsertSchema(stockTransferBatchItems).omit({ id: true, createdAt: true });
 
 // Wholesaler
 export const insertWholesalerSettingsSchema = createInsertSchema(wholesalerSettings).omit({ id: true, createdAt: true, updatedAt: true });
@@ -611,6 +645,8 @@ export type InsertVendor = typeof vendors.$inferInsert;
 // Inventory types
 export type Stock = typeof stock.$inferSelect;
 export type InsertStock = typeof stock.$inferInsert;
+export type StockBatch = typeof stockBatches.$inferSelect;
+export type InsertStockBatch = typeof stockBatches.$inferInsert;
 export type Garbage = typeof garbage.$inferSelect;
 export type InsertGarbage = typeof garbage.$inferInsert;
 
@@ -631,6 +667,8 @@ export type StockTransfer = typeof stockTransfers.$inferSelect;
 export type InsertStockTransfer = typeof stockTransfers.$inferInsert;
 export type StockTransferItem = typeof stockTransferItems.$inferSelect;
 export type InsertStockTransferItem = typeof stockTransferItems.$inferInsert;
+export type StockTransferBatchItem = typeof stockTransferBatchItems.$inferSelect;
+export type InsertStockTransferBatchItem = typeof stockTransferBatchItems.$inferInsert;
 
 // Wholesaler types
 export type WholesalerSettings = typeof wholesalerSettings.$inferSelect;
