@@ -65,7 +65,11 @@
     "imei_exists": "IMEI already exists",
     "invalid_mobile_catalog": "Invalid mobile catalog item",
     "bulk_created": "{{count}} products created successfully",
-    "bulk_create_failed": "Failed to create products"
+    "bulk_create_failed": "Failed to create products",
+    "variant_required": "Variant ID is required",
+    "invalid_variant":"Invalid variant",
+    "invalid_vendor": "invalid vendor",
+    "vendor_required": "Vendor Id is required"
   },
   "tax": {
     "fetch_failed": "Failed to fetch taxes",

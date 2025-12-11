@@ -359,7 +359,6 @@ export const createProduct = async (req, res) => {
       purchasePrice,
       salePrice,
       vendorId,
-      lowStockThreshold,
       shopId: requestedShopId,
       condition,
       notes
@@ -390,7 +389,9 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Invalid variant' });
     }
 
-    if (vendorId) {
+    if (!vendorId) {
+      return res.status(400).json({ error: req.t ? req.t('product.vendor_required') : 'Vendor Id is required' });
+    } else {
       const [vendorExists] = await db.select().from(vendors).where(
         and(eq(vendors.id, vendorId), eq(vendors.shopId, shopId))
       ).limit(1);

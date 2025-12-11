@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS vendors (
 -- ============================================================================
 
 -- Stock - actual inventory per shop (individual items with IMEI/serial)
-CREATE TABLE IF NOT EXISTS stock (
+CREATE TABLE IF NOT EXISTS stock_units (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
     variant_id VARCHAR NOT NULL,
     shop_id VARCHAR NOT NULL,
@@ -191,8 +191,7 @@ CREATE TABLE IF NOT EXISTS stock (
     is_sold BOOLEAN NOT NULL DEFAULT false,
     notes TEXT,
     condition product_condition NOT NULL DEFAULT 'new',
-    low_stock_threshold INTEGER NOT NULL DEFAULT 1,
-    vendor_id VARCHAR,
+    vendor_id VARCHAR NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

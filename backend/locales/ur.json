@@ -53,7 +53,11 @@
     "deleted": "مصنوعہ کامیابی سے حذف ہو گئی",
     "delete_failed": "مصنوعہ حذف کرنے میں ناکام",
     "low_stock_fetch_failed": "کم اسٹاک والی مصنوعات حاصل کرنے میں ناکام",
-    "product_id_not_found": "مصنوعہ {{id}} نہیں ملی"
+    "product_id_not_found": "مصنوعہ {{id}} نہیں ملی",
+    "variant_required": "متغیر ID درکار ہے",
+    "invalid_variant":"غلط قسم",
+    "invalid_vendor": "غلط فروش",
+    "vendor_required": "وینڈر کی شناخت درکار ہے"
   },
   "sale": {
     "fetch_failed": "فروخت حاصل کرنے میں ناکام",
