@@ -1,12 +1,12 @@
 import { db } from '../config/database.js';
-import { stock, variant, product, brand, category, vendors } from '../../shared/schema.js';
+import { stock, variant, product, brand, category, vendors, users } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 import { logActivity } from './notificationController.js';
 
 export const getProducts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, categoryId, lowStock, shopId: queryShopId } = req.query;
+    const { page = 1, limit = 10, search, category, lowStock, shopId: queryShopId } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
     const userShopIds = req.userShopIds || [];
 
@@ -36,8 +36,8 @@ export const getProducts = async (req, res) => {
       );
     }
 
-    if (categoryId) {
-      conditions.push(eq(category.id, categoryId));
+    if (!category) {
+      return res.status(400).json({ error: req.t('product.category_required') || 'Category is required' })
     }
 
     if (lowStock === 'true') {
@@ -61,12 +61,11 @@ export const getProducts = async (req, res) => {
       serialNumber: stock.serialNumber,
       barcode: stock.barcode,
       purchasePrice: stock.purchasePrice,
-      // salePrice: stock.salePrice,
+      salePrice: stock.salePrice,
       stockStatus: stock.stockStatus,
       isSold: stock.isSold,
       notes: stock.notes,
       condition: stock.condition,
-      lowStockThreshold: stock.lowStockThreshold,
       vendorId: stock.vendorId,
       createdAt: stock.createdAt,
       updatedAt: stock.updatedAt,
@@ -108,7 +107,7 @@ export const getProducts = async (req, res) => {
       .leftJoin(category, eq(product.categoryId, category.id))
       .where(whereClause);
 
-    res.json({
+    res.status(200).json({
       products: productList,
       pagination: {
         page: parseInt(page),
@@ -361,15 +360,17 @@ export const createProduct = async (req, res) => {
       vendorId,
       shopId: requestedShopId,
       condition,
-      notes
+      notes,
+      vendorType
     } = req.validatedBody;
+    console.log(req.validatedBody)
 
     const shopId = requestedShopId || req.userShopIds?.[0];
 
-    console.log('Create product - User:', req.user?.username, 'Role:', req.user?.role);
-    console.log('Create product - Requested shopId:', requestedShopId);
-    console.log('Create product - User shopIds:', req.userShopIds);
-    console.log('Create product - Final shopId:', shopId);
+    // console.log('Create product - User:', req.user?.username, 'Role:', req.user?.role);
+    // console.log('Create product - Requested shopId:', requestedShopId);
+    // console.log('Create product - User shopIds:', req.userShopIds);
+    // console.log('Create product - Final shopId:', shopId);
 
     if (!shopId) {
       return res.status(400).json({ error: req.t ? req.t('product.shop_required') : 'Shop ID is required' });
@@ -389,13 +390,23 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Invalid variant' });
     }
 
-    if (!vendorId) {
-      return res.status(400).json({ error: req.t ? req.t('product.vendor_required') : 'Vendor Id is required' });
-    } else {
-      const [vendorExists] = await db.select().from(vendors).where(
-        and(eq(vendors.id, vendorId), eq(vendors.shopId, shopId))
+    // if (!vendorId) {
+    //   return res.status(400).json({ error: req.t ? req.t('product.vendor_required') : 'Vendor Id is required' });
+    // } else {
+    //   const [vendorExists] = await db.select().from(vendors).where(
+    //     and(eq(vendors.id, vendorId), eq(vendors.shopId, shopId))
+    //   ).limit(1);
+    //   if (!vendorExists) {
+    //     return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
+    //   }
+    // }
+    if (!vendorType) {
+      return res.status(400).json({ error: req.t ? req.t('product.vendor_type') : 'Vendor type is required' }); 
+    } else if (vendorType === 'wholesaler') {
+      const wholesaler = await db.select().from(users).where(
+        and(eq(users.role, vendorType), eq(users.id, vendorId))
       ).limit(1);
-      if (!vendorExists) {
+      if (!wholesaler) {
         return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
       }
     }
@@ -433,7 +444,6 @@ export const createProduct = async (req, res) => {
       stockStatus: 'in_stock',
       isSold: false,
       notes: notes || null,
-      lowStockThreshold: lowStockThreshold || 5,
       vendorId: vendorId || null
     }).returning();
 

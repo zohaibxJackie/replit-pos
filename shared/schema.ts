@@ -179,7 +179,7 @@ export const vendors = pgTable("vendors", {
 // ============================================================================
 
 // Stock - actual inventory per shop (individual items with IMEI/serial)
-export const stock = pgTable("stock", {
+export const stock = pgTable("stock_units", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   variantId: varchar("variant_id").notNull(), // Links to global variant for suggestions
   shopId: varchar("shop_id").notNull(),
@@ -194,8 +194,7 @@ export const stock = pgTable("stock", {
   isSold: boolean("is_sold").notNull().default(false),
   notes: text("notes"),
   condition: productConditionEnum("condition").notNull().default("new"),
-  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
-  vendorId: varchar("vendor_id"),
+  vendorId: varchar("vendor_id").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

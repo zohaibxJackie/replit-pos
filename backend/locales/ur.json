@@ -57,7 +57,10 @@
     "variant_required": "متغیر ID درکار ہے",
     "invalid_variant":"غلط قسم",
     "invalid_vendor": "غلط فروش",
-    "vendor_required": "وینڈر کی شناخت درکار ہے"
+    "vendor_required": "وینڈر کی شناخت درکار ہے",
+    "vendor_type": "وینڈر کی قسم درکار ہے",
+    "category_required": "زمرہ درکار ہے"
+
   },
   "sale": {
     "fetch_failed": "فروخت حاصل کرنے میں ناکام",

@@ -69,7 +69,9 @@
     "variant_required": "Variant ID is required",
     "invalid_variant":"Invalid variant",
     "invalid_vendor": "invalid vendor",
-    "vendor_required": "Vendor Id is required"
+    "vendor_required": "Vendor Id is required",
+    "vendor_type": "Vendor type is required",
+    "category_required": "Category is required"
   },
   "tax": {
     "fetch_failed": "Failed to fetch taxes",

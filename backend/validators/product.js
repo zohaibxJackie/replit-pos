@@ -10,9 +10,9 @@ export const createStockSchema = z.object({
   purchasePrice: z.union([z.number().positive('Purchase price must be positive'), z.null()]).optional(),
   salePrice: z.number().positive('Sale price must be positive'),
   vendorId: z.string().uuid().optional().nullable(),
-  lowStockThreshold: z.number().int().min(0).default(5),
   condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).default('new'),
-  notes: z.string().optional().nullable()
+  notes: z.string().optional().nullable(),
+  vendorType: z.string().nonempty()
 });
 
 export const updateStockItemSchema = z.object({
