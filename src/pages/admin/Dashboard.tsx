@@ -186,39 +186,35 @@ export default function AdminDashboard() {
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             {hasMultipleShops && (
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-muted-foreground" />
-                <Select value={selectedShopId} onValueChange={setSelectedShopId}>
-                  <SelectTrigger className="w-[200px]" data-testid="select-shop-filter">
-                    <SelectValue placeholder={t('admin.dashboard.filters.all_shops') || 'All Shops'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('admin.dashboard.filters.all_shops') || 'All Shops'}</SelectItem>
-                    {shops.map((shop) => (
-                      <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-              <Select value={datePreset} onValueChange={(value) => setDatePreset(value as DatePreset)}>
-                <SelectTrigger className="w-[160px]" data-testid="select-date-preset">
-                  <SelectValue>{getDatePresetLabel()}</SelectValue>
+              <Select value={selectedShopId} onValueChange={setSelectedShopId}>
+                <SelectTrigger className="w-[200px]" data-testid="select-shop-filter">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                  <SelectValue placeholder={t('admin.dashboard.filters.all_shops') || 'All Shops'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="today">{t('admin.dashboard.filters.date_presets.today') || 'Today'}</SelectItem>
-                  <SelectItem value="yesterday">{t('admin.dashboard.filters.date_presets.yesterday') || 'Yesterday'}</SelectItem>
-                  <SelectItem value="last7days">{t('admin.dashboard.filters.date_presets.last_7_days') || 'Last 7 Days'}</SelectItem>
-                  <SelectItem value="last30days">{t('admin.dashboard.filters.date_presets.last_30_days') || 'Last 30 Days'}</SelectItem>
-                  <SelectItem value="thisWeek">{t('admin.dashboard.filters.date_presets.this_week') || 'This Week'}</SelectItem>
-                  <SelectItem value="thisMonth">{t('admin.dashboard.filters.date_presets.this_month') || 'This Month'}</SelectItem>
-                  <SelectItem value="custom">{t('admin.dashboard.filters.date_presets.custom') || 'Custom Range'}</SelectItem>
+                  <SelectItem value="all">{t('admin.dashboard.filters.all_shops') || 'All Shops'}</SelectItem>
+                  {shops.map((shop) => (
+                    <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </div>
+            )}
+            
+            <Select value={datePreset} onValueChange={(value) => setDatePreset(value as DatePreset)}>
+              <SelectTrigger className="w-[180px]" data-testid="select-date-preset">
+                <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                <SelectValue>{getDatePresetLabel()}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">{t('admin.dashboard.filters.date_presets.today') || 'Today'}</SelectItem>
+                <SelectItem value="yesterday">{t('admin.dashboard.filters.date_presets.yesterday') || 'Yesterday'}</SelectItem>
+                <SelectItem value="last7days">{t('admin.dashboard.filters.date_presets.last_7_days') || 'Last 7 Days'}</SelectItem>
+                <SelectItem value="last30days">{t('admin.dashboard.filters.date_presets.last_30_days') || 'Last 30 Days'}</SelectItem>
+                <SelectItem value="thisWeek">{t('admin.dashboard.filters.date_presets.this_week') || 'This Week'}</SelectItem>
+                <SelectItem value="thisMonth">{t('admin.dashboard.filters.date_presets.this_month') || 'This Month'}</SelectItem>
+                <SelectItem value="custom">{t('admin.dashboard.filters.date_presets.custom') || 'Custom Range'}</SelectItem>
+              </SelectContent>
+            </Select>
 
             {datePreset === 'custom' && (
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
