@@ -6,7 +6,7 @@ import { logActivity } from './notificationController.js';
 
 export const getProducts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, category, lowStock, shopId: queryShopId } = req.query;
+    const { page = 1, limit = 10, search, productCategory, lowStock, shopId: queryShopId } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
     const userShopIds = req.userShopIds || [];
 
@@ -36,7 +36,7 @@ export const getProducts = async (req, res) => {
       );
     }
 
-    if (!category) {
+    if (!productCategory) {
       return res.status(400).json({ error: req.t('product.category_required') || 'Category is required' })
     }
 
