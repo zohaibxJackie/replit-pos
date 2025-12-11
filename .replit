@@ -18,62 +18,6 @@ externalPort = 3001
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 33149
-externalPort = 8099
-
-[[ports]]
-localPort = 33453
-externalPort = 3000
-
-[[ports]]
-localPort = 35735
-externalPort = 8081
-
-[[ports]]
-localPort = 37639
-externalPort = 8000
-
-[[ports]]
-localPort = 38365
-externalPort = 3003
-
-[[ports]]
-localPort = 38923
-externalPort = 5173
-
-[[ports]]
-localPort = 39685
-externalPort = 4200
-
-[[ports]]
-localPort = 40279
-externalPort = 5000
-
-[[ports]]
-localPort = 40305
-externalPort = 8008
-
-[[ports]]
-localPort = 41127
-externalPort = 8080
-
-[[ports]]
-localPort = 41815
-externalPort = 6800
-
-[[ports]]
-localPort = 41897
-externalPort = 9000
-
-[[ports]]
-localPort = 44131
-externalPort = 3002
-
-[[ports]]
-localPort = 45395
-externalPort = 6000
-
 [env]
 
 [workflows]
