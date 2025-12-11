@@ -16,7 +16,7 @@ const FormPopupModal = ({ isOpen, onClose, children }: ModalProps) => {
     >
       {/* Modal Container */}
       <div
-        className="relative bg-white w-full max-w-lg rounded-xl shadow-xl p-6 sm:p-8 overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative bg-white w-full max-w-lg rounded-xl shadow-xl p-6 sm:p-8 overflow-hidden flex flex-col max-h-[95vh]"
         onClick={(e) => e.stopPropagation()} // prevent closing on content click
       >
         {/* Scrollable content */}

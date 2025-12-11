@@ -201,6 +201,9 @@
           "revenue": "Revenue",
           "profit": "Profit"
         }
+      },
+      "last_sales": {
+        "title": "Last Sales"
       }
     },
     "common": {

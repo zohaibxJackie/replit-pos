@@ -98,12 +98,12 @@ export default function Products() {
   const shops = useMemo(() => shopsData?.shops || [], [shopsData]);
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['/api/products', { page, limit, search: debouncedSearch, categoryId: categoryFilter, status: statusFilter, shopId: shopFilter }],
+    queryKey: ['/api/products', { page, limit, search: debouncedSearch, productCategory: 'mobile', status: statusFilter, shopId: shopFilter }],
     queryFn: () => api.products.getAll({
       page,
       limit,
       search: debouncedSearch || undefined,
-      categoryId: categoryFilter || undefined,
+      productCategory: 'mobile',
       status: statusFilter || undefined,
       shopId: shopFilter || undefined,
     }),
@@ -113,33 +113,35 @@ export default function Products() {
     const productList = productsData?.products || [];
     return productList.map(p => {
       const shop = shops.find(s => s.id === p.shopId);
+      console.log(p)
       return {
         id: p.id,
         shopId: p.shopId,
         shopName: shop?.name || 'Unknown',
         variantId: p.variantId || '',
-        variantName: p.variantName || p.customName || `Stock ${p.id.slice(0, 8)}`,
-        productName: p.productName || '',
-        brandName: p.brandName || '',
-        categoryName: p.categoryName || '',
-        color: p.color || '-',
-        storageSize: p.storageSize || '',
+        variantName: p.variant.variantName || p.customName || `Stock ${p.id.slice(0, 8)}`,
+        productName: p.product.name || '',
+        brandName: p.brand.name || '',
+        categoryName: p.category.name || '',
+        color: p.variant.color || '-',
+        storageSize: p.variant.storageSize || '',
         barcode: p.barcode,
         primaryImei: p.primaryImei || p.imei1,
         secondaryImei: p.secondaryImei || p.imei2,
         serialNumber: p.serialNumber,
         purchasePrice: p.purchasePrice,
         salePrice: p.salePrice || '0',
-        stockStatus: p.stockStatus || (p.stock > 0 ? 'in_stock' : 'out_of_stock'),
+        stockStatus: p.stockStatus,
         isSold: p.isSold || false,
         condition: p.condition || 'new',
         vendorId: p.vendorId,
-        sku: p.sku,
+        sku: p.variant.sku,
         createdAt: p.createdAt || '',
         updatedAt: p.updatedAt || '',
       } as StockItem;
     });
   }, [productsData, shops]);
+  // console.log(stockItems)
 
   const hasShops = shops.length > 0;
 

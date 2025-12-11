@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import {   DollarSign,   CreditCard,   Wallet,   Banknote,   Ticket,   Coins,   Calendar,   Download, } from "lucide-react";
+import { Calendar, Download } from "lucide-react";
 import DataTable from "@/components/DataTable";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";

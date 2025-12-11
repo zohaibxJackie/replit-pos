@@ -167,7 +167,7 @@ export const api = {
       limit?: number; 
       search?: string; 
       status?: string;
-      categoryId?: string;
+      productCategory: string;
     }) => {
       const searchParams = new URLSearchParams();
       if (params?.shopId) searchParams.set('shopId', params.shopId);
@@ -175,7 +175,7 @@ export const api = {
       if (params?.limit) searchParams.set('limit', params.limit.toString());
       if (params?.search) searchParams.set('search', params.search);
       if (params?.status) searchParams.set('status', params.status);
-      if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
+      if (params?.productCategory) searchParams.set('productCategory', params.productCategory);
       const query = searchParams.toString();
       return request<{ 
         products: Array<{

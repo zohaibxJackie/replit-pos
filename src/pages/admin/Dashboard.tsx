@@ -240,6 +240,9 @@ export default function AdminDashboard() {
                     }}
                     numberOfMonths={2}
                   />
+                  <div className="flex items-center justify-between gap-2">
+                <label className="text-sm font-medium">{t("admin.sales_report.from")}</label>
+              </div>
                 </PopoverContent>
               </Popover>
             )}
