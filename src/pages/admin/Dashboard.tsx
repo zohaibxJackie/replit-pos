@@ -4,7 +4,7 @@ import SalesAnalyticsChart from '@/components/SalesAnalyticsChart';
 import DevicesInRepair from '@/components/DevicesInRepair';
 import LastSales from '@/components/LastSales';
 import LowStockAlert from '@/components/LowStockAlert';
-import { DollarSign, Wrench, Package, Users, CalendarIcon, Building2, RotateCcw } from 'lucide-react';
+import { DollarSign, Wrench, Package, Users, CalendarIcon, Building2, RotateCcw, Calendar } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { useTitle } from '@/context/TitleContext';
@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Shop } from '@shared/schema';
@@ -224,25 +224,49 @@ export default function AdminDashboard() {
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="min-w-[200px] justify-start text-left font-normal" data-testid="button-date-range">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(customDateRange.from, 'MMM d')} - {format(customDateRange.to, 'MMM d, yyyy')}
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {format(customDateRange.from, 'MMM d, yyyy')} - {format(customDateRange.to, 'MMM d, yyyy')}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    defaultMonth={customDateRange.from}
-                    selected={{ from: customDateRange.from, to: customDateRange.to }}
-                    onSelect={(range) => {
-                      if (range?.from && range?.to) {
-                        setCustomDateRange({ from: range.from, to: range.to });
-                      }
-                    }}
-                    numberOfMonths={2}
-                  />
-                  <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium">{t("admin.sales_report.from")}</label>
-              </div>
+                <PopoverContent className="p-3 rounded-xl shadow-lg">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-sm font-medium">{t("admin.sales_report.from")}</label>
+                      <Input
+                        className="!w-9/12 justify-center"
+                        type="date"
+                        value={customDateRange.from ? customDateRange.from.toISOString().split("T")[0] : ""}
+                        onChange={(e) =>
+                          setCustomDateRange({
+                            ...customDateRange,
+                            from: e.target.value ? startOfDay(new Date(e.target.value)) : customDateRange.from,
+                          })
+                        }
+                        data-testid="input-date-from"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-sm font-medium">{t("admin.sales_report.to")}</label>
+                      <Input
+                        className="!w-9/12 justify-center"
+                        type="date"
+                        value={customDateRange.to ? customDateRange.to.toISOString().split("T")[0] : ""}
+                        onChange={(e) =>
+                          setCustomDateRange({
+                            ...customDateRange,
+                            to: e.target.value ? endOfDay(new Date(e.target.value)) : customDateRange.to,
+                          })
+                        }
+                        data-testid="input-date-to"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => setIsCalendarOpen(false)}
+                      data-testid="button-apply-date-range"
+                    >
+                      {t("admin.sales_report.apply") || "Apply"}
+                    </Button>
+                  </div>
                 </PopoverContent>
               </Popover>
             )}
