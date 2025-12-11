@@ -3,6 +3,7 @@ import { stock, variant, product, brand, category, vendors, users } from '../../
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 import { logActivity } from './notificationController.js';
+import { fetchMobileProducts, fetchAccessoryProducts } from '../helpers/productHelpers.js';
 
 export const getProducts = async (req, res) => {
   try {
@@ -14,106 +15,38 @@ export const getProducts = async (req, res) => {
       return res.status(400).json({ error: req.t('product.shop_required') || 'Shop ID is required' });
     }
 
-    let conditions = [eq(stock.isActive, true)];
-
-    if (queryShopId && userShopIds.includes(queryShopId)) {
-      conditions.push(eq(stock.shopId, queryShopId));
-    } else {
-      conditions.push(inArray(stock.shopId, userShopIds));
-    }
-
-    if (search) {
-      conditions.push(
-        or(
-          sql`COALESCE(${stock.barcode}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${stock.primaryImei}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${stock.secondaryImei}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${stock.serialNumber}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${variant.variantName}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${product.name}, '') ILIKE ${`%${search}%`}`,
-          sql`COALESCE(${brand.name}, '') ILIKE ${`%${search}%`}`
-        )
-      );
-    }
-
     if (!productCategory) {
-      return res.status(400).json({ error: req.t('product.category_required') || 'Category is required' })
+      return res.status(400).json({ error: req.t('product.category_required') || 'Category is required' });
     }
 
-    if (lowStock === 'true') {
-      const lowStockVariants = db.select({ variantId: stock.variantId })
-        .from(stock)
-        .where(and(eq(stock.isActive, true), eq(stock.isSold, false), ne(stock.stockStatus, 'sold')))
-        .groupBy(stock.variantId)
-        .having(sql`count(*) <= COALESCE(MIN(${stock.lowStockThreshold}), 5)`);
-      
-      conditions.push(sql`${stock.variantId} IN (${lowStockVariants})`);
+    const validCategories = ['mobile', 'accessory'];
+    if (!validCategories.includes(productCategory)) {
+      return res.status(400).json({ error: req.t('product.invalid_category') || 'Invalid category. Must be mobile or accessory' });
     }
 
-    const whereClause = and(...conditions);
+    const queryParams = {
+      userShopIds,
+      queryShopId,
+      search,
+      lowStock,
+      offset,
+      pageLimit
+    };
 
-    const productList = await db.select({
-      id: stock.id,
-      shopId: stock.shopId,
-      variantId: stock.variantId,
-      primaryImei: stock.primaryImei,
-      secondaryImei: stock.secondaryImei,
-      serialNumber: stock.serialNumber,
-      barcode: stock.barcode,
-      purchasePrice: stock.purchasePrice,
-      salePrice: stock.salePrice,
-      stockStatus: stock.stockStatus,
-      isSold: stock.isSold,
-      notes: stock.notes,
-      condition: stock.condition,
-      vendorId: stock.vendorId,
-      createdAt: stock.createdAt,
-      updatedAt: stock.updatedAt,
-      variant: {
-        id: variant.id,
-        variantName: variant.variantName,
-        color: variant.color,
-        storageSize: variant.storageSize,
-        sku: variant.sku,
-      },
-      product: {
-        id: product.id,
-        name: product.name,
-      },
-      brand: {
-        id: brand.id,
-        name: brand.name,
-      },
-      category: {
-        id: category.id,
-        name: category.name,
-      }
-    })
-      .from(stock)
-      .leftJoin(variant, eq(stock.variantId, variant.id))
-      .leftJoin(product, eq(variant.productId, product.id))
-      .leftJoin(brand, eq(product.brandId, brand.id))
-      .leftJoin(category, eq(product.categoryId, category.id))
-      .where(whereClause)
-      .orderBy(desc(stock.createdAt))
-      .limit(pageLimit)
-      .offset(offset);
-
-    const [{ count }] = await db.select({ count: sql`count(*)::int` })
-      .from(stock)
-      .leftJoin(variant, eq(stock.variantId, variant.id))
-      .leftJoin(product, eq(variant.productId, product.id))
-      .leftJoin(brand, eq(product.brandId, brand.id))
-      .leftJoin(category, eq(product.categoryId, category.id))
-      .where(whereClause);
+    let result;
+    if (productCategory === 'mobile') {
+      result = await fetchMobileProducts(queryParams);
+    } else {
+      result = await fetchAccessoryProducts(queryParams);
+    }
 
     res.status(200).json({
-      products: productList,
+      products: result.products,
       pagination: {
         page: parseInt(page),
         limit: pageLimit,
-        total: count,
-        totalPages: Math.ceil(count / pageLimit)
+        total: result.total,
+        totalPages: Math.ceil(result.total / pageLimit)
       }
     });
   } catch (error) {

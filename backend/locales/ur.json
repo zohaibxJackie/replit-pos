@@ -59,8 +59,8 @@
     "invalid_vendor": "غلط فروش",
     "vendor_required": "وینڈر کی شناخت درکار ہے",
     "vendor_type": "وینڈر کی قسم درکار ہے",
-    "category_required": "زمرہ درکار ہے"
-
+    "category_required": "زمرہ درکار ہے",
+    "invalid_category": "غلط زمرہ۔ موبائل یا اکسیسری ہونا چاہیے"
   },
   "sale": {
     "fetch_failed": "فروخت حاصل کرنے میں ناکام",

@@ -71,7 +71,8 @@
     "invalid_vendor": "invalid vendor",
     "vendor_required": "Vendor Id is required",
     "vendor_type": "Vendor type is required",
-    "category_required": "Category is required"
+    "category_required": "Category is required",
+    "invalid_category": "Invalid category. Must be mobile or accessory"
   },
   "tax": {
     "fetch_failed": "Failed to fetch taxes",
