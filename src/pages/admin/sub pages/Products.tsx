@@ -23,17 +23,34 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "react-i18next";
 
+interface variant {
+  id: string;
+  color: string;
+  sky: string;
+  storageSize: string;
+  variantName: string;
+}
+
+interface product {
+  id: string;
+  name: string;
+}
+interface category {
+  id: string;
+  name: string;
+}
+
 interface StockItem {
   id: string;
   shopId: string;
   shopName?: string;
   variantId: string;
-  variantName: string;
-  productName: string;
+  variantName: variant;
+  productName: product;
   brandName: string;
-  categoryName: string;
-  color?: string;
-  storageSize?: string;
+  categoryName: category;
+  color?: variant;
+  storageSize?: variant;
   barcode?: string;
   primaryImei?: string;
   secondaryImei?: string;
@@ -44,7 +61,7 @@ interface StockItem {
   isSold: boolean;
   condition: string;
   vendorId?: string;
-  sku?: string;
+  sku?: variant;
   createdAt: string;
   updatedAt: string;
 }
@@ -113,7 +130,6 @@ export default function Products() {
     const productList = productsData?.products || [];
     return productList.map(p => {
       const shop = shops.find(s => s.id === p.shopId);
-      console.log(p)
       return {
         id: p.id,
         shopId: p.shopId,
@@ -141,7 +157,6 @@ export default function Products() {
       } as StockItem;
     });
   }, [productsData, shops]);
-  // console.log(stockItems)
 
   const hasShops = shops.length > 0;
 
@@ -205,7 +220,6 @@ export default function Products() {
   };
 
   const handleMobileProductSubmit = (payload: MobileProductPayload) => {
-    const productName = `${payload.brand} ${payload.model} ${payload.memory ? payload.memory : ''} ${payload.color}`.trim();
     
     if (currentStock) {
       updateProductMutation.mutate({

@@ -296,7 +296,7 @@ export default function AdminDashboard() {
               title={t('admin.dashboard.cards.sales.title') || 'Today Sales'}
               value={`$${todaySales.toLocaleString()}`}
               icon={DollarSign}
-              trend={{ value: 12.5, isPositive: true }}
+              // trend={{ value: 12.5, isPositive: true }}
               gradient="from-teal-500 to-emerald-600"
             />
             <StatCard

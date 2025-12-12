@@ -94,7 +94,7 @@ export default function SalesAnalyticsChart() {
       {isLoading ? (
         <Skeleton className="w-full h-[340px] rounded-lg" />
       ) : chartData.length === 0 ? (
-        <div className="w-full h-[340px] flex items-center justify-center text-muted-foreground">
+        <div className="w-full h-[40px] flex items-center justify-center text-muted-foreground">
           No sales data available for this period
         </div>
       ) : (
