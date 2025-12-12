@@ -8,6 +8,43 @@ interface RequestOptions {
   headers?: Record<string, string>;
 }
 
+export interface CustomerType {
+  id: string;
+  shopId: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  documentType?: string | null;
+  documentNumber?: string | null;
+  dob?: string | null;
+  nationality?: string | null;
+  address?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  province?: string | null;
+  totalPurchases?: string;
+  unpaidBalance?: string;
+  lastPurchaseDate?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerCreateType {
+  name: string;
+  email?: string;
+  phone?: string;
+  documentType?: string;
+  documentNumber?: string;
+  dob?: string;
+  nationality?: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  province?: string;
+  status?: string;
+}
+
 function getAuthToken(): string | null {
   try {
     const authStorage = localStorage.getItem('auth-storage');
@@ -466,20 +503,28 @@ export const api = {
   },
 
   customers: {
-    getAll: (shopId?: string) =>
-      request(shopId ? `/api/customers?shopId=${shopId}` : '/api/customers'),
+    getAll: (params?: { page?: number; limit?: number; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.search) searchParams.set('search', params.search);
+      return request<{ 
+        customers: Array<CustomerType>; 
+        pagination: { page: number; limit: number; total: number; totalPages: number } 
+      }>(`/api/customers?${searchParams.toString()}`);
+    },
     
     search: (search: string, page: number = 1, limit: number = 10) =>
-      request<{ customers: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; totalPurchases?: string }>; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/api/customers?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`),
+      request<{ customers: Array<CustomerType>; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/api/customers?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`),
     
     getById: (id: string) =>
-      request(`/api/customers/${id}`),
+      request<{ customer: CustomerType; recentSales: Array<any> }>(`/api/customers/${id}`),
     
-    create: (data: { name: string; email?: string; phone?: string; address?: string }) =>
-      request<{ customer: { id: string; name: string; email?: string; phone?: string; address?: string } }>('/api/customers', { method: 'POST', body: data }),
+    create: (data: CustomerCreateType) =>
+      request<{ customer: CustomerType }>('/api/customers', { method: 'POST', body: data }),
     
-    update: (id: string, data: Partial<{ name: string; email: string; phone: string; address: string }>) =>
-      request(`/api/customers/${id}`, { method: 'PUT', body: data }),
+    update: (id: string, data: Partial<CustomerCreateType>) =>
+      request<{ customer: CustomerType }>(`/api/customers/${id}`, { method: 'PUT', body: data }),
     
     delete: (id: string) =>
       request(`/api/customers/${id}`, { method: 'DELETE' }),

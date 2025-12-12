@@ -76,14 +76,26 @@ export const getCustomerById = async (req, res) => {
 
 export const createCustomer = async (req, res) => {
   try {
-    const { name, email, phone, address } = req.validatedBody;
+    const { 
+      name, email, phone, address, 
+      documentType, documentNumber, dob, nationality,
+      postalCode, city, province, status 
+    } = req.validatedBody;
 
     const [newCustomer] = await db.insert(customers).values({
       shopId: req.userShopIds?.[0],
       name,
-      email,
-      phone,
-      address
+      email: email || null,
+      phone: phone || null,
+      documentType: documentType || null,
+      documentNumber: documentNumber || null,
+      dob: dob || null,
+      nationality: nationality || null,
+      address: address || null,
+      postalCode: postalCode || null,
+      city: city || null,
+      province: province || null,
+      status: status || 'active'
     }).returning();
 
     res.status(201).json({ customer: newCustomer });
@@ -96,7 +108,11 @@ export const createCustomer = async (req, res) => {
 export const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, address } = req.body;
+    const { 
+      name, email, phone, address,
+      documentType, documentNumber, dob, nationality,
+      postalCode, city, province, status
+    } = req.validatedBody || req.body;
 
     const [existingCustomer] = await db.select().from(customers).where(
       and(eq(customers.id, id), eq(customers.shopId, req.userShopIds?.[0]))
@@ -106,11 +122,19 @@ export const updateCustomer = async (req, res) => {
       return res.status(404).json({ error: req.t('customer.not_found') });
     }
 
-    const updateData = {};
+    const updateData = { updatedAt: new Date() };
     if (name) updateData.name = name;
-    if (email !== undefined) updateData.email = email;
-    if (phone !== undefined) updateData.phone = phone;
-    if (address !== undefined) updateData.address = address;
+    if (email !== undefined) updateData.email = email || null;
+    if (phone !== undefined) updateData.phone = phone || null;
+    if (address !== undefined) updateData.address = address || null;
+    if (documentType !== undefined) updateData.documentType = documentType || null;
+    if (documentNumber !== undefined) updateData.documentNumber = documentNumber || null;
+    if (dob !== undefined) updateData.dob = dob || null;
+    if (nationality !== undefined) updateData.nationality = nationality || null;
+    if (postalCode !== undefined) updateData.postalCode = postalCode || null;
+    if (city !== undefined) updateData.city = city || null;
+    if (province !== undefined) updateData.province = province || null;
+    if (status !== undefined) updateData.status = status || 'active';
 
     const [updatedCustomer] = await db.update(customers)
       .set(updateData)

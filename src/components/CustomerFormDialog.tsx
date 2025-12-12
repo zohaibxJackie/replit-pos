@@ -24,7 +24,7 @@ export interface CustomerFormData {
   dob: string;
   nationality: string;
   address: string;
-  postelCode: string;
+  postalCode: string;
   city: string;
   province: string;
   phone: string;
@@ -56,7 +56,7 @@ export function CustomerFormDialog({
     dob: "",
     nationality: "",
     address: "",
-    postelCode: "",
+    postalCode: "",
     city: "",
     province: "",
     phone: "",
@@ -74,7 +74,7 @@ export function CustomerFormDialog({
         dob: editingCustomer.dob || "",
         nationality: editingCustomer.nationality || "",
         address: editingCustomer.address || "",
-        postelCode: editingCustomer.postelCode || "",
+        postalCode: editingCustomer.postalCode || "",
         city: editingCustomer.city || "",
         province: editingCustomer.province || "",
       });
@@ -86,7 +86,7 @@ export function CustomerFormDialog({
         dob: "",
         nationality: "",
         address: "",
-        postelCode: "",
+        postalCode: "",
         city: "",
         province: "",
         phone: "",
@@ -119,22 +119,24 @@ export function CustomerFormDialog({
     setIsSubmitting(true);
 
     try {
-      const fullAddress = [
-        formData.address,
-        formData.city,
-        formData.province,
-        formData.postelCode,
-      ].filter(Boolean).join(", ");
-
       let customerId: string;
 
+      const customerPayload = {
+        name: formData.name,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        documentType: formData.documentType || undefined,
+        documentNumber: formData.documentNumber || undefined,
+        dob: formData.dob || undefined,
+        nationality: formData.nationality || undefined,
+        address: formData.address || undefined,
+        postalCode: formData.postalCode || undefined,
+        city: formData.city || undefined,
+        province: formData.province || undefined,
+      };
+
       if (editingCustomer?.id) {
-        await api.customers.update(editingCustomer.id.toString(), {
-          name: formData.name,
-          email: formData.email || undefined,
-          phone: formData.phone || undefined,
-          address: fullAddress || undefined,
-        });
+        await api.customers.update(editingCustomer.id.toString(), customerPayload);
         customerId = editingCustomer.id.toString();
 
         toast({
@@ -142,12 +144,7 @@ export function CustomerFormDialog({
           description: `${formData.name} has been updated.`,
         });
       } else {
-        const response = await api.customers.create({
-          name: formData.name,
-          email: formData.email || undefined,
-          phone: formData.phone || undefined,
-          address: fullAddress || undefined,
-        });
+        const response = await api.customers.create(customerPayload);
         customerId = response.customer.id;
 
         toast({
@@ -295,7 +292,7 @@ export function CustomerFormDialog({
           {/* Address and other info */}
           {[
             { label: "Address", name: "address", type: "text" },
-            { label: "Postal Code", name: "postelCode", type: "text" },
+            { label: "Postal Code", name: "postalCode", type: "text" },
             { label: "City", name: "city", type: "text" },
             { label: "Province", name: "province", type: "text" },
           ].map((field) => (

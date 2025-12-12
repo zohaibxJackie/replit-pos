@@ -238,8 +238,18 @@ export const customers = pgTable("customers", {
   name: text("name").notNull(),
   email: text("email"),
   phone: text("phone"),
+  documentType: text("document_type"),
+  documentNumber: text("document_number"),
+  dob: text("dob"),
+  nationality: text("nationality"),
   address: text("address"),
+  postalCode: text("postal_code"),
+  city: text("city"),
+  province: text("province"),
   totalPurchases: decimal("total_purchases", { precision: 10, scale: 2 }).notNull().default("0"),
+  unpaidBalance: decimal("unpaid_balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  lastPurchaseDate: timestamp("last_purchase_date", { withTimezone: true }),
+  status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -576,7 +586,7 @@ export const insertStockBatchSchema = createInsertSchema(stockBatches).omit({ id
 export const insertGarbageSchema = createInsertSchema(garbage).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Customer & sales
-export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true, totalPurchases: true });
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true, totalPurchases: true, unpaidBalance: true, lastPurchaseDate: true });
 export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true });
 export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true, createdAt: true });
 
