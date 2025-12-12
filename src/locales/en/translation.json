@@ -231,7 +231,10 @@
       "phone": "Phone",
       "unpaid_balance": "Unpaid Balance",
       "actions": "Actions",
-      "email": "Email"
+      "email": "Email",
+      "delete_success": "Customer deleted",
+      "delete_success_description": "{{name}} has been deleted successfully.",
+      "delete_error": "Failed to delete customer. Please try again."
     },
     "providers": {
       "title": "Providers",

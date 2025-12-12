@@ -47,6 +47,7 @@ export default function Customer() {
     }),
   });
 
+
   const customers = data?.customers || [];
   const pagination = data?.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 };
 
@@ -100,7 +101,6 @@ export default function Customer() {
             "Postal Code": row.postalCode || "-",
             "Total Purchases": `€${row.totalPurchases || "0"}`,
             "Unpaid Balance": `€${row.unpaidBalance || "0"}`,
-            Status: row.status,
             "Joining Date": row.createdAt ? format(new Date(row.createdAt), "yyyy-MM-dd") : "-",
           })
             .map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`)
@@ -134,6 +134,25 @@ export default function Customer() {
       setIsLoadingDetails(false);
     }
   };
+
+  const handleDeleteCustomer = async (customer: CustomerType) => {
+    if (!confirm(`Are you sure you want to delete ${customer.name}`)) return; 
+
+    try {
+      await api.customers.delete(customer.id)
+      toast({
+        title: t("admin.clients.delete_success"),
+        description: t("admin.clients.delete_success_description", { name: customer.name }),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] })
+    } catch(error) {
+      toast({
+        title: t("common.error"),
+        description: t("admin.clients.delete_error"),
+        variant: "destructive",
+      });
+    }
+  }
 
   const handleCloseViewDialog = () => {
     setViewingClient(null);
@@ -247,7 +266,7 @@ export default function Customer() {
             <Button
               size="icon"
               variant="destructive"
-              onClick={() => handleOpenModal(row)}
+              onClick={() => handleDeleteCustomer(row)}
               title="Delete Customer"
               data-testid={`button-edit-customer-${row.id}`}
             >
