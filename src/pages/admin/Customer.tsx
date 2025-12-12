@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Printer, Edit, Loader2, ShoppingBag } from "lucide-react";
+import { Plus, Eye, Printer, Edit, Loader2, ShoppingBag, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { printElement } from "@/utils/print";
@@ -150,6 +150,7 @@ export default function Customer() {
     { key: "name", label: t("admin.clients.name"), filterType: "text" as const },
     { key: "documentNumber", label: t("admin.clients.id_number"), filterType: "text" as const },
     { key: "phone", label: t("admin.clients.phone"), filterType: "text" as const },
+    { key: "email", label: t("admin.clients.email"), filterType: "none"},
     {
       key: "totalPurchases",
       label: "Total Business",
@@ -157,31 +158,31 @@ export default function Customer() {
       render: (value: string) => (
         <span className="font-medium">€{parseFloat(value || "0").toFixed(2)}</span>
       ),
-    },
-    {
-      key: "unpaidBalance",
-      label: t("admin.clients.unpaid_balance"),
-      filterType: "select" as const,
-      filterOptions: ["Paid", "Unpaid"],
-      render: (value: string) => {
-        const balance = parseFloat(value || "0");
-        return balance > 0 ? (
-          <Badge variant="destructive">€{balance.toFixed(2)}</Badge>
-        ) : (
-          <Badge variant="default">€0.00</Badge>
-        );
-      },
-    },
-    {
-      key: "status",
-      label: "Status",
-      filterType: "none" as const,
-      render: (value: string) => (
-        <Badge variant={value === "active" ? "default" : "secondary"}>
-          {value?.charAt(0).toUpperCase() + value?.slice(1)}
-        </Badge>
-      ),
-    },
+    }
+    // {
+    //   key: "unpaidBalance",
+    //   label: t("admin.clients.unpaid_balance"),
+    //   filterType: "select" as const,
+    //   filterOptions: ["Paid", "Unpaid"],
+    //   render: (value: string) => {
+    //     const balance = parseFloat(value || "0");
+    //     return balance > 0 ? (
+    //       <Badge variant="destructive">€{balance.toFixed(2)}</Badge>
+    //     ) : (
+    //       <Badge variant="default">€0.00</Badge>
+    //     );
+    //   },
+    // }
+    // {
+    //   key: "status",
+    //   label: "Status",
+    //   filterType: "none" as const,
+    //   render: (value: string) => (
+    //     <Badge variant={value === "active" ? "default" : "secondary"}>
+    //       {value?.charAt(0).toUpperCase() + value?.slice(1)}
+    //     </Badge>
+    //   ),
+    // },
   ];
 
   if (isLoading) {
@@ -242,6 +243,15 @@ export default function Customer() {
               data-testid={`button-edit-customer-${row.id}`}
             >
               <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="destructive"
+              onClick={() => handleOpenModal(row)}
+              title="Delete Customer"
+              data-testid={`button-edit-customer-${row.id}`}
+            >
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
         )}

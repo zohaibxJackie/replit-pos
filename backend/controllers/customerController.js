@@ -9,7 +9,7 @@ export const getCustomers = async (req, res) => {
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
     const shopId = req.userShopIds?.[0];
 
-    let conditions = [eq(customers.shopId, shopId)];
+    let conditions = [eq(customers.shopId, shopId), eq(customers.isActive, true)];
 
     if (search) {
       conditions.push(
@@ -160,7 +160,9 @@ export const deleteCustomer = async (req, res) => {
       return res.status(404).json({ error: req.t('customer.not_found') });
     }
 
-    await db.delete(customers).where(eq(customers.id, id));
+    await db.update(customers)
+    .set({isActive : false})
+    .where(eq(customers.id, id))
 
     res.json({ message: req.t('customer.deleted') });
   } catch (error) {

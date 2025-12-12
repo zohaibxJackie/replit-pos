@@ -230,7 +230,8 @@
       "id_number": "ID Number",
       "phone": "Phone",
       "unpaid_balance": "Unpaid Balance",
-      "actions": "Actions"
+      "actions": "Actions",
+      "email": "Email"
     },
     "providers": {
       "title": "Providers",

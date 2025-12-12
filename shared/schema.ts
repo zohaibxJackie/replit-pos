@@ -249,7 +249,7 @@ export const customers = pgTable("customers", {
   totalPurchases: decimal("total_purchases", { precision: 10, scale: 2 }).notNull().default("0"),
   unpaidBalance: decimal("unpaid_balance", { precision: 10, scale: 2 }).notNull().default("0"),
   lastPurchaseDate: timestamp("last_purchase_date", { withTimezone: true }),
-  status: text("status").notNull().default("active"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
