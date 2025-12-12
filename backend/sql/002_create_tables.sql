@@ -8,7 +8,7 @@
 CREATE TYPE shop_type AS ENUM ('retail_shop', 'wholesaler', 'repair_center');
 
 -- Product condition enum
-CREATE TYPE product_condition AS ENUM ('new', 'like_new', 'good', 'fair', 'poor');
+CREATE TYPE product_condition AS ENUM ('new', 'used');
 
 -- Stock status enum
 CREATE TYPE stock_status AS ENUM ('in_stock', 'out_of_stock', 'reserved', 'sold', 'defective', 'returned', 'transferred');
