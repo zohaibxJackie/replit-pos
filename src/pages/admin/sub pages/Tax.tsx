@@ -218,8 +218,7 @@ export default function Tax() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-lg font-semibold" data-testid="text-tax-title">{t("tax.title")}</h2>
+      <div className="flex items-center justify-end gap-2 flex-wrap">
         <div>
           <Button onClick={openAddModal} data-testid="button-add-tax">
             <Plus className="w-4 h-4 mr-2" />
