@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTitle } from '@/context/TitleContext';
+import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,7 @@ export default function AdminShops() {
   const { setTitle } = useTitle();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { currentShop, setCurrentShop } = useAuthStore();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -106,12 +108,21 @@ export default function AdminShops() {
     mutationFn: async ({ id, data }: { id: string; data: { name?: string; phone?: string; whatsapp?: string; address?: string; currencyCode?: string } }) => {
       return api.shops.updateAdminShop(id, data);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       toast({ 
         title: t('admin.shops.toast.success') || 'Success', 
         description: t('admin.shops.toast.shop_updated') || 'Shop has been updated successfully.' 
       });
       queryClient.invalidateQueries({ queryKey: ['/api/shops/my-shops'] });
+      
+      // Update currentShop in auth store if it's the shop being edited
+      if (currentShop && currentShop.id === variables.id) {
+        setCurrentShop({
+          ...currentShop,
+          ...variables.data
+        });
+      }
+      
       setIsEditDialogOpen(false);
       setSelectedShop(null);
     },
