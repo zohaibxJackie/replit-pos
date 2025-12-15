@@ -1043,5 +1043,72 @@
       "update_failed": "Failed to update tax",
       "delete_failed": "Failed to delete tax"
     }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account settings and preferences",
+    "shop_info": {
+      "title": "Shop Information",
+      "shop_name": "Shop Name",
+      "subscription": "Subscription",
+      "phone": "Shop Phone",
+      "address": "Shop Address"
+    },
+    "shops_info": {
+      "title": "My Shops",
+      "no_shops": "No shops associated with your account"
+    },
+    "tabs": {
+      "profile": "Profile Details",
+      "password": "Change Password"
+    },
+    "form": {
+      "title": "Profile Information",
+      "description": "Update your personal information",
+      "username": "Username",
+      "email": "Email",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp",
+      "address": "Address",
+      "business_name": "Business Name",
+      "currency": "Display Currency",
+      "currency_description": "This currency will be used for displaying all monetary values across your shops.",
+      "select_currency": "Select currency",
+      "save_changes": "Save Changes"
+    },
+    "password": {
+      "title": "Change Password",
+      "description_admin": "Update your password to keep your account secure",
+      "description_sales": "Contact your administrator to reset your password",
+      "sales_info": "As a sales person, you cannot change your password directly. Please request a password reset from your administrator.",
+      "request_reset": "Request Password Reset",
+      "current_password": "Current Password",
+      "new_password": "New Password",
+      "confirm_password": "Confirm New Password",
+      "update_button": "Update Password"
+    },
+    "currency_warning": {
+      "title": "Change Display Currency?",
+      "description": "Changing your currency will only affect how values are displayed going forward. Historical reports may show incorrect currency symbols for past transactions.",
+      "cancel": "Cancel",
+      "confirm": "Change Currency"
+    },
+    "toast": {
+      "success": "Success",
+      "profile_updated": "Profile updated successfully",
+      "password_updated": "Password updated successfully",
+      "request_sent_title": "Request Sent",
+      "request_sent_description": "Your password reset request has been sent to the administrator.",
+      "error": "Error",
+      "passwords_mismatch": "Passwords do not match",
+      "password_too_short": "Password must be at least 6 characters"
+    },
+    "roles": {
+      "super_admin": "Super Admin",
+      "admin": "Admin",
+      "sales_person": "Sales Person",
+      "repair_man": "Repair Technician",
+      "wholesaler": "Wholesaler"
+    }
   }
 }

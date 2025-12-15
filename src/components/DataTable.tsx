@@ -170,7 +170,7 @@ export default function DataTable({
                 </TableHead>
               ))}
               {showActions && (
-                <TableHead className="flex justify-center items-center text-right font-semibold text-foreground">
+                <TableHead className="text-center font-semibold text-foreground">
                   {t("admin.common.actions")}
                 </TableHead>
               )}
@@ -207,7 +207,7 @@ export default function DataTable({
                     </TableCell>
                   ))}
                   {showActions && (
-                    <TableCell className="text-right">
+                    <TableCell className="text-center">
                       {renderActions && renderActions(row)}
                     </TableCell>
                   )}

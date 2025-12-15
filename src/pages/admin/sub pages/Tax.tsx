@@ -83,14 +83,8 @@ export default function Tax() {
       key: "value",
       label: t("tax.columns.value"),
       filterType: "none" as const,
-      // render: (val: string) => format(Number(val)),
+      render: (val: string) => `${val}%`,
     }
-    // {
-    //   key: "isActive",
-    //   label: t("tax.columns.status"),
-    //   filterType: "none",
-    //   render: (val: boolean) => val ? t("tax.status.active") : t("tax.status.inactive"),
-    // }
   ];
 
   const openAddModal = () => {
@@ -187,7 +181,7 @@ export default function Tax() {
   };
 
   const renderActions = (row: TaxItem) => (
-    <div className="flex items-center gap-2 justify-end">
+    <div className="flex items-center gap-2 justify-center">
       <Button
         size="icon"
         variant="ghost"

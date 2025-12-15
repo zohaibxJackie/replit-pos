@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { useTranslation } from 'react-i18next';
+import { useTitle } from '@/context/TitleContext';
 import {
   Select,
   SelectContent,
@@ -30,6 +32,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+interface ShopData {
+  id: string;
+  name: string;
+  subscriptionTier: string;
+  subscriptionStatus: string;
+  phone?: string;
+  address?: string;
+}
+
 interface ProfileData {
   user: {
     id: string;
@@ -46,20 +57,21 @@ interface ProfileData {
     shopName?: string;
     currencyCode?: string;
   };
-  shop?: {
-    id: string;
-    name: string;
-    subscriptionTier: string;
-    subscriptionStatus: string;
-    phone?: string;
-    address?: string;
-  };
+  shop?: ShopData;
+  shops?: ShopData[];
 }
 
 export default function Profile() {
+  const { t } = useTranslation();
+  const { setTitle } = useTitle();
   const { toast } = useToast();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+
+  useEffect(() => {
+    setTitle(t("profile.title"));
+    return () => setTitle("");
+  }, [setTitle, t]);
   
   const [profileForm, setProfileForm] = useState({
     username: '',
@@ -104,14 +116,14 @@ export default function Profile() {
       return apiRequest<{ user: ProfileData['user']; message: string }>('PUT', '/api/users/profile', data);
     },
     onSuccess: (response) => {
-      toast({ title: 'Success', description: 'Profile updated successfully' });
+      toast({ title: t('profile.toast.success'), description: t('profile.toast.profile_updated') });
       if (response?.user) {
         setUser(response.user);
       }
       queryClient.invalidateQueries({ queryKey: ['/api/users/profile'] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('profile.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -120,11 +132,11 @@ export default function Profile() {
       return apiRequest('PUT', '/api/auth/password', data);
     },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Password updated successfully' });
+      toast({ title: t('profile.toast.success'), description: t('profile.toast.password_updated') });
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('profile.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -134,12 +146,12 @@ export default function Profile() {
     },
     onSuccess: () => {
       toast({ 
-        title: 'Request Sent', 
-        description: 'Your password reset request has been sent to the administrator.' 
+        title: t('profile.toast.request_sent_title'), 
+        description: t('profile.toast.request_sent_description') 
       });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t('profile.toast.error'), description: error.message, variant: 'destructive' });
     }
   });
 
@@ -152,12 +164,12 @@ export default function Profile() {
     e.preventDefault();
     
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({ title: 'Error', description: 'Passwords do not match', variant: 'destructive' });
+      toast({ title: t('profile.toast.error'), description: t('profile.toast.passwords_mismatch'), variant: 'destructive' });
       return;
     }
     
     if (passwordForm.newPassword.length < 6) {
-      toast({ title: 'Error', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      toast({ title: t('profile.toast.error'), description: t('profile.toast.password_too_short'), variant: 'destructive' });
       return;
     }
     
@@ -168,14 +180,7 @@ export default function Profile() {
   };
 
   const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      super_admin: 'Super Admin',
-      admin: 'Admin',
-      sales_person: 'Sales Person',
-      repair_man: 'Repair Technician',
-      wholesaler: 'Wholesaler'
-    };
-    return labels[role] || role;
+    return t(`profile.roles.${role}`, { defaultValue: role });
   };
 
   const isSalesPerson = user?.role === 'sales_person';
@@ -210,13 +215,13 @@ export default function Profile() {
   }
 
   const userData = profileData?.user || user;
-  const shopData = profileData?.shop;
+  const shopsData = profileData?.shops || (profileData?.shop ? [profileData.shop] : []);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-semibold">My Profile</h1>
-        <p className="text-muted-foreground mt-1">Manage your account settings and preferences</p>
+        <h1 className="text-3xl font-semibold">{t('profile.title')}</h1>
+        <p className="text-muted-foreground mt-1">{t('profile.subtitle')}</p>
       </div>
 
       <Card>
@@ -236,44 +241,50 @@ export default function Profile() {
         </CardContent>
       </Card>
 
-      {shopData && (
+      {shopsData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building className="w-5 h-5" />
-              Shop Information
+              {shopsData.length > 1 ? t('profile.shops_info.title') : t('profile.shop_info.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label className="text-muted-foreground">Shop Name</Label>
-                <p className="font-medium" data-testid="text-shop-name">{shopData.name}</p>
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Subscription</Label>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" data-testid="badge-subscription">{shopData.subscriptionTier}</Badge>
-                  <Badge 
-                    variant={shopData.subscriptionStatus === 'active' ? 'default' : 'secondary'}
-                    data-testid="badge-subscription-status"
-                  >
-                    {shopData.subscriptionStatus}
-                  </Badge>
+            <div className="space-y-6">
+              {shopsData.map((shop, index) => (
+                <div key={shop.id} className={index > 0 ? "pt-6 border-t" : ""}>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label className="text-muted-foreground">{t('profile.shop_info.shop_name')}</Label>
+                      <p className="font-medium" data-testid={`text-shop-name-${shop.id}`}>{shop.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">{t('profile.shop_info.subscription')}</Label>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" data-testid={`badge-subscription-${shop.id}`}>{shop.subscriptionTier}</Badge>
+                        <Badge 
+                          variant={shop.subscriptionStatus === 'active' ? 'default' : 'secondary'}
+                          data-testid={`badge-subscription-status-${shop.id}`}
+                        >
+                          {shop.subscriptionStatus}
+                        </Badge>
+                      </div>
+                    </div>
+                    {shop.phone && (
+                      <div>
+                        <Label className="text-muted-foreground">{t('profile.shop_info.phone')}</Label>
+                        <p className="font-medium">{shop.phone}</p>
+                      </div>
+                    )}
+                    {shop.address && (
+                      <div>
+                        <Label className="text-muted-foreground">{t('profile.shop_info.address')}</Label>
+                        <p className="font-medium">{shop.address}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {shopData.phone && (
-                <div>
-                  <Label className="text-muted-foreground">Shop Phone</Label>
-                  <p className="font-medium">{shopData.phone}</p>
-                </div>
-              )}
-              {shopData.address && (
-                <div>
-                  <Label className="text-muted-foreground">Shop Address</Label>
-                  <p className="font-medium">{shopData.address}</p>
-                </div>
-              )}
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -281,15 +292,15 @@ export default function Profile() {
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList>
-          <TabsTrigger value="profile" data-testid="tab-profile">Profile Details</TabsTrigger>
-          <TabsTrigger value="password" data-testid="tab-password">Change Password</TabsTrigger>
+          <TabsTrigger value="profile" data-testid="tab-profile">{t('profile.tabs.profile')}</TabsTrigger>
+          <TabsTrigger value="password" data-testid="tab-password">{t('profile.tabs.password')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile">
           <Card>
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal information</CardDescription>
+              <CardTitle>{t('profile.form.title')}</CardTitle>
+              <CardDescription>{t('profile.form.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleProfileSubmit} className="space-y-4">
@@ -297,7 +308,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="username" className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      Username
+                      {t('profile.form.username')}
                     </Label>
                     <Input
                       id="username"
@@ -310,7 +321,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="email" className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      Email
+                      {t('profile.form.email')}
                     </Label>
                     <Input
                       id="email"
@@ -324,7 +335,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="flex items-center gap-2">
                       <Phone className="w-4 h-4" />
-                      Phone
+                      {t('profile.form.phone')}
                     </Label>
                     <Input
                       id="phone"
@@ -335,7 +346,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="whatsapp">WhatsApp</Label>
+                    <Label htmlFor="whatsapp">{t('profile.form.whatsapp')}</Label>
                     <Input
                       id="whatsapp"
                       value={profileForm.whatsapp}
@@ -347,7 +358,7 @@ export default function Profile() {
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="address" className="flex items-center gap-2">
                       <MapPin className="w-4 h-4" />
-                      Address
+                      {t('profile.form.address')}
                     </Label>
                     <Input
                       id="address"
@@ -361,7 +372,7 @@ export default function Profile() {
                     <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="businessName" className="flex items-center gap-2">
                         <Building className="w-4 h-4" />
-                        Business Name
+                        {t('profile.form.business_name')}
                       </Label>
                       <Input
                         id="businessName"
@@ -376,14 +387,14 @@ export default function Profile() {
                     <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="currency" className="flex items-center gap-2">
                         <Coins className="w-4 h-4" />
-                        Display Currency
+                        {t('profile.form.currency')}
                       </Label>
                       <Select
                         value={profileForm.currencyCode}
                         onValueChange={handleCurrencyChange}
                       >
                         <SelectTrigger data-testid="select-profile-currency">
-                          <SelectValue placeholder="Select currency" />
+                          <SelectValue placeholder={t('profile.form.select_currency')} />
                         </SelectTrigger>
                         <SelectContent>
                           {SUPPORTED_CURRENCIES.map((currency) => (
@@ -394,7 +405,7 @@ export default function Profile() {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        This currency will be used for displaying all monetary values across your shops.
+                        {t('profile.form.currency_description')}
                       </p>
                     </div>
                   )}
@@ -405,7 +416,7 @@ export default function Profile() {
                   ) : (
                     <Save className="w-4 h-4 mr-2" />
                   )}
-                  Save Changes
+                  {t('profile.form.save_changes')}
                 </Button>
               </form>
             </CardContent>
@@ -417,12 +428,12 @@ export default function Profile() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="w-5 h-5" />
-                Change Password
+                {t('profile.password.title')}
               </CardTitle>
               <CardDescription>
                 {isSalesPerson 
-                  ? 'Contact your administrator to reset your password'
-                  : 'Update your password to keep your account secure'
+                  ? t('profile.password.description_sales')
+                  : t('profile.password.description_admin')
                 }
               </CardDescription>
             </CardHeader>
@@ -430,8 +441,7 @@ export default function Profile() {
               {isSalesPerson ? (
                 <div className="space-y-4">
                   <p className="text-muted-foreground">
-                    As a sales person, you cannot change your password directly. 
-                    Please request a password reset from your administrator.
+                    {t('profile.password.sales_info')}
                   </p>
                   <Button 
                     onClick={() => requestPasswordResetMutation.mutate()}
@@ -441,13 +451,13 @@ export default function Profile() {
                     {requestPasswordResetMutation.isPending && (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     )}
-                    Request Password Reset
+                    {t('profile.password.request_reset')}
                   </Button>
                 </div>
               ) : (
                 <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Label htmlFor="currentPassword">{t('profile.password.current_password')}</Label>
                     <Input
                       id="currentPassword"
                       type="password"
@@ -458,7 +468,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
+                    <Label htmlFor="newPassword">{t('profile.password.new_password')}</Label>
                     <Input
                       id="newPassword"
                       type="password"
@@ -470,7 +480,7 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Label htmlFor="confirmPassword">{t('profile.password.confirm_password')}</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
@@ -483,7 +493,7 @@ export default function Profile() {
                   </div>
                   <Button type="submit" disabled={updatePasswordMutation.isPending} data-testid="button-update-password">
                     {updatePasswordMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Update Password
+                    {t('profile.password.update_button')}
                   </Button>
                 </form>
               )}
@@ -497,19 +507,18 @@ export default function Profile() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              Change Display Currency?
+              {t('profile.currency_warning.title')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Changing your currency will only affect how values are displayed going forward. 
-              Historical reports may show incorrect currency symbols for past transactions.
+              {t('profile.currency_warning.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelCurrencyChange} data-testid="button-cancel-currency-change">
-              Cancel
+              {t('profile.currency_warning.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction onClick={confirmCurrencyChange} data-testid="button-confirm-currency-change">
-              Change Currency
+              {t('profile.currency_warning.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
