@@ -83,14 +83,14 @@ export default function Tax() {
       key: "value",
       label: t("tax.columns.value"),
       filterType: "none" as const,
-      render: (val: string) => format(Number(val)),
-    },
-    {
-      key: "isActive",
-      label: t("tax.columns.status"),
-      filterType: "none",
-      render: (val: boolean) => val ? t("tax.status.active") : t("tax.status.inactive"),
+      // render: (val: string) => format(Number(val)),
     }
+    // {
+    //   key: "isActive",
+    //   label: t("tax.columns.status"),
+    //   filterType: "none",
+    //   render: (val: boolean) => val ? t("tax.status.active") : t("tax.status.inactive"),
+    // }
   ];
 
   const openAddModal = () => {

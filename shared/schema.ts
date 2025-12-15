@@ -287,7 +287,7 @@ export const taxes = pgTable("taxes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   shopId: varchar("shop_id").notNull(),
   name: text("name").notNull(),
-  type: taxTypeEnum("type").notNull().default("flat"),
+  // type: taxTypeEnum("type").notNull().default("flat"),
   value: decimal("value", { precision: 10, scale: 2 }).notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
