@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { mockProducts } from "@/utils/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/utils/currency";
 import { useSidebar } from "@/components/ui/sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { printReceipt, Receipt, openCashDrawer } from "@/utils/thermalPrinter";
@@ -69,6 +70,7 @@ const PAYMENT_METHODS = [
 
 export default function POS() {
   useAuth("pos");
+  const { format } = useCurrency();
   const { setOpen: setSidebarOpen } = useSidebar();
   const { setTitle } = useTitle();
   const [cart, setCart] = useState<CartItemType[]>([]);
@@ -312,8 +314,8 @@ export default function POS() {
         title: "Sale Completed",
         description:
           change !== undefined
-            ? `Total: $${total.toFixed(2)} | Change: $${change.toFixed(2)}`
-            : `Total: $${total.toFixed(2)}`,
+            ? `Total: ${format(total)} | Change: ${format(change)}`
+            : `Total: ${format(total)}`,
       });
 
       setCart([]);
@@ -450,13 +452,13 @@ export default function POS() {
         <div className="flex justify-between">
           <span className="text-muted-foreground">Subtotal</span>
           <span className="font-medium" data-testid="text-subtotal">
-            ${subtotal.toFixed(2)}
+            {format(subtotal)}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Tax (10%)</span>
           <span className="font-medium" data-testid="text-tax">
-            ${tax.toFixed(2)}
+            {format(tax)}
           </span>
         </div>
         <div className="flex justify-between items-center gap-2">
@@ -484,7 +486,7 @@ export default function POS() {
       <div className="flex justify-between items-center py-2">
         <span className="text-lg font-semibold">Total</span>
         <span className="text-2xl font-bold" data-testid="text-total">
-          ${total.toFixed(2)}
+          {format(total)}
         </span>
       </div>
 
@@ -771,7 +773,7 @@ export default function POS() {
           <div className="flex-1 flex items-center justify-between">
             <span className="text-sm font-medium">Total:</span>
             <span className="text-xl font-bold" data-testid="text-total-mobile">
-              ${total.toFixed(2)}
+              {format(total)}
             </span>
           </div>
         </div>

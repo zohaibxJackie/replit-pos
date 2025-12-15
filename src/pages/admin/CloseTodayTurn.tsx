@@ -8,6 +8,7 @@ import { Table, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { Link } from "wouter";
 import { useTitle } from '@/context/TitleContext';
 import { useTranslation } from "react-i18next";
+import { useCurrency } from "@/utils/currency";
 interface TurnItem {
   id: number;
   date: string;
@@ -24,6 +25,7 @@ export default function CloseTodayTurn() {
   useAuth("adminCloseTodayTurn");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format, symbol } = useCurrency();
   useEffect(() => {
     setTitle(t("admin.close_today_turn.title"));
     return () => setTitle('Business Dashboard');
@@ -92,7 +94,7 @@ export default function CloseTodayTurn() {
             <TableBody>
               <TableRow className="bg-muted/30 font-semibold">
                 <TableCell>Close Today Shift</TableCell>
-                <TableCell className="text-right">Amount (€)</TableCell>
+                <TableCell className="text-right">Amount ({symbol})</TableCell>
               </TableRow>
 
               <TableRow>
@@ -100,34 +102,34 @@ export default function CloseTodayTurn() {
                 <TableCell className="text-right">{latestTurn.date}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Sale by Cash (€)</TableCell>
+                <TableCell>Sale by Cash</TableCell>
                 <TableCell className="text-right">
-                  {latestTurn.cashSale.toFixed(2)}
+                  {format(latestTurn.cashSale)}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Sale by Card (€)</TableCell>
+                <TableCell>Sale by Card</TableCell>
                 <TableCell className="text-right">
-                  {latestTurn.cardSale.toFixed(2)}
+                  {format(latestTurn.cardSale)}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Sale by Credit (€)</TableCell>
+                <TableCell>Sale by Credit</TableCell>
                 <TableCell className="text-right">
-                  {latestTurn.creditSale.toFixed(2)}
+                  {format(latestTurn.creditSale)}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Refund (€)</TableCell>
+                <TableCell>Refund</TableCell>
                 <TableCell className="text-right">
-                  {latestTurn.refund.toFixed(2)}
+                  {format(latestTurn.refund)}
                 </TableCell>
               </TableRow>
 
               <TableRow className="font-semibold border-t-2 border-primary/40">
-                <TableCell>Total (€)</TableCell>
+                <TableCell>Total</TableCell>
                 <TableCell className="text-right text-primary">
-                  {latestTurn.totalSale.toFixed(2)}
+                  {format(latestTurn.totalSale)}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -148,19 +150,19 @@ export default function CloseTodayTurn() {
               <b>Date:</b> {viewItem.date}
             </p>
             <p>
-              <b>Cash Sale:</b> €{viewItem.cashSale.toFixed(2)}
+              <b>Cash Sale:</b> {format(viewItem.cashSale)}
             </p>
             <p>
-              <b>Card Sale:</b> €{viewItem.cardSale.toFixed(2)}
+              <b>Card Sale:</b> {format(viewItem.cardSale)}
             </p>
             <p>
-              <b>Credit Sale:</b> €{viewItem.creditSale.toFixed(2)}
+              <b>Credit Sale:</b> {format(viewItem.creditSale)}
             </p>
             <p>
-              <b>Refund:</b> €{viewItem.refund.toFixed(2)}
+              <b>Refund:</b> {format(viewItem.refund)}
             </p>
             <p>
-              <b>Total:</b> €{viewItem.totalSale.toFixed(2)}
+              <b>Total:</b> {format(viewItem.totalSale)}
             </p>
             <p>
               <b>Status:</b> {viewItem.status}

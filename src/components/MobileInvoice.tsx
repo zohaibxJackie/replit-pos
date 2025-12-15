@@ -1,4 +1,5 @@
 import { Receipt } from '@/utils/thermalPrinter';
+import { useCurrency } from '@/utils/currency';
 
 interface MobileInvoiceProps {
   receipt: Receipt;
@@ -7,6 +8,7 @@ interface MobileInvoiceProps {
 }
 
 export function MobileInvoice({ receipt, amountPaid, change }: MobileInvoiceProps) {
+  const { format } = useCurrency();
   return (
     <div id="mobile-invoice" className="hidden">
       <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
@@ -53,8 +55,8 @@ export function MobileInvoice({ receipt, amountPaid, change }: MobileInvoiceProp
               <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
                 <td style={{ padding: '10px' }}>{item.name}</td>
                 <td style={{ padding: '10px', textAlign: 'center' }}>{item.quantity}</td>
-                <td style={{ padding: '10px', textAlign: 'right' }}>${item.price.toFixed(2)}</td>
-                <td style={{ padding: '10px', textAlign: 'right' }}>${item.total.toFixed(2)}</td>
+                <td style={{ padding: '10px', textAlign: 'right' }}>{format(item.price)}</td>
+                <td style={{ padding: '10px', textAlign: 'right' }}>{format(item.total)}</td>
               </tr>
             ))}
           </tbody>
@@ -63,21 +65,21 @@ export function MobileInvoice({ receipt, amountPaid, change }: MobileInvoiceProp
         <div style={{ marginBottom: '20px', borderTop: '2px solid #333', paddingTop: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
             <span>Subtotal:</span>
-            <span>${receipt.subtotal.toFixed(2)}</span>
+            <span>{format(receipt.subtotal)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
             <span>Tax:</span>
-            <span>${receipt.tax.toFixed(2)}</span>
+            <span>{format(receipt.tax)}</span>
           </div>
           {receipt.discount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', color: '#16a34a' }}>
               <span>Discount:</span>
-              <span>-${receipt.discount.toFixed(2)}</span>
+              <span>-{format(receipt.discount)}</span>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '10px', borderTop: '2px solid #333', fontSize: '18px', fontWeight: 'bold' }}>
             <span>TOTAL:</span>
-            <span>${receipt.total.toFixed(2)}</span>
+            <span>{format(receipt.total)}</span>
           </div>
         </div>
 
@@ -89,11 +91,11 @@ export function MobileInvoice({ receipt, amountPaid, change }: MobileInvoiceProp
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '16px' }}>
               <span style={{ fontWeight: 'bold' }}>Amount Paid:</span>
-              <span>${amountPaid.toFixed(2)}</span>
+              <span>{format(amountPaid)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', color: '#16a34a', fontWeight: 'bold' }}>
               <span>Change:</span>
-              <span>${change.toFixed(2)}</span>
+              <span>{format(change)}</span>
             </div>
           </div>
         )}

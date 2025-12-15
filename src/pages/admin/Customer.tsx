@@ -14,8 +14,9 @@ import { CustomerFormDialog, CustomerFormData } from "@/components/CustomerFormD
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, CustomerType } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useCurrency } from "@/utils/currency";
 
 export default function Customer() {
   useAuth("adminCustomer");
@@ -23,6 +24,7 @@ export default function Customer() {
   const { t } = useTranslation();
   const { setTitle } = useTitle();
   const queryClient = useQueryClient();
+  const { format } = useCurrency();
 
   useEffect(() => {
     setTitle(t("admin.clients.title"));
@@ -99,9 +101,9 @@ export default function Customer() {
             City: row.city || "-",
             Province: row.province || "-",
             "Postal Code": row.postalCode || "-",
-            "Total Purchases": `€${row.totalPurchases || "0"}`,
-            "Unpaid Balance": `€${row.unpaidBalance || "0"}`,
-            "Joining Date": row.createdAt ? format(new Date(row.createdAt), "yyyy-MM-dd") : "-",
+            "Total Purchases": format(row.totalPurchases || "0"),
+            "Unpaid Balance": format(row.unpaidBalance || "0"),
+            "Joining Date": row.createdAt ? formatDate(new Date(row.createdAt), "yyyy-MM-dd") : "-",
           })
             .map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`)
             .join("")}
@@ -175,7 +177,7 @@ export default function Customer() {
       label: "Total Business",
       filterType: "none" as const,
       render: (value: string) => (
-        <span className="font-medium">€{parseFloat(value || "0").toFixed(2)}</span>
+        <span className="font-medium">{format(value)}</span>
       ),
     }
     // {
@@ -341,20 +343,20 @@ export default function Customer() {
                   <div className="bg-muted p-3 rounded-md">
                     <p className="text-sm text-muted-foreground">Total Purchases</p>
                     <p className="text-xl font-bold text-green-600" data-testid="text-total-purchases">
-                      €{parseFloat(viewingClient.totalPurchases || "0").toFixed(2)}
+                      {format(viewingClient.totalPurchases || "0")}
                     </p>
                   </div>
                   <div className="bg-muted p-3 rounded-md">
                     <p className="text-sm text-muted-foreground">Unpaid Balance</p>
                     <p className="text-xl font-bold text-red-600" data-testid="text-unpaid-balance">
-                      €{parseFloat(viewingClient.unpaidBalance || "0").toFixed(2)}
+                      {format(viewingClient.unpaidBalance || "0")}
                     </p>
                   </div>
                   <div className="bg-muted p-3 rounded-md">
                     <p className="text-sm text-muted-foreground">Last Purchase</p>
                     <p className="text-xl font-bold">
                       {viewingClient.lastPurchaseDate 
-                        ? format(new Date(viewingClient.lastPurchaseDate), "MMM dd, yyyy")
+                        ? formatDate(new Date(viewingClient.lastPurchaseDate), "MMM dd, yyyy")
                         : "-"}
                     </p>
                   </div>
@@ -377,11 +379,11 @@ export default function Customer() {
                           <div>
                             <p className="font-medium">Sale #{sale.id?.slice(-6) || index + 1}</p>
                             <p className="text-sm text-muted-foreground">
-                              {sale.createdAt ? format(new Date(sale.createdAt), "MMM dd, yyyy") : "-"}
+                              {sale.createdAt ? formatDate(new Date(sale.createdAt), "MMM dd, yyyy") : "-"}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold">€{parseFloat(sale.total || "0").toFixed(2)}</p>
+                            <p className="font-bold">{format(sale.total || "0")}</p>
                             <Badge variant="outline" className="text-xs">{sale.paymentMethod || "Cash"}</Badge>
                           </div>
                         </div>

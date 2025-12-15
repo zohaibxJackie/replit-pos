@@ -3,9 +3,11 @@ import { useAuth } from '@/hooks/useAuth';
 import DataTable from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/utils/mockData';
+import { useCurrency } from '@/utils/currency';
 
 export default function POSProducts() {
   useAuth("posProducts");
+  const { format } = useCurrency();
   const [products] = useState(mockProducts); //todo: remove mock functionality
 
   const columns = [
@@ -14,7 +16,7 @@ export default function POSProducts() {
     {
       key: 'price',
       label: 'Price',
-      render: (value: string) => `$${value}`,
+      render: (value: string) => format(value),
     },
     {
       key: 'stock',

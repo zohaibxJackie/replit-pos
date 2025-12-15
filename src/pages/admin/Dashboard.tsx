@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Shop } from '@shared/schema';
+import { useCurrency } from '@/utils/currency';
 
 interface TodaySalesResponse {
   sales: Array<{
@@ -69,6 +70,7 @@ type DatePreset = 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thisWeek
 
 export default function AdminDashboard() {
   useAuth("adminDashboard");
+  const { format } = useCurrency();
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
   const { setTitle } = useTitle();
@@ -294,7 +296,7 @@ export default function AdminDashboard() {
           <>
             <StatCard
               title={t('admin.dashboard.cards.sales.title') || 'Today Sales'}
-              value={`$${todaySales.toLocaleString()}`}
+              value={format(todaySales)}
               icon={DollarSign}
               // trend={{ value: 12.5, isPositive: true }}
               gradient="from-teal-500 to-emerald-600"

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import DataTable from '@/components/DataTable';
 import { mockSales } from '@/utils/mockData';
+import { useCurrency } from '@/utils/currency';
 
 export default function RecentSales() {
   useAuth("posSales");
+  const { format } = useCurrency();
   const [sales] = useState(mockSales); //todo: remove mock functionality
 
   const columns = [
@@ -17,7 +19,7 @@ export default function RecentSales() {
     {
       key: 'total',
       label: 'Total',
-      render: (value: string) => <span className="font-semibold">${value}</span>,
+      render: (value: string) => <span className="font-semibold">{format(value)}</span>,
     },
   ];
 

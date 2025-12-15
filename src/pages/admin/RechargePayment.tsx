@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 import { useTitle } from '@/context/TitleContext';
+import { useCurrency } from "@/utils/currency";
 
 interface RechargePayment {
   id: number;
@@ -24,6 +25,7 @@ export default function RechargePayments() {
   useAuth("adminRechargePayments");
   const { t } = useTranslation();
   const {setTitle} = useTitle();
+  const { format } = useCurrency();
   useEffect(() => {
     setTitle(t("admin.recharge_payments.title"));           
     return () => setTitle('Business Dashboard');
@@ -138,7 +140,7 @@ export default function RechargePayments() {
             <p><b>Service Name:</b> {viewPayment.serviceName}</p>
             <p><b>Country:</b> {viewPayment.country}</p>
             <p><b>Authorization:</b> {viewPayment.authorization}</p>
-            <p><b>Amount:</b> €{viewPayment.amount.toFixed(2)}</p>
+            <p><b>Amount:</b> {format(viewPayment.amount)}</p>
             <p><b>Type:</b> {viewPayment.type}</p>
             <p><b>Status:</b> {viewPayment.status}</p>
 

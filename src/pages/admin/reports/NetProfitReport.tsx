@@ -4,7 +4,7 @@ import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { TablePagination } from "@/components/ui/tablepagination";
 import {
   Select,
@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useTitle } from '@/context/TitleContext';
 import { Card } from "@/components/ui/card";
+import { useCurrency } from "@/utils/currency";
 import {
   LineChart,
   Line,
@@ -40,6 +41,7 @@ export default function NetProfitReport() {
   useAuth("adminReportsNetProfit");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format, symbol } = useCurrency();
 
   useEffect(() => {
     setTitle("Net Profit Report");
@@ -90,45 +92,45 @@ export default function NetProfitReport() {
   }, [profitData]);
 
   const columns = [
-    { key: "date", label: "Date", filterType: "none" },
+    { key: "date", label: "Date", filterType: "none" as const },
     { 
       key: "revenue", 
-      label: "Revenue (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toLocaleString()}`
+      label: `Revenue (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     { 
       key: "cost", 
-      label: "Cost (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toLocaleString()}`
+      label: `Cost (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     { 
       key: "expenses", 
-      label: "Expenses (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toLocaleString()}`
+      label: `Expenses (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     { 
       key: "grossProfit", 
-      label: "Gross Profit (€)", 
-      filterType: "none",
+      label: `Gross Profit (${symbol})`, 
+      filterType: "none" as const,
       render: (value: number) => (
-        <span className="font-semibold text-green-600">€{value.toLocaleString()}</span>
+        <span className="font-semibold text-green-600">{format(value)}</span>
       )
     },
     { 
       key: "netProfit", 
-      label: "Net Profit (€)", 
-      filterType: "none",
+      label: `Net Profit (${symbol})`, 
+      filterType: "none" as const,
       render: (value: number) => (
-        <span className="font-semibold text-blue-600">€{value.toLocaleString()}</span>
+        <span className="font-semibold text-blue-600">{format(value)}</span>
       )
     },
     { 
       key: "profitMargin", 
       label: "Profit Margin (%)", 
-      filterType: "none",
+      filterType: "none" as const,
       render: (value: string) => `${value}%`
     },
   ];
@@ -174,7 +176,7 @@ export default function NetProfitReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 "Select Date Range"
@@ -227,23 +229,23 @@ export default function NetProfitReport() {
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.totalRevenue.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-gray-900">{format(summary.totalRevenue)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Total Cost</p>
-          <p className="text-xl font-semibold text-red-600">€{summary.totalCost.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-red-600">{format(summary.totalCost)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-          <p className="text-xl font-semibold text-orange-600">€{summary.totalExpenses.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-orange-600">{format(summary.totalExpenses)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Gross Profit</p>
-          <p className="text-xl font-semibold text-green-600">€{summary.totalGrossProfit.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-green-600">{format(summary.totalGrossProfit)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Net Profit</p>
-          <p className="text-xl font-semibold text-blue-600">€{summary.totalNetProfit.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-blue-600">{format(summary.totalNetProfit)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Avg Margin</p>

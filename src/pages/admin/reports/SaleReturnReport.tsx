@@ -4,7 +4,8 @@ import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
+import { useCurrency } from "@/utils/currency";
 import { TablePagination } from "@/components/ui/tablepagination";
 import {
   Select,
@@ -37,6 +38,7 @@ export default function SaleReturnReport() {
   useAuth("adminReportsSaleReturn");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format, symbol } = useCurrency();
 
   useEffect(() => {
     setTitle("Sale Return Report");
@@ -98,17 +100,17 @@ export default function SaleReturnReport() {
   }, [returnData]);
 
   const columns = [
-    { key: "returnNumber", label: "Return #", filterType: "text" },
-    { key: "originalSale", label: "Original Sale", filterType: "text" },
-    { key: "date", label: "Return Date", filterType: "none" },
-    { key: "customer", label: "Customer", filterType: "text" },
-    { key: "product", label: "Product", filterType: "text" },
-    { key: "quantity", label: "Qty", filterType: "none" },
+    { key: "returnNumber", label: "Return #", filterType: "text" as const },
+    { key: "originalSale", label: "Original Sale", filterType: "text" as const },
+    { key: "date", label: "Return Date", filterType: "none" as const },
+    { key: "customer", label: "Customer", filterType: "text" as const },
+    { key: "product", label: "Product", filterType: "text" as const },
+    { key: "quantity", label: "Qty", filterType: "none" as const },
     { 
       key: "amount", 
-      label: "Amount (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toFixed(2)}`
+      label: `Amount (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     { 
       key: "reason", 
@@ -175,7 +177,7 @@ export default function SaleReturnReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 "Select Date Range"
@@ -232,7 +234,7 @@ export default function SaleReturnReport() {
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Total Amount</p>
-          <p className="text-xl font-semibold text-red-600">€{summary.totalAmount.toFixed(2)}</p>
+          <p className="text-xl font-semibold text-red-600">{format(summary.totalAmount)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Processed</p>

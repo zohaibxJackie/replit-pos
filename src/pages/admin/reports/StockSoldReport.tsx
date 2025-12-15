@@ -4,7 +4,8 @@ import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
+import { useCurrency } from "@/utils/currency";
 import { TablePagination } from "@/components/ui/tablepagination";
 import {
   Select,
@@ -37,6 +38,7 @@ export default function StockSoldReport() {
   useAuth("adminReportsStockSold");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format } = useCurrency();
 
   useEffect(() => {
     setTitle(t("admin.reports.stock_sold.title"));
@@ -101,14 +103,14 @@ export default function StockSoldReport() {
     { 
       key: "revenue", 
       label: t("admin.reports.common.revenue"), 
-      filterType: "none",
-      render: (value: number) => `€${value.toFixed(2)}`
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     { 
       key: "profit", 
       label: t("admin.reports.common.profit"), 
-      filterType: "none",
-      render: (value: number) => `€${value.toFixed(2)}`
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
   ];
 
@@ -160,7 +162,7 @@ export default function StockSoldReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 t("admin.reports.common.date_range")
@@ -217,11 +219,11 @@ export default function StockSoldReport() {
         </Card>
         <Card className="p-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.common.revenue")}</p>
-          <p className="text-xl font-semibold">€{summary.totalRevenue.toFixed(2)}</p>
+          <p className="text-xl font-semibold">{format(summary.totalRevenue)}</p>
         </Card>
         <Card className="p-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.common.profit")}</p>
-          <p className="text-xl font-semibold text-green-600 dark:text-green-400">€{summary.totalProfit.toFixed(2)}</p>
+          <p className="text-xl font-semibold text-green-600 dark:text-green-400">{format(summary.totalProfit)}</p>
         </Card>
         <Card className="p-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.stock_sold.daily_sales")}</p>

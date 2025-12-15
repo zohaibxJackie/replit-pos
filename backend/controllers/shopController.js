@@ -254,7 +254,7 @@ export const getMyShops = async (req, res) => {
 
 export const createAdminShop = async (req, res) => {
   try {
-    const { name, phone, whatsapp, address } = req.body;
+    const { name, phone, whatsapp, address, currencyCode } = req.body;
     const userId = req.user.id;
     
     const maxShops = await getMaxShopsFromPlan(userId);
@@ -277,7 +277,8 @@ export const createAdminShop = async (req, res) => {
       phone,
       whatsapp,
       address,
-      subscriptionTier
+      subscriptionTier,
+      currencyCode: currencyCode || 'USD'
     }).returning();
     
     await db.insert(userShop).values({
@@ -295,7 +296,7 @@ export const createAdminShop = async (req, res) => {
 export const updateAdminShop = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, whatsapp, address } = req.body;
+    const { name, phone, whatsapp, address, currencyCode } = req.body;
     const userId = req.user.id;
 
     const [existingShop] = await db.select().from(shops).where(eq(shops.id, id)).limit(1);
@@ -315,6 +316,7 @@ export const updateAdminShop = async (req, res) => {
     if (phone !== undefined) updateData.phone = phone;
     if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
     if (address !== undefined) updateData.address = address;
+    if (currencyCode !== undefined) updateData.currencyCode = currencyCode;
 
     const [updatedShop] = await db.update(shops)
       .set(updateData)

@@ -10,6 +10,7 @@ import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 import { Eye } from "lucide-react";
 import FormPopupModal from "@/components/ui/FormPopupModal";
+import { useCurrency } from "@/utils/currency";
 
 type Wholesaler = {
   id: number;
@@ -34,6 +35,7 @@ export default function Wholesalers() {
   useAuth("adminWholesalers");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format } = useCurrency();
 
   useEffect(() => {
     setTitle(t("admin.wholesalers.title") || "Wholesale Suppliers");
@@ -203,7 +205,7 @@ export default function Wholesalers() {
                         {product.discount && <span className="ml-2 text-green-600 font-semibold">{product.discount}% OFF</span>}
                       </p>
                     </div>
-                    <p className="font-bold text-lg">${product.price.toFixed(2)}</p>
+                    <p className="font-bold text-lg">{format(product.price)}</p>
                   </div>
                 ))}
                 {(mockProducts[selectedWholesaler.id] || []).length === 0 && (

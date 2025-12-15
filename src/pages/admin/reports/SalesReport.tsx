@@ -6,11 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 import {   Select,   SelectTrigger,   SelectValue,   SelectContent,   SelectItem, } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { TablePagination } from "@/components/ui/tablepagination";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useTitle } from '@/context/TitleContext';
+import { useCurrency } from "@/utils/currency";
 
 type DateRange = {
   from: Date | undefined;
@@ -66,21 +67,23 @@ export default function DailySalesReport() {
     cash: 395,
   };
 
+  const { format: formatCurrency, symbol } = useCurrency();
+  
   const columns = [
-    { key: "ticket", label: t("admin.sales_report.ticket"), filterType: "none" },
-    { key: "date", label: t("admin.sales_report.date"), filterType: "none" },
-    { key: "product", label: t("admin.sales_report.product"), filterType: "text" },
-    { key: "imei", label: t("admin.sales_report.imei"), filterType: "text" },
-    { key: "buyPrice", label: t("admin.sales_report.buy_price"), filterType: "none" },
-    { key: "salePrice", label: t("admin.sales_report.sale_price"), filterType: "none" },
-    { key: "qty", label: t("admin.sales_report.quantity"), filterType: "none" },
+    { key: "ticket", label: t("admin.sales_report.ticket"), filterType: "none" as const },
+    { key: "date", label: t("admin.sales_report.date"), filterType: "none" as const },
+    { key: "product", label: t("admin.sales_report.product"), filterType: "text" as const },
+    { key: "imei", label: t("admin.sales_report.imei"), filterType: "text" as const },
+    { key: "buyPrice", label: t("admin.sales_report.buy_price"), filterType: "none" as const, render: (value: number) => formatCurrency(value) },
+    { key: "salePrice", label: t("admin.sales_report.sale_price"), filterType: "none" as const, render: (value: number) => formatCurrency(value) },
+    { key: "qty", label: t("admin.sales_report.quantity"), filterType: "none" as const },
     {
       key: "paymentType",
       label: t("admin.sales_report.payment_type"),
-      filterType: "select",
+      filterType: "select" as const,
       filterOptions: ["Card", "Cash", "Bank"],
     },
-    { key: "saleType", label: t("admin.sales_report.sale_type"), filterType: "select", filterOptions: ["Mobile", "Accessories"] },
+    { key: "saleType", label: t("admin.sales_report.sale_type"), filterType: "select" as const, filterOptions: ["Mobile", "Accessories"] },
   ];
 
   // Filtering logic using DataTable
@@ -150,8 +153,8 @@ export default function DailySalesReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} -{" "}
-                  {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} -{" "}
+                  {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 t("admin.sales_report.select_date_range")
@@ -214,27 +217,27 @@ export default function DailySalesReport() {
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">{t("admin.sales_report.total_sale")}</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.sale}</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(summary.sale)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">{t("admin.sales_report.card")}</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.card}</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(summary.card)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">{t("admin.sales_report.credit")}</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.credit}</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(summary.credit)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">{t("admin.sales_report.bank")}</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.bank}</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(summary.bank)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">{t("admin.sales_report.voucher")}</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.voucher}</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(summary.voucher)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">{t("admin.sales_report.cash")}</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.cash}</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(summary.cash)}</p>
         </div>
       </div>
 

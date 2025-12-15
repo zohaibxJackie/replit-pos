@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useCurrency } from '@/utils/currency';
 
 interface CartItemProps {
   id: string;
@@ -24,6 +25,7 @@ export default function CartItem({
   onUpdateQuantity, 
   onRemove 
 }: CartItemProps) {
+  const { format } = useCurrency();
   const total = price * quantity;
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -39,7 +41,7 @@ export default function CartItem({
           <span className="break-words text-sm sm:text-base">{name}</span>
           {lowStock && <Badge variant="destructive" className="text-xs">Low Stock</Badge>}
         </div>
-        <div className="text-xs sm:text-sm text-muted-foreground">${price.toFixed(2)} each</div>
+        <div className="text-xs sm:text-sm text-muted-foreground">{format(price)} each</div>
       </div>
       
       <div className="flex items-center gap-1 sm:gap-2">
@@ -77,7 +79,7 @@ export default function CartItem({
       </div>
       
       <div className="font-semibold min-w-16 sm:min-w-20 text-right text-sm sm:text-base" data-testid={`text-total-${id}`}>
-        ${total.toFixed(2)}
+        {format(total)}
       </div>
       
       <Button

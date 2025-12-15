@@ -3,10 +3,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTitle } from '@/context/TitleContext';
 import StatCard from '@/components/StatCard';
 import { Users, Store, DollarSign, TrendingUp } from 'lucide-react';
+import { useCurrency } from '@/utils/currency';
 
 export default function SuperAdminDashboard() {
   useAuth("superAdminDashboard");
   const { setTitle } = useTitle();
+  const { format } = useCurrency();
 
   useEffect(() => {
     setTitle('Super Admin Dashboard');
@@ -38,7 +40,7 @@ export default function SuperAdminDashboard() {
         />
         <StatCard
           title="Monthly Revenue"
-          value={`$${stats.totalRevenue.toLocaleString()}`}
+          value={format(stats.totalRevenue)}
           icon={DollarSign}
           trend={{ value: 15.2, isPositive: true }}
           gradient="bg-gradient-to-br from-chart-4 to-chart-3"

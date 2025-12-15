@@ -10,6 +10,7 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { useCurrency } from "@/utils/currency";
 
 interface TaxItem {
   id: string;
@@ -27,6 +28,7 @@ export default function Tax() {
   const { t } = useTranslation();
   const { setTitle } = useTitle();
   const { toast } = useToast();
+  const { format } = useCurrency();
 
   useEffect(() => {
     setTitle(t("tax.title"));
@@ -76,12 +78,12 @@ export default function Tax() {
   }, [taxes, filters]);
 
   const columns = [
-    { key: "name", label: t("tax.columns.name"), filterType: "text" },
+    { key: "name", label: t("tax.columns.name"), filterType: "text" as const },
     {
       key: "value",
       label: t("tax.columns.value"),
-      filterType: "none",
-      render: (val: string) => `$${Number(val).toFixed(2)}`,
+      filterType: "none" as const,
+      render: (val: string) => format(Number(val)),
     },
     {
       key: "isActive",

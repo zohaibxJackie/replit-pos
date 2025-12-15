@@ -4,7 +4,8 @@ import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
+import { useCurrency } from "@/utils/currency";
 import { TablePagination } from "@/components/ui/tablepagination";
 import {
   Select,
@@ -37,6 +38,7 @@ export default function ContractsReport() {
   useAuth("adminReportsContractsReport");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format, symbol } = useCurrency();
 
   useEffect(() => {
     setTitle("Contracts Report");
@@ -93,16 +95,16 @@ export default function ContractsReport() {
   }, [contractsData]);
 
   const columns = [
-    { key: "contractNumber", label: "Contract #", filterType: "text" },
-    { key: "customer", label: "Customer", filterType: "text" },
-    { key: "type", label: "Type", filterType: "select", filterOptions: ["Maintenance", "Service", "Support"] },
-    { key: "startDate", label: "Start Date", filterType: "none" },
-    { key: "endDate", label: "End Date", filterType: "none" },
+    { key: "contractNumber", label: "Contract #", filterType: "text" as const },
+    { key: "customer", label: "Customer", filterType: "text" as const },
+    { key: "type", label: "Type", filterType: "select" as const, filterOptions: ["Maintenance", "Service", "Support"] },
+    { key: "startDate", label: "Start Date", filterType: "none" as const },
+    { key: "endDate", label: "End Date", filterType: "none" as const },
     { 
       key: "value", 
-      label: "Value (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toFixed(2)}`
+      label: `Value (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     {
       key: "status",
@@ -163,7 +165,7 @@ export default function ContractsReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 "Select Date Range"
@@ -228,7 +230,7 @@ export default function ContractsReport() {
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Total Value</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.totalValue.toFixed(2)}</p>
+          <p className="text-xl font-semibold text-gray-900">{format(summary.totalValue)}</p>
         </div>
       </div>
 

@@ -21,11 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTitle } from '@/context/TitleContext';
+import { useCurrency } from "@/utils/currency";
 
 export default function Providers() {
   useAuth("adminProviders"); 
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { format, symbol } = useCurrency();
 
   const {setTitle} = useTitle();
   useEffect(() => {
@@ -171,7 +173,7 @@ export default function Providers() {
                 Location: provider.location,
                 Type: provider.type,
                 "CIF/DNI/PASSPORT": provider.document,
-                Balance: `${provider.balance.toFixed(2)} €`,
+                Balance: format(provider.balance),
               }).map(([key, value]) => (
                 <tr key={key} className="border-b">
                   <td className="font-semibold text-gray-700 py-2 pr-3 w-1/3">
@@ -389,7 +391,7 @@ export default function Providers() {
           </div>
 
           <div>
-            <Label>Opening Balance (€)</Label>
+            <Label>Opening Balance ({symbol})</Label>
             <Input
               name="balance"
               type="number"
@@ -503,7 +505,7 @@ export default function Providers() {
                   className={`font-semibold ${viewingProvider.balance < 0 ? "text-red-600" : "text-green-700"
                     }`}
                 >
-                  €{viewingProvider.balance.toFixed(2)}
+                  {format(viewingProvider.balance)}
                 </p>
               </div>
             </div>

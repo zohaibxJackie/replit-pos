@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "react-i18next";
 import { useTitle } from '@/context/TitleContext';
+import { useCurrency } from "@/utils/currency";
 
 interface Transaction {
     id: number;
@@ -25,6 +26,7 @@ export default function PrivateWallet() {
     const { toast } = useToast();
     const {t} = useTranslation();
     const {setTitle} = useTitle();
+    const { format, symbol } = useCurrency();
     useEffect(() => {
         setTitle(t("admin.private_wallet.title"));         
         return () => setTitle('Business Dashboard'); 
@@ -86,9 +88,7 @@ export default function PrivateWallet() {
 
         toast({
             title: "Transaction Added",
-            description: `${newItem.type} of €${newItem.amount.toFixed(
-                2
-            )} added successfully.`,
+            description: `${newItem.type} of ${format(newItem.amount)} added successfully.`,
         });
 
 
@@ -107,19 +107,19 @@ export default function PrivateWallet() {
             <div className="grid grid-cols-4 gap-4">
                 <Card className="p-4 text-center">
                     <h2 className="text-sm text-gray-500">Opening Balance</h2>
-                    <p className="text-xl font-semibold text-green-600">€{openingBalance.toFixed(2)}</p>
+                    <p className="text-xl font-semibold text-green-600">{format(openingBalance)}</p>
                 </Card>
                 <Card className="p-4 text-center">
                     <h2 className="text-sm text-gray-500">Cash In</h2>
-                    <p className="text-xl font-semibold text-blue-600">€{totalCashIn.toFixed(2)}</p>
+                    <p className="text-xl font-semibold text-blue-600">{format(totalCashIn)}</p>
                 </Card>
                 <Card className="p-4 text-center">
                     <h2 className="text-sm text-gray-500">Cash Out</h2>
-                    <p className="text-xl font-semibold text-red-600">€{totalCashOut.toFixed(2)}</p>
+                    <p className="text-xl font-semibold text-red-600">{format(totalCashOut)}</p>
                 </Card>
                 <Card className="p-4 text-center">
                     <h2 className="text-sm text-gray-500">Closing Balance</h2>
-                    <p className="text-xl font-semibold text-primary">€{closingBalance.toFixed(2)}</p>
+                    <p className="text-xl font-semibold text-primary">{format(closingBalance)}</p>
                 </Card>
             </div>
 
@@ -148,7 +148,7 @@ export default function PrivateWallet() {
                                     {t.type}
                                 </TableCell>
                                 <TableCell>{t.description}</TableCell>
-                                <TableCell className="text-right">€{t.amount.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{format(t.amount)}</TableCell>
                                 <TableCell>{t.addedBy}</TableCell>
                             </TableRow>
                         ))}
@@ -181,7 +181,7 @@ export default function PrivateWallet() {
                             />
                         </div>
                         <div>
-                            <Label>Amount (€)</Label>
+                            <Label>Amount ({symbol})</Label>
                             <Input
                                 type="number"
                                 placeholder="Enter amount"

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign } from 'lucide-react';
+import { useCurrency } from '@/utils/currency';
 
 interface PaymentDialogProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface PaymentDialogProps {
 }
 
 export function PaymentDialog({ open, onOpenChange, total, onConfirmPayment }: PaymentDialogProps) {
+  const { format } = useCurrency();
   const [amountPaid, setAmountPaid] = useState('');
   const change = parseFloat(amountPaid) - total;
 
@@ -45,7 +47,7 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirmPayment }: P
           <div className="space-y-2">
             <Label htmlFor="total-amount">Total Amount</Label>
             <div className="text-2xl font-bold text-primary" data-testid="text-payment-total">
-              ${total.toFixed(2)}
+              {format(total)}
             </div>
           </div>
 
@@ -71,11 +73,11 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirmPayment }: P
                 className={`text-2xl font-bold ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
                 data-testid="text-change-amount"
               >
-                ${change >= 0 ? change.toFixed(2) : '0.00'}
+                {format(change >= 0 ? change : 0)}
               </div>
               {!isValid && (
                 <p className="text-sm text-destructive">
-                  Amount paid must be at least ${total.toFixed(2)}
+                  Amount paid must be at least {format(total)}
                 </p>
               )}
             </div>

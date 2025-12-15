@@ -4,7 +4,7 @@ import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { TablePagination } from "@/components/ui/tablepagination";
 import {
   Select,
@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useTitle } from '@/context/TitleContext';
 import { Card } from "@/components/ui/card";
+import { useCurrency } from "@/utils/currency";
 import {
   BarChart,
   Bar,
@@ -37,6 +38,7 @@ export default function TopMobileSalesReport() {
   useAuth("adminReportsTopMobileSales");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format, symbol } = useCurrency();
 
   useEffect(() => {
     setTitle("Top Mobile Sales Report");
@@ -92,21 +94,21 @@ export default function TopMobileSalesReport() {
   }, [topMobiles]);
 
   const columns = [
-    { key: "rank", label: "Rank", filterType: "none" },
-    { key: "model", label: "Model", filterType: "text" },
-    { key: "brand", label: "Brand", filterType: "select", filterOptions: ["Apple", "Samsung", "Xiaomi", "Google", "OnePlus", "OPPO", "Vivo", "Realme"] },
-    { key: "unitsSold", label: "Units Sold", filterType: "none" },
+    { key: "rank", label: "Rank", filterType: "none" as const },
+    { key: "model", label: "Model", filterType: "text" as const },
+    { key: "brand", label: "Brand", filterType: "select" as const, filterOptions: ["Apple", "Samsung", "Xiaomi", "Google", "OnePlus", "OPPO", "Vivo", "Realme"] },
+    { key: "unitsSold", label: "Units Sold", filterType: "none" as const },
     { 
       key: "revenue", 
-      label: "Revenue (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toLocaleString()}`
+      label: `Revenue (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     { 
       key: "profit", 
-      label: "Profit (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toLocaleString()}`
+      label: `Profit (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
   ];
 
@@ -151,7 +153,7 @@ export default function TopMobileSalesReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 "Select Date Range"
@@ -208,11 +210,11 @@ export default function TopMobileSalesReport() {
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.totalRevenue.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-gray-900">{format(summary.totalRevenue)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Total Profit</p>
-          <p className="text-xl font-semibold text-green-600">€{summary.totalProfit.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-green-600">{format(summary.totalProfit)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Top Brand</p>

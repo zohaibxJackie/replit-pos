@@ -4,7 +4,8 @@ import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
+import { useCurrency } from "@/utils/currency";
 import { TablePagination } from "@/components/ui/tablepagination";
 import {
   Select,
@@ -37,6 +38,7 @@ export default function MobileRecordReport() {
   useAuth("adminReportsMobileRecord");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format, symbol } = useCurrency();
 
   useEffect(() => {
     setTitle("Mobile Record Report");
@@ -101,22 +103,22 @@ export default function MobileRecordReport() {
   }, [mobileRecords]);
 
   const columns = [
-    { key: "imei", label: "IMEI", filterType: "text" },
-    { key: "brand", label: "Brand", filterType: "select", filterOptions: ["Apple", "Samsung", "Xiaomi", "Google"] },
-    { key: "model", label: "Model", filterType: "text" },
-    { key: "purchaseDate", label: "Purchase Date", filterType: "none" },
-    { key: "saleDate", label: "Sale Date", filterType: "none" },
+    { key: "imei", label: "IMEI", filterType: "text" as const },
+    { key: "brand", label: "Brand", filterType: "select" as const, filterOptions: ["Apple", "Samsung", "Xiaomi", "Google"] },
+    { key: "model", label: "Model", filterType: "text" as const },
+    { key: "purchaseDate", label: "Purchase Date", filterType: "none" as const },
+    { key: "saleDate", label: "Sale Date", filterType: "none" as const },
     { 
       key: "purchasePrice", 
-      label: "Purchase Price (€)", 
-      filterType: "none",
-      render: (value: number) => `€${value.toFixed(2)}`
+      label: `Purchase Price (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => format(value)
     },
     { 
       key: "salePrice", 
-      label: "Sale Price (€)", 
-      filterType: "none",
-      render: (value: number) => value > 0 ? `€${value.toFixed(2)}` : "-"
+      label: `Sale Price (${symbol})`, 
+      filterType: "none" as const,
+      render: (value: number) => value > 0 ? format(value) : "-"
     },
     {
       key: "status",
@@ -175,7 +177,7 @@ export default function MobileRecordReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 "Select Date Range"
@@ -240,11 +242,11 @@ export default function MobileRecordReport() {
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Purchase Value</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.totalPurchaseValue.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-gray-900">{format(summary.totalPurchaseValue)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <p className="text-sm font-medium text-gray-500">Sale Value</p>
-          <p className="text-xl font-semibold text-gray-900">€{summary.totalSaleValue.toLocaleString()}</p>
+          <p className="text-xl font-semibold text-gray-900">{format(summary.totalSaleValue)}</p>
         </div>
       </div>
 

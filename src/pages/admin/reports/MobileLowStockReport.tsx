@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTitle } from '@/context/TitleContext';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { Calendar } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
@@ -171,7 +171,7 @@ export default function MobileLowStockReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 "Select Date Range"

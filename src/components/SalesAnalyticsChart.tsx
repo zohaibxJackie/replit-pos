@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { useCurrency } from '@/utils/currency';
 import { 
   LineChart, 
   Line, 
@@ -32,6 +33,7 @@ interface SalesAnalyticsResponse {
 
 export default function SalesAnalyticsChart() {
   const [period, setPeriod] = useState<Period>('week');
+  const { format } = useCurrency();
 
   const { data, isLoading } = useQuery<SalesAnalyticsResponse>({
     queryKey: ['/api/sales/analytics', { period }]
@@ -54,7 +56,7 @@ export default function SalesAnalyticsChart() {
           <h3 className="text-xl font-bold">Sales Analytics</h3>
           <p className="text-sm text-muted-foreground mt-1">
             {data?.stats ? (
-              <>Total: ${parseFloat(data.stats.totalSales).toLocaleString()} | {data.stats.saleCount} transactions</>
+              <>Total: {format(parseFloat(data.stats.totalSales))} | {data.stats.saleCount} transactions</>
             ) : (
               'Revenue and transaction tracking'
             )}
@@ -115,7 +117,7 @@ export default function SalesAnalyticsChart() {
             <YAxis 
               className="text-xs"
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
-              tickFormatter={(value) => `$${value.toLocaleString()}`}
+              tickFormatter={(value) => format(value)}
             />
             <Tooltip 
               contentStyle={{ 
@@ -125,7 +127,7 @@ export default function SalesAnalyticsChart() {
                 boxShadow: '0px 8px 16px hsl(0 0% 0% / 0.1)'
               }}
               labelStyle={{ fontWeight: '600', marginBottom: '8px' }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Sales']}
+              formatter={(value: number) => [format(value), 'Sales']}
             />
             <Legend 
               wrapperStyle={{ paddingTop: '20px' }}

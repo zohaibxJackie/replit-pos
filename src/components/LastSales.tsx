@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, Receipt } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useCurrency } from '@/utils/currency';
 
 interface Sale {
   id: string;
@@ -27,6 +28,7 @@ interface LastSalesProps {
 }
 
 export default function LastSales({ title = 'Recent Sales', onViewAll }: LastSalesProps) {
+  const { format } = useCurrency();
   const { data, isLoading } = useQuery<SalesResponse>({
     queryKey: ['/api/sales/today']
   });
@@ -106,7 +108,7 @@ export default function LastSales({ title = 'Recent Sales', onViewAll }: LastSal
                   </TableCell>
                   <TableCell className="font-semibold">{getPaymentLabel(sale.paymentMethod)}</TableCell>
                   <TableCell className="font-bold text-emerald-600">
-                    ${parseFloat(sale.total).toFixed(2)}
+                    {format(sale.total)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDate(sale.createdAt)}

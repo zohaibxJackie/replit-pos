@@ -17,10 +17,12 @@ export interface Receipt {
   paymentMethod: string;
   customerName?: string;
   cashierName: string;
+  currencySymbol?: string;
 }
 
 export function generateESCPOSCommands(receipt: Receipt): Uint8Array {
   const commands: number[] = [];
+  const cs = receipt.currencySymbol || '$';
   
   const ESC = 0x1B;
   const GS = 0x1D;
@@ -61,7 +63,7 @@ export function generateESCPOSCommands(receipt: Receipt): Uint8Array {
     const itemLine = `${item.name}`;
     addText(commands, itemLine);
     commands.push(0x0A);
-    const qtyPrice = `  ${item.quantity} x $${item.price.toFixed(2)}`.padEnd(30) + `$${item.total.toFixed(2)}`.padStart(12);
+    const qtyPrice = `  ${item.quantity} x ${cs}${item.price.toFixed(2)}`.padEnd(30) + `${cs}${item.total.toFixed(2)}`.padStart(12);
     addText(commands, qtyPrice);
     commands.push(0x0A);
   });
@@ -70,19 +72,19 @@ export function generateESCPOSCommands(receipt: Receipt): Uint8Array {
   addText(commands, '-'.repeat(42));
   commands.push(0x0A);
   
-  addText(commands, `Subtotal:`.padEnd(30) + `$${receipt.subtotal.toFixed(2)}`.padStart(12));
+  addText(commands, `Subtotal:`.padEnd(30) + `${cs}${receipt.subtotal.toFixed(2)}`.padStart(12));
   commands.push(0x0A);
-  addText(commands, `Tax:`.padEnd(30) + `$${receipt.tax.toFixed(2)}`.padStart(12));
+  addText(commands, `Tax:`.padEnd(30) + `${cs}${receipt.tax.toFixed(2)}`.padStart(12));
   commands.push(0x0A);
   if (receipt.discount > 0) {
-    addText(commands, `Discount:`.padEnd(30) + `-$${receipt.discount.toFixed(2)}`.padStart(12));
+    addText(commands, `Discount:`.padEnd(30) + `-${cs}${receipt.discount.toFixed(2)}`.padStart(12));
     commands.push(0x0A);
   }
   addText(commands, '-'.repeat(42));
   commands.push(0x0A);
   
   commands.push(ESC, 0x45, 0x01);
-  addText(commands, `TOTAL:`.padEnd(30) + `$${receipt.total.toFixed(2)}`.padStart(12));
+  addText(commands, `TOTAL:`.padEnd(30) + `${cs}${receipt.total.toFixed(2)}`.padStart(12));
   commands.push(0x0A);
   commands.push(ESC, 0x45, 0x00);
   

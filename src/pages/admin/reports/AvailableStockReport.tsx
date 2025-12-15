@@ -4,7 +4,8 @@ import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
+import { useCurrency } from "@/utils/currency";
 import { TablePagination } from "@/components/ui/tablepagination";
 import {
   Select,
@@ -37,6 +38,7 @@ export default function AvailableStockReport() {
   useAuth("adminReportsAvailableStock");
   const { t } = useTranslation();
   const { setTitle } = useTitle();
+  const { format } = useCurrency();
 
   useEffect(() => {
     setTitle(t("admin.reports.available_stock.title"));
@@ -173,7 +175,7 @@ export default function AvailableStockReport() {
               <Calendar className="w-4 h-4" />
               {dateRange?.from && dateRange?.to ? (
                 <>
-                  {format(new Date(dateRange.from), "MMM d, yyyy")} - {format(new Date(dateRange.to), "MMM d, yyyy")}
+                  {formatDate(new Date(dateRange.from), "MMM d, yyyy")} - {formatDate(new Date(dateRange.to), "MMM d, yyyy")}
                 </>
               ) : (
                 t("admin.reports.common.date_range")
@@ -242,7 +244,7 @@ export default function AvailableStockReport() {
         </Card>
         <Card className="p-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{t("admin.reports.common.total_value")}</p>
-          <p className="text-xl font-semibold">€{summary.totalValue.toFixed(2)}</p>
+          <p className="text-xl font-semibold">{format(summary.totalValue)}</p>
         </Card>
       </div>
 
