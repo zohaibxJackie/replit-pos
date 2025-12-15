@@ -382,7 +382,7 @@ export const getMyProfile = async (req, res) => {
 
 export const updateMyProfile = async (req, res) => {
   try {
-    const { username, email, businessName, phone, whatsapp, address } = req.body;
+    const { username, email, businessName, phone, whatsapp, address, currencyCode } = req.body;
 
     if (email && email !== req.user.email) {
       const [existingEmail] = await db.select().from(users)
@@ -409,6 +409,7 @@ export const updateMyProfile = async (req, res) => {
     if (phone !== undefined) updateData.phone = phone;
     if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
     if (address !== undefined) updateData.address = address;
+    if (currencyCode !== undefined) updateData.currencyCode = currencyCode;
     updateData.updatedAt = new Date();
 
     const [updatedUser] = await db.update(users)
