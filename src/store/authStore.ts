@@ -10,6 +10,7 @@ export interface Shop {
   phone?: string;
   whatsapp?: string;
   address?: string;
+  currencyCode?: string;
 }
 
 export interface User {
