@@ -28,8 +28,8 @@ export const repairStatusEnum = pgEnum("repair_status", ["pending", "assigned", 
 // Password reset status
 export const passwordResetStatusEnum = pgEnum("password_reset_status", ["pending", "approved", "rejected"]);
 
-// Tax type enum
-export const taxTypeEnum = pgEnum("tax_type", ["percent", "flat"]);
+// Tax type enum - flat only (no percentage)
+export const taxTypeEnum = pgEnum("tax_type", ["flat"]);
 
 // Stock transfer status
 export const stockTransferStatusEnum = pgEnum("stock_transfer_status", ["pending", "completed", "cancelled"]);

@@ -2,159 +2,195 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import DataTable from "@/components/DataTable";
 import FormPopupModal from "@/components/ui/FormPopupModal";
 import { useToast } from "@/hooks/use-toast";
 import { useTitle } from "@/context/TitleContext";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
-
-type TaxType = "percent" | "flat";
+import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 interface TaxItem {
   id: string;
+  shopId: string;
   name: string;
-  type: TaxType;
-  value: number;
+  type: "flat";
+  value: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function Tax() {
   useAuth("catalogTax");
-
+  const { t } = useTranslation();
   const { setTitle } = useTitle();
   const { toast } = useToast();
 
   useEffect(() => {
-    setTitle("Taxes");
-    return () => setTitle("Business Dashboard");
-  }, [setTitle]);
+    setTitle(t("tax.title"));
+    return () => setTitle(t("admin.titles.admin"));
+  }, [setTitle, t]);
 
-  // initial mock taxes
-  const [taxes, setTaxes] = useState<TaxItem[]>(() => [
-    { id: "t2", name: "GST 5%", type: "percent", value: 5},
-    { id: "t3", name: "Service Fee", type: "flat", value: 50},
-  ]);
+  const [taxes, setTaxes] = useState<TaxItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTax, setEditingTax] = useState<TaxItem | null>(null);
 
-  // form state
   const [formName, setFormName] = useState("");
-  const [formType, setFormType] = useState<TaxType>("percent");
   const [formValue, setFormValue] = useState<number | "">("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // table filters (DataTable will call onFilterChange)
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  // Derived data for DataTable (filtering handled by DataTable UI but we still do a simple client-side filter for our mock)
+  const fetchTaxes = async () => {
+    try {
+      setLoading(true);
+      const response = await api.taxes.getAll();
+      setTaxes(response.taxes);
+    } catch (error) {
+      console.error("Failed to fetch taxes:", error);
+      toast({ 
+        title: t("tax.toast.error"), 
+        description: t("tax.toast.fetch_failed"),
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTaxes();
+  }, []);
+
   const filteredTaxes = useMemo(() => {
-    if (!filters.name && !filters.type) return taxes;
-    return taxes.filter((t) => {
-      const matchName = !filters.name || t.name.toLowerCase().includes(filters.name.toLowerCase());
-      const matchType = !filters.type || t.type === filters.type;
-      return matchName && matchType;
+    if (!filters.name) return taxes;
+    return taxes.filter((tx) => {
+      const matchName = !filters.name || tx.name.toLowerCase().includes(filters.name.toLowerCase());
+      return matchName;
     });
   }, [taxes, filters]);
 
-  // Table columns
   const columns = [
-    { key: "name", label: "Name", filterType: "text" },
-    {
-      key: "type",
-      label: "Type",
-      filterType: "select",
-      filterOptions: ["percent", "flat"],
-      render: (val: TaxType) => (val === "percent" ? "Percentage" : "Flat"),
-    },
+    { key: "name", label: t("tax.columns.name"), filterType: "text" },
     {
       key: "value",
-      label: "Value",
+      label: t("tax.columns.value"),
       filterType: "none",
-      render: (val: number, row: TaxItem) =>
-        row.type === "percent" ? `${val}%` : `$${Number(val).toFixed(2)}`,
+      render: (val: string) => `$${Number(val).toFixed(2)}`,
+    },
+    {
+      key: "isActive",
+      label: t("tax.columns.status"),
+      filterType: "none",
+      render: (val: boolean) => val ? t("tax.status.active") : t("tax.status.inactive"),
     }
   ];
 
-  // open add modal
   const openAddModal = () => {
     setEditingTax(null);
     setFormName("");
-    setFormType("percent");
     setFormValue("");
     setErrors({});
     setIsModalOpen(true);
   };
 
-  // open edit modal
   const openEditModal = (tax: TaxItem) => {
     setEditingTax(tax);
     setFormName(tax.name);
-    setFormType(tax.type);
-    setFormValue(tax.value);
+    setFormValue(Number(tax.value));
     setErrors({});
     setIsModalOpen(true);
   };
 
-  // delete handler
-  const handleDelete = (tax: TaxItem) => {
-    const ok = window.confirm(`Delete tax "${tax.name}"? This action cannot be undone.`);
+  const handleDelete = async (tax: TaxItem) => {
+    const ok = window.confirm(t("tax.delete_confirm", { name: tax.name }));
     if (!ok) return;
-    setTaxes((prev) => prev.filter((t) => t.id !== tax.id));
-    toast({ title: "Tax deleted", description: `${tax.name} removed.` });
+    
+    try {
+      await api.taxes.delete(tax.id);
+      setTaxes((prev) => prev.filter((tx) => tx.id !== tax.id));
+      toast({ 
+        title: t("tax.toast.deleted"), 
+        description: t("tax.toast.deleted_desc", { name: tax.name })
+      });
+    } catch (error) {
+      console.error("Failed to delete tax:", error);
+      toast({ 
+        title: t("tax.toast.error"), 
+        description: t("tax.toast.delete_failed"),
+        variant: "destructive"
+      });
+    }
   };
 
-  // validate form
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!formName.trim()) e.name = "Name is required";
-    if (formValue === "" || Number.isNaN(Number(formValue))) e.value = "Value is required";
-    else {
+    if (!formName.trim()) e.name = t("tax.validation.name_required");
+    if (formValue === "" || Number.isNaN(Number(formValue))) {
+      e.value = t("tax.validation.value_required");
+    } else {
       const v = Number(formValue);
-      if (v < 0) e.value = "Value must be >= 0";
-      if (formType === "percent" && (v < 0 || v > 100)) e.value = "Percentage must be between 0 and 100";
+      if (v < 0) e.value = t("tax.validation.value_positive");
     }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  // submit (add or update)
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!validate()) return;
 
-    const payload: Omit<TaxItem, "id" | "createdAt"> = {
-      name: formName.trim(),
-      type: formType,
-      value: Number(formValue),
-    };
+    setIsSubmitting(true);
 
-    if (editingTax) {
-      // update
-      setTaxes((prev) => prev.map((t) => (t.id === editingTax.id ? { ...t, ...payload } : t)));
-      toast({ title: "Tax updated", description: `${payload.name} updated.` });
-    } else {
-      // add
-      const newTax: TaxItem = {
-        id: `tax_${Date.now()}`,
-        ...payload,
-      };
-      setTaxes((prev) => [newTax, ...prev]);
-      toast({ title: "Tax added", description: `${payload.name} created.` });
+    try {
+      if (editingTax) {
+        const response = await api.taxes.update(editingTax.id, {
+          name: formName.trim(),
+          value: Number(formValue),
+        });
+        setTaxes((prev) =>
+          prev.map((tx) => (tx.id === editingTax.id ? { ...tx, ...response.tax } : tx))
+        );
+        toast({ 
+          title: t("tax.toast.updated"), 
+          description: t("tax.toast.updated_desc", { name: formName.trim() })
+        });
+      } else {
+        const response = await api.taxes.create({
+          name: formName.trim(),
+          value: Number(formValue),
+        });
+        setTaxes((prev) => [response.tax as TaxItem, ...prev]);
+        toast({ 
+          title: t("tax.toast.created"), 
+          description: t("tax.toast.created_desc", { name: formName.trim() })
+        });
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Failed to save tax:", error);
+      toast({ 
+        title: t("tax.toast.error"), 
+        description: editingTax ? t("tax.toast.update_failed") : t("tax.toast.create_failed"),
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsModalOpen(false);
   };
 
-  // Render action buttons for each row
   const renderActions = (row: TaxItem) => (
     <div className="flex items-center gap-2 justify-end">
       <Button
         size="icon"
         variant="ghost"
-        title="Edit"
+        title={t("tax.actions.edit")}
+        data-testid={`button-edit-tax-${row.id}`}
         onClick={(ev) => {
           ev.stopPropagation();
           openEditModal(row);
@@ -166,7 +202,8 @@ export default function Tax() {
       <Button
         size="icon"
         variant="ghost"
-        title="Delete"
+        title={t("tax.actions.delete")}
+        data-testid={`button-delete-tax-${row.id}`}
         onClick={(ev) => {
           ev.stopPropagation();
           handleDelete(row);
@@ -179,12 +216,12 @@ export default function Tax() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Taxes</h2>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h2 className="text-lg font-semibold" data-testid="text-tax-title">{t("tax.title")}</h2>
         <div>
-          <Button onClick={openAddModal}>
+          <Button onClick={openAddModal} data-testid="button-add-tax">
             <Plus className="w-4 h-4 mr-2" />
-            Add Tax
+            {t("tax.add_tax")}
           </Button>
         </div>
       </div>
@@ -195,48 +232,47 @@ export default function Tax() {
         showActions
         renderActions={renderActions}
         onFilterChange={(f) => setFilters(f)}
+        loading={loading}
       />
 
       <FormPopupModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h2 className="text-2xl font-semibold">{editingTax ? "Edit Tax" : "Create New Tax"}</h2>
+        <h2 className="text-2xl font-semibold" data-testid="text-tax-modal-title">
+          {editingTax ? t("tax.modal.edit_title") : t("tax.modal.create_title")}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
-            <Label>Name</Label>
-            <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Tax name" />
-            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            <Label>{t("tax.form.name")}</Label>
+            <Input 
+              value={formName} 
+              onChange={(e) => setFormName(e.target.value)} 
+              placeholder={t("tax.form.name_placeholder")}
+              data-testid="input-tax-name"
+            />
+            {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
           </div>
 
           <div>
-            <Label>Type</Label>
-            <Select value={formType} onValueChange={(v) => setFormType(v as TaxType)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="percent">Percentage</SelectItem>
-                <SelectItem value="flat">Flat</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Value {formType === "percent" ? "(%)" : "$"}</Label>
+            <Label>{t("tax.form.value")}</Label>
             <Input
               type="number"
               step="0.01"
               min={0}
               value={formValue}
               onChange={(e) => setFormValue(e.target.value === "" ? "" : Number(e.target.value))}
+              placeholder={t("tax.form.value_placeholder")}
+              data-testid="input-tax-value"
             />
-            {errors.value && <p className="text-xs text-red-500 mt-1">{errors.value}</p>}
+            {errors.value && <p className="text-xs text-destructive mt-1">{errors.value}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-              Cancel
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} data-testid="button-tax-cancel">
+              {t("tax.form.cancel")}
             </Button>
-            <Button type="submit">{editingTax ? "Update Tax" : "Create Tax"}</Button>
+            <Button type="submit" disabled={isSubmitting} data-testid="button-tax-submit">
+              {isSubmitting ? t("tax.form.saving") : (editingTax ? t("tax.form.update") : t("tax.form.create"))}
+            </Button>
           </div>
         </form>
       </FormPopupModal>

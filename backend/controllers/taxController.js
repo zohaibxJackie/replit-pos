@@ -51,15 +51,11 @@ export const getTaxById = async (req, res) => {
 
 export const createTax = async (req, res) => {
   try {
-    const { name, type, value } = req.body;
+    const { name, value } = req.body;
     const shopId = req.userShopIds?.[0];
 
-    if (!name || !type || value === undefined) {
+    if (!name || value === undefined) {
       return res.status(400).json({ error: req.t('tax.missing_fields') });
-    }
-
-    if (type === 'percent' && (value < 0 || value > 100)) {
-      return res.status(400).json({ error: req.t('tax.invalid_percent') });
     }
 
     if (value < 0) {
@@ -69,7 +65,7 @@ export const createTax = async (req, res) => {
     const [newTax] = await db.insert(taxes).values({
       shopId,
       name,
-      type,
+      type: 'flat',
       value: value.toString(),
       isActive: true
     }).returning();
@@ -84,7 +80,7 @@ export const createTax = async (req, res) => {
 export const updateTax = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, type, value, isActive } = req.body;
+    const { name, value, isActive } = req.body;
     const shopId = req.userShopIds?.[0];
 
     const [existingTax] = await db.select().from(taxes).where(
@@ -97,7 +93,6 @@ export const updateTax = async (req, res) => {
 
     const updateData = { updatedAt: new Date() };
     if (name !== undefined) updateData.name = name;
-    if (type !== undefined) updateData.type = type;
     if (value !== undefined) updateData.value = value.toString();
     if (isActive !== undefined) updateData.isActive = isActive;
 

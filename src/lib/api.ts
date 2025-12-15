@@ -434,17 +434,17 @@ export const api = {
       if (params?.search) searchParams.set('search', params.search);
       if (params?.isActive !== undefined) searchParams.set('isActive', params.isActive.toString());
       const query = searchParams.toString();
-      return request<{ taxes: Array<{ id: string; shopId: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean; createdAt: string; updatedAt: string }> }>(query ? `/api/taxes?${query}` : '/api/taxes');
+      return request<{ taxes: Array<{ id: string; shopId: string; name: string; type: 'flat'; value: string; isActive: boolean; createdAt: string; updatedAt: string }> }>(query ? `/api/taxes?${query}` : '/api/taxes');
     },
     
     getById: (id: string) =>
-      request<{ tax: { id: string; shopId: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean } }>(`/api/taxes/${id}`),
+      request<{ tax: { id: string; shopId: string; name: string; type: 'flat'; value: string; isActive: boolean } }>(`/api/taxes/${id}`),
     
-    create: (data: { name: string; type: 'percent' | 'flat'; value: number }) =>
-      request<{ tax: { id: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean } }>('/api/taxes', { method: 'POST', body: data }),
+    create: (data: { name: string; value: number }) =>
+      request<{ tax: { id: string; name: string; type: 'flat'; value: string; isActive: boolean } }>('/api/taxes', { method: 'POST', body: data }),
     
-    update: (id: string, data: Partial<{ name: string; type: 'percent' | 'flat'; value: number; isActive: boolean }>) =>
-      request<{ tax: { id: string; name: string; type: 'percent' | 'flat'; value: string; isActive: boolean } }>(`/api/taxes/${id}`, { method: 'PUT', body: data }),
+    update: (id: string, data: Partial<{ name: string; value: number; isActive: boolean }>) =>
+      request<{ tax: { id: string; name: string; type: 'flat'; value: string; isActive: boolean } }>(`/api/taxes/${id}`, { method: 'PUT', body: data }),
     
     delete: (id: string) =>
       request(`/api/taxes/${id}`, { method: 'DELETE' }),

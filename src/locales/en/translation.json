@@ -993,5 +993,55 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success"
+  },
+  "tax": {
+    "title": "Manage Taxes",
+    "add_tax": "Add Tax",
+    "columns": {
+      "name": "Name",
+      "value": "Value",
+      "status": "Status"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "create_title": "Create New Tax",
+      "edit_title": "Edit Tax"
+    },
+    "form": {
+      "name": "Tax Name",
+      "name_placeholder": "Enter tax name",
+      "value": "Value ($)",
+      "value_placeholder": "Enter tax value",
+      "cancel": "Cancel",
+      "create": "Create Tax",
+      "update": "Update Tax",
+      "saving": "Saving..."
+    },
+    "validation": {
+      "name_required": "Tax name is required",
+      "value_required": "Tax value is required",
+      "value_positive": "Value must be 0 or greater"
+    },
+    "delete_confirm": "Delete tax \"{{name}}\"? This action cannot be undone.",
+    "toast": {
+      "error": "Error",
+      "fetch_failed": "Failed to fetch taxes",
+      "created": "Tax Created",
+      "created_desc": "{{name}} has been created successfully",
+      "updated": "Tax Updated",
+      "updated_desc": "{{name}} has been updated successfully",
+      "deleted": "Tax Deleted",
+      "deleted_desc": "{{name}} has been deleted",
+      "create_failed": "Failed to create tax",
+      "update_failed": "Failed to update tax",
+      "delete_failed": "Failed to delete tax"
+    }
   }
 }
