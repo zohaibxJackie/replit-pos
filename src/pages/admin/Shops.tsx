@@ -7,13 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { 
   Building2, 
   Plus, 
@@ -21,10 +14,8 @@ import {
   Loader2,
   Store,
   Package,
-  AlertTriangle,
-  Coins
+  AlertTriangle
 } from 'lucide-react';
-import { SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -69,8 +60,7 @@ export default function AdminShops() {
     name: '',
     phone: '',
     whatsapp: '',
-    address: '',
-    currencyCode: 'USD'
+    address: ''
   });
 
   useEffect(() => {
@@ -140,8 +130,7 @@ export default function AdminShops() {
       name: '',
       phone: '',
       whatsapp: '',
-      address: '',
-      currencyCode: 'USD'
+      address: ''
     });
   };
 
@@ -178,8 +167,7 @@ export default function AdminShops() {
       name: shop.name,
       phone: shop.phone || '',
       whatsapp: shop.whatsapp || '',
-      address: shop.address || '',
-      currencyCode: shop.currencyCode || 'USD'
+      address: shop.address || ''
     });
     setIsEditDialogOpen(true);
   };
@@ -293,7 +281,6 @@ export default function AdminShops() {
                 <TableRow>
                   <TableHead>{t('admin.shops.table.shop_name') || 'Shop Name'}</TableHead>
                   <TableHead>{t('admin.shops.table.phone') || 'Phone'}</TableHead>
-                  <TableHead>{t('admin.shops.table.currency') || 'Currency'}</TableHead>
                   <TableHead>{t('admin.shops.table.tier') || 'Subscription'}</TableHead>
                   <TableHead>{t('admin.shops.table.status') || 'Status'}</TableHead>
                   <TableHead>{t('admin.shops.table.created') || 'Created'}</TableHead>
@@ -305,12 +292,6 @@ export default function AdminShops() {
                   <TableRow key={shop.id}>
                     <TableCell className="font-medium">{shop.name}</TableCell>
                     <TableCell>{shop.phone || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="gap-1">
-                        <Coins className="w-3 h-3" />
-                        {shop.currencyCode || 'USD'}
-                      </Badge>
-                    </TableCell>
                     <TableCell>
                       <Badge className={getTierBadge(shop.subscriptionTier)}>
                         {shop.subscriptionTier}
@@ -394,24 +375,6 @@ export default function AdminShops() {
                   data-testid="input-shop-address"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="currency">{t('admin.shops.form.currency') || 'Currency'}</Label>
-                <Select
-                  value={formData.currencyCode}
-                  onValueChange={(value) => setFormData({ ...formData, currencyCode: value })}
-                >
-                  <SelectTrigger data-testid="select-shop-currency">
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUPPORTED_CURRENCIES.map((currency) => (
-                      <SelectItem key={currency.code} value={currency.code}>
-                        {currency.symbol} - {currency.name} ({currency.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -472,24 +435,6 @@ export default function AdminShops() {
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   data-testid="input-edit-shop-address"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-currency">{t('admin.shops.form.currency') || 'Currency'}</Label>
-                <Select
-                  value={formData.currencyCode}
-                  onValueChange={(value) => setFormData({ ...formData, currencyCode: value })}
-                >
-                  <SelectTrigger data-testid="select-edit-shop-currency">
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUPPORTED_CURRENCIES.map((currency) => (
-                      <SelectItem key={currency.code} value={currency.code}>
-                        {currency.symbol} - {currency.name} ({currency.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             <DialogFooter>

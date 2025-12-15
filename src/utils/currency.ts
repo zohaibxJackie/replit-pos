@@ -82,8 +82,9 @@ export function getCurrencySymbol(currencyCode?: string): string {
 }
 
 export function useCurrency() {
-  const { currentShop } = useAuthStore();
-  const currencyCode = currentShop?.currencyCode || 'USD';
+  const { user } = useAuthStore();
+  // Get currency from user (applies to all their shops for consistent reporting)
+  const currencyCode = user?.currencyCode || 'USD';
 
   return {
     currencyCode,

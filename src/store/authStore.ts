@@ -23,6 +23,7 @@ export interface User {
   phone?: string;
   whatsapp?: string;
   address?: string;
+  currencyCode?: string;
   active?: boolean;
 }
 

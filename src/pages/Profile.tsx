@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,28 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Mail, Phone, MapPin, Building, Lock, Loader2, Save } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Building, Lock, Loader2, Save, Coins, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { SUPPORTED_CURRENCIES } from '@/utils/currency';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ProfileData {
   user: {
@@ -26,6 +44,7 @@ interface ProfileData {
     active: boolean;
     shopId?: string;
     shopName?: string;
+    currencyCode?: string;
   };
   shop?: {
     id: string;
@@ -48,7 +67,8 @@ export default function Profile() {
     businessName: '',
     phone: '',
     whatsapp: '',
-    address: ''
+    address: '',
+    currencyCode: user?.currencyCode || 'USD'
   });
   
   const [passwordForm, setPasswordForm] = useState({
@@ -57,12 +77,15 @@ export default function Profile() {
     confirmPassword: ''
   });
 
+  const [showCurrencyWarning, setShowCurrencyWarning] = useState(false);
+  const [pendingCurrencyChange, setPendingCurrencyChange] = useState<string | null>(null);
+
   const { data: profileData, isLoading } = useQuery<ProfileData>({
     queryKey: ['/api/users/profile'],
     enabled: !!user
   });
 
-  useState(() => {
+  useEffect(() => {
     if (profileData?.user) {
       setProfileForm({
         username: profileData.user.username || '',
@@ -70,10 +93,11 @@ export default function Profile() {
         businessName: profileData.user.businessName || '',
         phone: profileData.user.phone || '',
         whatsapp: profileData.user.whatsapp || '',
-        address: profileData.user.address || ''
+        address: profileData.user.address || '',
+        currencyCode: profileData.user.currencyCode || 'USD'
       });
     }
-  });
+  }, [profileData]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: typeof profileForm) => {
@@ -155,6 +179,27 @@ export default function Profile() {
   };
 
   const isSalesPerson = user?.role === 'sales_person';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    if (newCurrency !== profileForm.currencyCode) {
+      setPendingCurrencyChange(newCurrency);
+      setShowCurrencyWarning(true);
+    }
+  };
+
+  const confirmCurrencyChange = () => {
+    if (pendingCurrencyChange) {
+      setProfileForm({ ...profileForm, currencyCode: pendingCurrencyChange });
+      setPendingCurrencyChange(null);
+    }
+    setShowCurrencyWarning(false);
+  };
+
+  const cancelCurrencyChange = () => {
+    setPendingCurrencyChange(null);
+    setShowCurrencyWarning(false);
+  };
 
   if (isLoading) {
     return (
@@ -327,6 +372,32 @@ export default function Profile() {
                       />
                     </div>
                   )}
+                  {isAdmin && (
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="currency" className="flex items-center gap-2">
+                        <Coins className="w-4 h-4" />
+                        Display Currency
+                      </Label>
+                      <Select
+                        value={profileForm.currencyCode}
+                        onValueChange={handleCurrencyChange}
+                      >
+                        <SelectTrigger data-testid="select-profile-currency">
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SUPPORTED_CURRENCIES.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.code}>
+                              {currency.symbol} - {currency.name} ({currency.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        This currency will be used for displaying all monetary values across your shops.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <Button type="submit" disabled={updateProfileMutation.isPending} data-testid="button-save-profile">
                   {updateProfileMutation.isPending ? (
@@ -420,6 +491,29 @@ export default function Profile() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={showCurrencyWarning} onOpenChange={setShowCurrencyWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Change Display Currency?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Changing your currency will only affect how values are displayed going forward. 
+              Historical reports may show incorrect currency symbols for past transactions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelCurrencyChange} data-testid="button-cancel-currency-change">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCurrencyChange} data-testid="button-confirm-currency-change">
+              Change Currency
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

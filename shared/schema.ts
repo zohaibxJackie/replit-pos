@@ -110,6 +110,7 @@ export const users = pgTable("users", {
   phone: text("phone"),
   whatsapp: text("whatsapp"),
   address: text("address"),
+  currencyCode: text("currency_code").notNull().default("USD"), // User's preferred currency (applies to all their shops)
   refreshToken: text("refresh_token"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
