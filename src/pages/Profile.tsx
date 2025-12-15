@@ -219,10 +219,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-semibold">{t('profile.title')}</h1>
-        <p className="text-muted-foreground mt-1">{t('profile.subtitle')}</p>
-      </div>
+     
 
       <Card>
         <CardContent className="pt-6">
