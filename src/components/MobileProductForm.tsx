@@ -16,6 +16,7 @@ import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Textarea } from "./ui/textarea";
+import { useAuthStore } from "@/store/authStore";
 
 interface Tax {
   id: string;
@@ -289,8 +290,8 @@ export interface MobileProductPayload {
   variantId: string;
   condition: string;
   notes?: string;
-  vendorId?: string;
-  vendorType?: string;
+  vendorId: string;
+  vendorType: string;
   serialNumber?: string;
   barcode?: string;
   categoryId?: string;
@@ -306,6 +307,7 @@ interface MobileProductFormProps {
 
 export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isEditing = false }: MobileProductFormProps) {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
 
   const [conditionType, setConditionType] = useState<"new" | "used">(initialData?.condition === "used" ? "used" : "new");
   const [brand, setBrand] = useState<string>(initialData?.brand || "");
@@ -386,8 +388,8 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   });
 
   const { data: vendorsData, isLoading: vendorsLoading } = useQuery({
-    queryKey: ['/api/vendors', shopId],
-    queryFn: () => api.vendors.getAll(shopId),
+    queryKey: ['/api/vendors', user?.id],
+    queryFn: () => api.vendors.getAll(user?.id),
     enabled: conditionType === "new" && !!shopId,
   });
 
@@ -445,6 +447,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
     if (model) {
       setSelectedColor(null);
       setColorDisplay("");
+      setVariantId(model.id)
     }
   }, []);
 
@@ -542,10 +545,9 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       sellingPrice: parseFloat(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
       category: "mobile",
-      categoryId: "mobile",
       quantity: !isEditing && quantity > 1 ? quantity : undefined,
       imeis: !isEditing && quantity > 1 ? imeis : undefined,
-      variantId: initialData?.variantId || "",
+      variantId: variantId || "",
       condition: conditionType,
       notes: notes || undefined,
       vendorId: vendorId || undefined,
@@ -553,6 +555,8 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       serialNumber: serialNumber || undefined,
       barcode: barcode || undefined,
     };
+
+    console.log(payload)
 
     onSubmit(payload);
   };

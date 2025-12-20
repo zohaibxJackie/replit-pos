@@ -982,7 +982,15 @@
       "serial_input": "Serial Number",
       "serial_placeholder": "Enter serial number",
       "notes": "Notes (if any)",
-      "notes_placeholder": "Enter any notes about mobile"
+      "notes_placeholder": "Enter any notes about mobile",
+      "new_mobile": "New Mobile",
+      "used_mobile": "Used Mobile",
+      "vendor": "Vendor",
+      "select_vendor": "Select vendor",
+      "customer": "Customer",
+      "select_customer": "Select customer",
+      "barcode": "Barcode",
+      "barcode_placeholder": "Enter unique barcode"
     },
     "no_tax": "No Tax"
   },

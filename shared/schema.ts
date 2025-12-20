@@ -10,7 +10,7 @@ import { createInsertSchema } from "drizzle-zod";
 export const shopTypeEnum = pgEnum("shop_type", ["retail_shop", "wholesaler", "repair_center"]);
 
 // Product condition enum - used for stock items
-export const productConditionEnum = pgEnum("product_condition", ["new", "like_new", "good", "fair", "poor"]);
+export const productConditionEnum = pgEnum("product_condition", ["new", "used"]);
 
 // Stock status enum - tracks individual item lifecycle
 export const stockStatusEnum = pgEnum("stock_status", ["in_stock", "out_of_stock", "reserved", "sold", "defective", "returned", "transferred"]);
@@ -36,6 +36,9 @@ export const stockTransferStatusEnum = pgEnum("stock_transfer_status", ["pending
 
 // Tracking mode enum - determines how inventory is tracked for a variant
 export const trackingModeEnum = pgEnum("tracking_mode", ["serialized", "bulk"]);
+
+// Vendor type enum
+export const vendorTypeEnum = pgEnum("vendor_type", ["vendor", "customer", "wholesaler"])
 
 // ============================================================================
 // GLOBAL LOOKUP TABLES (Master Data - manually populated, for suggestions)
@@ -171,6 +174,7 @@ export const vendors = pgTable("vendors", {
   phone: text("phone"),
   email: text("email"),
   address: text("address"),
+  createdBy: text("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -196,6 +200,7 @@ export const stock = pgTable("stock_units", {
   notes: text("notes"),
   condition: productConditionEnum("condition").notNull().default("new"),
   vendorId: varchar("vendor_id").notNull(),
+  vendorType: vendorTypeEnum("vendor_type").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

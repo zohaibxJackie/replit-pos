@@ -298,7 +298,6 @@ export const createProduct = async (req, res) => {
       notes,
       vendorType
     } = req.validatedBody;
-    console.log(req.validatedBody)
 
     const shopId = requestedShopId || req.userShopIds?.[0];
 
@@ -322,24 +321,15 @@ export const createProduct = async (req, res) => {
 
     const [variantExists] = await db.select().from(variant).where(eq(variant.id, variantId)).limit(1);
     if (!variantExists) {
-      return res.status(400).json({ error: req.t ? req.t('product.invalid_serial') : 'Invalid variant' });
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Invalid variant' });
     }
     
-    const [serialExists] = await db.select().from(stock).where(eq(stock.serialNumber), serialNumber)
-    if (!serialExists) {
-      return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Serial number already exists' });
+    const [serialExists] = await db.select().from(stock).where(eq(stock.serialNumber, serialNumber)).limit(1);
+    
+    if (serialExists) {
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_serial') : 'Serial number already exists' });
     }
 
-    // if (!vendorId) {
-    //   return res.status(400).json({ error: req.t ? req.t('product.vendor_required') : 'Vendor Id is required' });
-    // } else {
-    //   const [vendorExists] = await db.select().from(vendors).where(
-    //     and(eq(vendors.id, vendorId), eq(vendors.shopId, shopId))
-    //   ).limit(1);
-    //   if (!vendorExists) {
-    //     return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
-    //   }
-    // }
     if (!vendorType) {
       return res.status(400).json({ error: req.t ? req.t('product.vendor_type') : 'Vendor type is required' }); 
     } else if (vendorType === process.env.WHOLESALER) {
@@ -400,7 +390,8 @@ export const createProduct = async (req, res) => {
       stockStatus: 'in_stock',
       isSold: false,
       notes: notes || null,
-      vendorId: vendorId
+      vendorId: vendorId,
+      vendorType
     }).returning();
 
     try {

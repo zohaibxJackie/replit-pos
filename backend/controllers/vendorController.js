@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { vendors, stock, variant, product, brand } from '../../shared/schema.js';
+import { vendors, stock, variant, product, brand, users } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 
@@ -7,9 +7,15 @@ export const getVendors = async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
-    const shopId = req.userShopIds?.[0];
+    const { userId } = req.query;
 
-    let conditions = [eq(vendors.shopId, shopId)];
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    console.log(user)
+    if (user.length < 1) {
+      return res.status(400).json({ error: req.t("vendors.invalid_user_id") })
+    }
+
+    let conditions = [eq(vendors.createdBy, userId)];
 
     if (search) {
       conditions.push(

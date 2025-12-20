@@ -357,8 +357,8 @@ export const api = {
   },
 
   vendors: {
-    getAll: (shopId?: string) =>
-      request<{ vendors: Array<{ id: string; shopId: string; name: string; phone?: string; email?: string; address?: string; createdAt: string }> }>(shopId ? `/api/vendors?shopId=${shopId}` : '/api/vendors'),
+    getAll: (userId?: string) =>
+      request<{ vendors: Array<{ id: string; name: string; phone?: string; email?: string; address?: string; createdAt: string }> }>(userId ? `/api/vendors?userId=${userId}` : '/api/vendors'),
     
     getById: (id: string) =>
       request<{ vendor: { id: string; shopId: string; name: string; phone?: string; email?: string; address?: string; createdAt: string } }>(`/api/vendors/${id}`),

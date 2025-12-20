@@ -10,7 +10,7 @@ export const createStockSchema = z.object({
   purchasePrice: z.union([z.number().positive('Purchase price must be positive'), z.null()]).optional(),
   salePrice: z.number().positive('Sale price must be positive'),
   vendorId: z.string().uuid().optional().nullable(),
-  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).default('new'),
+  condition: z.enum(['new', 'used']).default('new'),
   notes: z.string().optional().nullable(),
   vendorType: z.string().nonempty()
 });
@@ -21,7 +21,7 @@ export const updateStockItemSchema = z.object({
   salePrice: z.union([z.number().positive('Sale price must be positive'), z.null()]).optional(),
   vendorId: z.string().uuid().optional().nullable(),
   lowStockThreshold: z.number().int().min(0).optional(),
-  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).optional(),
+  condition: z.enum(['new', 'used']).optional(),
   stockStatus: z.enum(['in_stock', 'reserved', 'sold', 'transferred', 'returned', 'defective']).optional(),
   notes: z.string().optional().nullable()
 }).strict();
@@ -34,7 +34,7 @@ export const bulkCreateStockSchema = z.object({
   vendorId: z.string().uuid().optional().nullable(),
   lowStockThreshold: z.number().int().min(0).default(5),
   quantity: z.number().int().min(1).max(100, 'Maximum 100 items per batch'),
-  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).default('new'),
+  condition: z.enum(['new']).default('new'),
   items: z.array(z.object({
     primaryImei: z.string().min(1).optional().nullable(),
     secondaryImei: z.string().optional().nullable(),
@@ -55,7 +55,7 @@ export const stockItemUpdateSchema = z.object({
   primaryImei: z.string().min(15).max(15).optional(),
   secondaryImei: z.string().min(15).max(15).optional().nullable(),
   serialNumber: z.string().optional().nullable(),
-  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).optional(),
+  condition: z.enum(['new', 'used']).optional(),
   stockStatus: z.enum(['in_stock', 'reserved', 'sold', 'transferred', 'returned', 'defective']).optional(),
   notes: z.string().optional().nullable()
 }).strict();
