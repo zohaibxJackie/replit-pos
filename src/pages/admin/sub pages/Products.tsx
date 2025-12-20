@@ -252,11 +252,10 @@ export default function Products() {
           condition: payload.condition,
           notes: payload.notes || null,
           vendorId: payload.vendorId || null,
-          items: payload.imeis.map(e => ({ 
-            primaryImei: e.imei1, 
-            secondaryImei: e.imei2 || null,
-            serialNumber: null,
-            barcode: null
+          vendorType: payload.vendorType || 'vendor',
+          imeis: payload.imeis.map(e => ({ 
+            imei1: e.imei1, 
+            imei2: e.imei2 || null,
           })),
         });
       } else {

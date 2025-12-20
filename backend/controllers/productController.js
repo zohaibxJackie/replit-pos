@@ -425,7 +425,8 @@ export const bulkCreateProducts = async (req, res) => {
       quantity,
       imeis,
       condition,
-      notes
+      notes,
+      vendorType
     } = req.validatedBody;
 
     const shopId = requestedShopId || req.userShopIds?.[0];
@@ -527,7 +528,8 @@ export const bulkCreateProducts = async (req, res) => {
         isSold: false,
         notes: notes || null,
         lowStockThreshold: lowStockThreshold || 5,
-        vendorId: vendorId || null
+        vendorId: vendorId || null,
+        vendorType
       }).returning();
 
       createdStockItems.push(newStock);
