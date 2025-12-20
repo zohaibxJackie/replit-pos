@@ -166,7 +166,7 @@ export const userShop = pgTable("user_shop", {
 // Vendors - suppliers for a shop
 export const vendors = pgTable("vendors", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  shopId: varchar("shop_id").notNull(),
+  // shopId: varchar("shop_id").notNull(),
   name: text("name").notNull(),
   phone: text("phone"),
   email: text("email"),

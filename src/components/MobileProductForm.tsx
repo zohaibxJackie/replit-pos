@@ -271,6 +271,7 @@ export interface MobileProductPayload {
   category: string;
   quantity?: number;
   imeis?: ImeiEntry[];
+  variantId: string;
 }
 
 interface MobileProductFormProps {
@@ -297,7 +298,6 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState<number>(1);
   const [imeis, setImeis] = useState<ImeiEntry[]>([{ imei1: "", imei2: "" }]);
-  console.log(selectedModel)
   const [showScanner, setShowScanner] = useState(false);
   const [showScanner2, setShowScanner2] = useState(false);
   const [showBulkScanner, setShowBulkScanner] = useState(false);
