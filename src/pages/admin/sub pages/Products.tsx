@@ -226,9 +226,14 @@ export default function Products() {
         id: currentStock.id,
         data: {
           salePrice: payload.sellingPrice,
+          purchasePrice: payload.purchasePrice,
           primaryImei: payload.imei,
           secondaryImei: payload.imei2,
-          variantId: payload.variantId,
+          serialNumber: payload.serialNumber || null,
+          barcode: payload.barcode || null,
+          condition: payload.condition,
+          notes: payload.notes || null,
+          vendorId: payload.vendorId || null,
         }
       });
     } else {
@@ -240,25 +245,34 @@ export default function Products() {
       if (payload.quantity && payload.quantity > 1 && payload.imeis) {
         bulkCreateProductMutation.mutate({
           shopId: selectedShopId,
-          categoryId: payload.categoryId || 'mobile',
           variantId: payload.variantId,
           salePrice: payload.sellingPrice,
           purchasePrice: payload.purchasePrice,
           quantity: payload.quantity,
-          imeis: payload.imeis.map(e => ({ 
+          condition: payload.condition,
+          notes: payload.notes || null,
+          vendorId: payload.vendorId || null,
+          items: payload.imeis.map(e => ({ 
             primaryImei: e.imei1, 
-            secondaryImei: e.imei2 || null 
+            secondaryImei: e.imei2 || null,
+            serialNumber: null,
+            barcode: null
           })),
         });
       } else {
         createProductMutation.mutate({
           shopId: selectedShopId,
-          categoryId: payload.categoryId || 'mobile',
           variantId: payload.variantId,
           salePrice: payload.sellingPrice,
           purchasePrice: payload.purchasePrice,
           primaryImei: payload.imei,
           secondaryImei: payload.imei2,
+          serialNumber: payload.serialNumber || null,
+          barcode: payload.barcode || null,
+          condition: payload.condition,
+          notes: payload.notes || null,
+          vendorId: payload.vendorId || null,
+          vendorType: payload.vendorType || 'vendor',
         });
       }
     }

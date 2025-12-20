@@ -272,6 +272,13 @@ export interface MobileProductPayload {
   quantity?: number;
   imeis?: ImeiEntry[];
   variantId: string;
+  condition: string;
+  notes?: string;
+  vendorId?: string;
+  vendorType?: string;
+  serialNumber?: string;
+  barcode?: string;
+  categoryId?: string;
 }
 
 interface MobileProductFormProps {
@@ -489,8 +496,15 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       taxId: taxId === "no_tax" ? undefined : taxId,
       mobileCatalogId: selectedColor?.id || selectedModel.id,
       category: "mobile",
+      categoryId: "mobile",
       quantity: !isEditing && quantity > 1 ? quantity : undefined,
       imeis: !isEditing && quantity > 1 ? imeis : undefined,
+      condition: "new",
+      notes: undefined,
+      vendorId: undefined,
+      vendorType: undefined,
+      serialNumber: undefined,
+      barcode: undefined,
     };
 
     onSubmit(payload);
