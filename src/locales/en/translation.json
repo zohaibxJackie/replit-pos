@@ -990,7 +990,9 @@
       "customer": "Customer",
       "select_customer": "Select customer",
       "barcode": "Barcode",
-      "barcode_placeholder": "Enter unique barcode"
+      "barcode_placeholder": "Enter unique barcode",
+      "lowStockThreshold": "Low stock threshold",
+      "lowStockThreshold_placeholder": "Enter the minimum threshold"
     },
     "no_tax": "No Tax"
   },

@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { stock, variant, product, brand, category, vendors, users, customers } from '../../shared/schema.js';
+import { stock, variant, product, brand, category, vendors, users, customers, taxes } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 import { logActivity } from './notificationController.js';
@@ -296,7 +296,9 @@ export const createProduct = async (req, res) => {
       shopId: requestedShopId,
       condition,
       notes,
-      vendorType
+      vendorType,
+      taxId,
+      lowStockThreshold
     } = req.validatedBody;
 
     const shopId = requestedShopId || req.userShopIds?.[0];
@@ -374,6 +376,13 @@ export const createProduct = async (req, res) => {
         return res.status(400).json({ error: req.t ? req.t('product.imei_duplicate') : 'Primary and Secondary IMEI cannot be the same' });
       }
     }
+    
+    if (taxId) {
+      const [tax] = await db.select().from(taxes).where(eq(taxes.id, taxId));
+      if (!tax) {
+        return res.status(400).json({ error: req.t ? req.t('product.tax_invalid') : 'Invalid tax id' });
+      }
+    }
 
     const finalBarcode = barcode || `STK-${shopId.substring(0, 6)}-${Date.now()}`;
 
@@ -391,7 +400,9 @@ export const createProduct = async (req, res) => {
       isSold: false,
       notes: notes || null,
       vendorId: vendorId,
-      vendorType
+      vendorType,
+      taxId,
+      lowStockThreshold
     }).returning();
 
     try {

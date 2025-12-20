@@ -201,6 +201,8 @@ export const stock = pgTable("stock_units", {
   condition: productConditionEnum("condition").notNull().default("new"),
   vendorId: varchar("vendor_id").notNull(),
   vendorType: vendorTypeEnum("vendor_type").notNull(),
+  taxId: varchar("tax_id"),
+  lowStockThreshold: decimal("low_stock_threshold"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

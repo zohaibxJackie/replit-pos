@@ -272,6 +272,8 @@ export default function Products() {
           notes: payload.notes || null,
           vendorId: payload.vendorId || null,
           vendorType: payload.vendorType || 'vendor',
+          taxId: payload.taxId || undefined,
+          lowStockThreshold: payload.lowStockThreshold || 0
         });
       }
     }

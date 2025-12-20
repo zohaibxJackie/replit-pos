@@ -295,6 +295,7 @@ export interface MobileProductPayload {
   serialNumber?: string;
   barcode?: string;
   categoryId?: string;
+  lowStockThreshold?: number;
 }
 
 interface MobileProductFormProps {
@@ -333,6 +334,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   const [serialNumber, setSerialNumber] = useState<string>(initialData?.serialNumber || '');
   const [barcode, setBarcode] = useState<string>(initialData?.barcode || '');
   const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || '');
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(0);
 
   const handleQuantityChange = useCallback((newQty: number) => {
     const qty = Math.max(1, Math.min(100, newQty));
@@ -553,10 +555,8 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       vendorId: vendorId || undefined,
       vendorType: conditionType === "new" ? "vendor" : "customer",
       serialNumber: serialNumber || undefined,
-      barcode: barcode || undefined,
+      barcode: barcode || undefined, 
     };
-
-    console.log(payload)
 
     onSubmit(payload);
   };
@@ -826,6 +826,21 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
           data-testid="input-barcode"
         />
       </div>
+
+      {conditionType === "new" && (<div>
+        <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
+          {t("products.form.lowStockThreshold")}
+        </Label>
+        <Input 
+          type="number"
+          min={0} 
+          id="lowStockThreshold"
+          value={lowStockThreshold}
+          placeholder={t("products.form.lowStockThreshold_placeholder")}
+          onChange={(e) => setLowStockThreshold(Number(e.target.value))}
+          data-testid="input-lowStockThreshold"
+        />
+      </div>)}
 
       <div>
         <Label htmlFor="purchasePrice" className="text-sm font-medium">

@@ -271,7 +271,6 @@ export const api = {
         condition: string;
         vendorId?: string;
         sku?: string;
-        lowStockThreshold?: number;
         notes?: string;
         createdAt: string;
         updatedAt: string;
@@ -285,7 +284,6 @@ export const api = {
     
     create: (data: { 
       shopId: string; 
-      categoryId?: 'mobile' | 'accessories';
       variantId?: string;
       barcode?: string; 
       salePrice: number;
@@ -294,12 +292,13 @@ export const api = {
       primaryImei?: string;
       secondaryImei?: string;
       serialNumber?: string;
-      sku?: string;
       vendorId?: string;
       condition?: string;
       notes?: string;
-    }) =>
-      request('/api/products', { method: 'POST', body: data }),
+      taxId?: string;
+    }) =>{
+      console.log(data)
+      return request('/api/products', { method: 'POST', body: data })},
     
     update: (id: string, data: Partial<{ 
       variantId: string;
@@ -338,8 +337,10 @@ export const api = {
       condition?: string;
       quantity: number;
       imeis: Array<{ primaryImei: string; secondaryImei?: string | null }>;
-    }) =>
-      request<{ products: Array<{ id: string }>; count: number }>('/api/products/bulk', { method: 'POST', body: data }),
+    }) =>{
+      console.log(data)
+      return request<{ products: Array<{ id: string }>; count: number }>('/api/products/bulk', { method: 'POST', body: data })
+    },
     
     getBrands: () =>
       request<{ brands: Array<{ id: string; name: string }> }>('/api/products/brands'),

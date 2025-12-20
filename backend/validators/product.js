@@ -12,7 +12,9 @@ export const createStockSchema = z.object({
   vendorId: z.string().uuid().optional().nullable(),
   condition: z.enum(['new', 'used']).default('new'),
   notes: z.string().optional().nullable(),
-  vendorType: z.string().nonempty()
+  vendorType: z.string().nonempty(),
+  taxId: z.string().nullable(),
+  lowStockThreshold: z.number().int().min(0).optional()
 });
 
 export const updateStockItemSchema = z.object({
