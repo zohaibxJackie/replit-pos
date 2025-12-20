@@ -978,7 +978,11 @@
       "select_tax": "Select tax (optional)",
       "final_price_with_tax": "Final Price (with tax)",
       "add_mobile": "Add Mobile",
-      "update_mobile": "Update Mobile"
+      "update_mobile": "Update Mobile",
+      "serial_input": "Serial Number",
+      "serial_placeholder": "Enter serial number",
+      "notes": "Notes (if any)",
+      "notes_placeholder": "Enter any notes about mobile"
     },
     "no_tax": "No Tax"
   },

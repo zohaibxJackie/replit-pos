@@ -14,6 +14,7 @@ import { BarcodeScannerDialog } from "@/components/BarcodeScannerDialog";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Textarea } from "./ui/textarea";
 
 interface Tax {
   id: string;
@@ -260,7 +261,6 @@ export interface ImeiEntry {
 export interface MobileProductPayload {
   brand: string;
   model: string;
-  memory?: string;
   color: string;
   imei: string;
   imei2?: string;
@@ -297,8 +297,8 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   const [modelDisplay, setModelDisplay] = useState<string>(initialData?.model || "");
   const [selectedColor, setSelectedColor] = useState<MobileColor | null>(null);
   const [colorDisplay, setColorDisplay] = useState<string>(initialData?.color || "");
-  const [imei, setImei] = useState<string>(initialData?.imei || "");
-  const [imei2, setImei2] = useState<string>(initialData?.imei2 || "");
+  const [imei, setImei] = useState<string | null>(initialData?.imei || null);
+  const [imei2, setImei2] = useState<string | null>(initialData?.imei2 || null);
   const [purchasePrice, setPurchasePrice] = useState<string>(initialData?.purchasePrice?.toString() || "");
   const [sellingPrice, setSellingPrice] = useState<string>(initialData?.sellingPrice?.toString() || "");
   const [taxId, setTaxId] = useState<string | undefined>(initialData?.taxId);
@@ -310,6 +310,10 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   const [showBulkScanner, setShowBulkScanner] = useState(false);
   const [activeScannerIndex, setActiveScannerIndex] = useState<number | null>(null);
   const [activeScannerField, setActiveScannerField] = useState<'imei1' | 'imei2'>('imei1');
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [notes, setNotes] = useState<string>('');
+  const [serialNumber, setSerialNumber] = useState<string | null>(null);
+  
 
   const handleQuantityChange = useCallback((newQty: number) => {
     const qty = Math.max(1, Math.min(100, newQty));
@@ -494,7 +498,6 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       purchasePrice: parseFloat(purchasePrice),
       sellingPrice: parseFloat(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
-      mobileCatalogId: selectedColor?.id || selectedModel.id,
       category: "mobile",
       categoryId: "mobile",
       quantity: !isEditing && quantity > 1 ? quantity : undefined,
@@ -506,6 +509,8 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       serialNumber: undefined,
       barcode: undefined,
     };
+
+    console.log(payload)
 
     onSubmit(payload);
   };
@@ -591,7 +596,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
             <div className="flex gap-2">
               <Input
                 id="imei"
-                value={imei}
+                value={imei || ''}
                 onChange={(e) => setImei(e.target.value)}
                 placeholder={t("products.form.enter_or_scan_imei")}
                 className="flex-1"
@@ -702,6 +707,21 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       )}
 
       <div>
+        <label htmlFor="serial" className="text-sm font-medium">
+          {t("products.form.serial_input")}
+        </label>
+        <Input 
+        type="text" 
+        id="serial"
+        value={serialNumber || ''}
+        placeholder={t("products.form.serial_placeholder")}
+        onChange={(e) => setSerialNumber(e.target.value)}
+        data-testid="input-serial"
+        />
+        
+      </div>
+
+      <div>
         <Label htmlFor="purchasePrice" className="text-sm font-medium">
           {t("products.form.purchase_price")} <span className="text-destructive">*</span>
         </Label>
@@ -762,6 +782,20 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
           </div>
         </div>
       )}
+
+      <div>
+        <label htmlFor="serial" className="text-sm font-medium">
+        {t("products.form.notes")}
+        </label>
+        <Textarea 
+        id="serial"
+        value={notes}
+        placeholder={t("products.form.notes_placeholder")}
+        onChange={(e) => setSerialNumber(e.target.value)}
+        data-testid="input-notes"
+        />
+        
+      </div>
 
       <div className="flex justify-end gap-2 pt-4">
         <Button

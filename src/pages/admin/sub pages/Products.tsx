@@ -446,9 +446,9 @@ export default function Products() {
       </div>
 
       <FormPopupModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setCurrentStock(null); }}>
-        <h2 className="text-2xl font-semibold mb-4">
+        {/* <h2 className="text-2xl font-semibold mb-4">
           {currentStock ? t("admin.products.edit_product") : t("admin.products.add_mobile")}
-        </h2>
+        </h2> */}
         
         {!currentStock && (
           <div className="mb-4">

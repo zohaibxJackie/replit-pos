@@ -190,7 +190,7 @@ export const stock = pgTable("stock_units", {
   serialNumber: text("serial_number"),
   barcode: text("barcode"),
   purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
-  salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
   stockStatus: stockStatusEnum("stock_status").notNull().default("in_stock"),
   isSold: boolean("is_sold").notNull().default(false),
   notes: text("notes"),

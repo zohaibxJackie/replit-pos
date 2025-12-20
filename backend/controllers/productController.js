@@ -1,9 +1,11 @@
 import { db } from '../config/database.js';
-import { stock, variant, product, brand, category, vendors, users } from '../../shared/schema.js';
+import { stock, variant, product, brand, category, vendors, users, customers } from '../../shared/schema.js';
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 import { logActivity } from './notificationController.js';
 import { fetchMobileProducts, fetchAccessoryProducts } from '../helpers/productHelpers.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const getProducts = async (req, res) => {
   try {
@@ -320,7 +322,12 @@ export const createProduct = async (req, res) => {
 
     const [variantExists] = await db.select().from(variant).where(eq(variant.id, variantId)).limit(1);
     if (!variantExists) {
-      return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Invalid variant' });
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_serial') : 'Invalid variant' });
+    }
+    
+    const [serialExists] = await db.select().from(stock).where(eq(stock.serialNumber), serialNumber)
+    if (!serialExists) {
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_variant') : 'Serial number already exists' });
     }
 
     // if (!vendorId) {
@@ -335,13 +342,29 @@ export const createProduct = async (req, res) => {
     // }
     if (!vendorType) {
       return res.status(400).json({ error: req.t ? req.t('product.vendor_type') : 'Vendor type is required' }); 
-    } else if (vendorType === 'wholesaler') {
+    } else if (vendorType === process.env.WHOLESALER) {
       const wholesaler = await db.select().from(users).where(
         and(eq(users.role, vendorType), eq(users.id, vendorId))
       ).limit(1);
       if (!wholesaler) {
         return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
       }
+    } else if (vendorType === process.env.CUSTOMER) {
+      const customer = await db.select().from(customers).where(
+        eq(customers.id, vendorId)
+      ).limit(1);
+      if (!customer) {
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
+      }
+    } else if (vendorType === process.env.VENDOR) {
+      const vendor = await db.select().from(vendors).where(
+        eq(vendors.id, vendorId)
+      )
+      if (!vendor) {
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
+      }
+    } else {
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
     }
 
     if (!(await checkBarcodeUniqueness(barcode, shopId))) {
@@ -377,7 +400,7 @@ export const createProduct = async (req, res) => {
       stockStatus: 'in_stock',
       isSold: false,
       notes: notes || null,
-      vendorId: vendorId || null
+      vendorId: vendorId
     }).returning();
 
     try {
@@ -431,6 +454,33 @@ export const bulkCreateProducts = async (req, res) => {
 
     if (quantity !== imeis.length) {
       return res.status(400).json({ error: req.t ? req.t('product.imei_count_mismatch') : 'IMEI count must match quantity' });
+    }
+
+    if (!vendorType) {
+      return res.status(400).json({ error: req.t ? req.t('product.vendor_type') : 'Vendor type is required' }); 
+    } else if (vendorType === process.env.WHOLESALER) {
+      const wholesaler = await db.select().from(users).where(
+        and(eq(users.role, vendorType), eq(users.id, vendorId))
+      ).limit(1);
+      if (!wholesaler) {
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
+      }
+    } else if (vendorType === process.env.CUSTOMER) {
+      const customer = await db.select().from(customers).where(
+        eq(customers.id, vendorId)
+      ).limit(1);
+      if (!customer) {
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
+      }
+    } else if (vendorType === process.env.VENDOR) {
+      const vendor = await db.select().from(vendors).where(
+        eq(vendors.id, vendorId)
+      )
+      if (!vendor) {
+        return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
+      }
+    } else {
+      return res.status(400).json({ error: req.t ? req.t('product.invalid_vendor') : 'Invalid vendor' });
     }
 
     const [variantExists] = await db.select().from(variant).where(eq(variant.id, variantId)).limit(1);
