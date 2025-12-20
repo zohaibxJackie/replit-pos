@@ -658,7 +658,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
         )}
       </div>
 
-      {!isEditing && (
+      {!isEditing && conditionType === "new" && (
         <div>
           <Label htmlFor="quantity" className="text-sm font-medium">
             {t("products.form.quantity")} <span className="text-destructive">*</span>
