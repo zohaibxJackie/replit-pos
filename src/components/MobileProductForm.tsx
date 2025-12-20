@@ -9,6 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Loader2 } from "lucide-react";
 import { BarcodeScannerDialog } from "@/components/BarcodeScannerDialog";
 import { api } from "@/lib/api";
@@ -35,6 +36,20 @@ interface MobileModel {
 interface MobileColor {
   id: string;
   color: string;
+}
+
+interface Vendor {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
 }
 
 function SearchableSelect({
@@ -292,13 +307,14 @@ interface MobileProductFormProps {
 export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isEditing = false }: MobileProductFormProps) {
   const { t } = useTranslation();
 
+  const [conditionType, setConditionType] = useState<"new" | "used">(initialData?.condition === "used" ? "used" : "new");
   const [brand, setBrand] = useState<string>(initialData?.brand || "");
   const [selectedModel, setSelectedModel] = useState<MobileModel | null>(null);
   const [modelDisplay, setModelDisplay] = useState<string>(initialData?.model || "");
   const [selectedColor, setSelectedColor] = useState<MobileColor | null>(null);
   const [colorDisplay, setColorDisplay] = useState<string>(initialData?.color || "");
-  const [imei, setImei] = useState<string | null>(initialData?.imei || null);
-  const [imei2, setImei2] = useState<string | null>(initialData?.imei2 || null);
+  const [imei, setImei] = useState<string>(initialData?.imei || "");
+  const [imei2, setImei2] = useState<string>(initialData?.imei2 || "");
   const [purchasePrice, setPurchasePrice] = useState<string>(initialData?.purchasePrice?.toString() || "");
   const [sellingPrice, setSellingPrice] = useState<string>(initialData?.sellingPrice?.toString() || "");
   const [taxId, setTaxId] = useState<string | undefined>(initialData?.taxId);
@@ -311,9 +327,10 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   const [activeScannerIndex, setActiveScannerIndex] = useState<number | null>(null);
   const [activeScannerField, setActiveScannerField] = useState<'imei1' | 'imei2'>('imei1');
   const [variantId, setVariantId] = useState<string | null>(null);
-  const [notes, setNotes] = useState<string>('');
-  const [serialNumber, setSerialNumber] = useState<string | null>(null);
-  
+  const [notes, setNotes] = useState<string>(initialData?.notes || '');
+  const [serialNumber, setSerialNumber] = useState<string>(initialData?.serialNumber || '');
+  const [barcode, setBarcode] = useState<string>(initialData?.barcode || '');
+  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || '');
 
   const handleQuantityChange = useCallback((newQty: number) => {
     const qty = Math.max(1, Math.min(100, newQty));
@@ -359,13 +376,25 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
 
   const { data: colorsData, isLoading: colorsLoading } = useQuery({
     queryKey: ['/api/products/catalog/mobiles/colors', brand, selectedModel?.name, selectedModel?.memory],
-    queryFn: () => api.mobileCatalog.getColors(selectedModel),
+    queryFn: () => api.mobileCatalog.getColors(selectedModel as any),
     enabled: !!brand && !!selectedModel,
   });
 
   const { data: taxesData, isLoading: taxesLoading } = useQuery({
     queryKey: ['/api/taxes', { isActive: true }],
     queryFn: () => api.taxes.getAll({ isActive: true }),
+  });
+
+  const { data: vendorsData, isLoading: vendorsLoading } = useQuery({
+    queryKey: ['/api/vendors', shopId],
+    queryFn: () => api.vendors.getAll(shopId),
+    enabled: conditionType === "new" && !!shopId,
+  });
+
+  const { data: customersData, isLoading: customersLoading } = useQuery({
+    queryKey: ['/api/customers'],
+    queryFn: () => api.customers.getAll({ limit: 1000 }),
+    enabled: conditionType === "used",
   });
 
   const brands = useMemo(() => {
@@ -383,16 +412,24 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
   const taxes = useMemo(() => {
     const taxList = taxesData?.taxes || [];
     return [
-      { id: "no_tax", name: t("products.no_tax"), type: 'percent' as const, value: "0", isActive: true },
-      ...taxList.map(t => ({
-        id: t.id,
-        name: `${t.name} (${t.type === 'percent' ? t.value + '%' : t.value})`,
-        type: t.type,
-        value: t.value,
-        isActive: t.isActive
+      { id: "no_tax", name: t("products.no_tax"), type: 'flat' as const, value: "0", isActive: true },
+      ...taxList.map(tax => ({
+        id: tax.id,
+        name: `${tax.name} (${tax.type === 'percent' ? tax.value + '%' : tax.value})`,
+        type: tax.type as 'percent' | 'flat',
+        value: tax.value,
+        isActive: tax.isActive
       }))
     ];
   }, [taxesData, t]);
+
+  const vendors = useMemo(() => {
+    return vendorsData?.vendors || [];
+  }, [vendorsData]);
+
+  const customers = useMemo(() => {
+    return customersData?.customers || [];
+  }, [customersData]);
 
   const handleBrandChange = useCallback((newBrand: string) => {
     setBrand(newBrand);
@@ -478,6 +515,13 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       });
     }
 
+    if (conditionType === "new" && !vendorId) {
+      newErrors.vendor = t("products.form.vendor_required");
+    }
+    if (conditionType === "used" && !vendorId) {
+      newErrors.vendor = t("products.form.customer_required");
+    }
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -491,7 +535,6 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
     const payload: MobileProductPayload = {
       brand,
       model: selectedModel.name,
-      memory: selectedModel.memory,
       color: selectedColor?.color || colorDisplay.trim(),
       imei: isEditing || quantity === 1 ? imei.trim() : imeis[0]?.imei1.trim() || "",
       imei2: isEditing || quantity === 1 ? (imei2.trim() || undefined) : (imeis[0]?.imei2.trim() || undefined),
@@ -502,21 +545,67 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       categoryId: "mobile",
       quantity: !isEditing && quantity > 1 ? quantity : undefined,
       imeis: !isEditing && quantity > 1 ? imeis : undefined,
-      condition: "new",
-      notes: undefined,
-      vendorId: undefined,
-      vendorType: undefined,
-      serialNumber: undefined,
-      barcode: undefined,
+      variantId: initialData?.variantId || "",
+      condition: conditionType,
+      notes: notes || undefined,
+      vendorId: vendorId || undefined,
+      vendorType: conditionType === "new" ? "vendor" : "customer",
+      serialNumber: serialNumber || undefined,
+      barcode: barcode || undefined,
     };
-
-    console.log(payload)
 
     onSubmit(payload);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <Tabs defaultValue={conditionType} onValueChange={(val) => setConditionType(val as "new" | "used")} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="new" data-testid="tab-new-mobile">
+            {t("products.form.new_mobile") || "New"}
+          </TabsTrigger>
+          <TabsTrigger value="used" data-testid="tab-used-mobile">
+            {t("products.form.used_mobile") || "Used"}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="new" className="space-y-4">
+          <div>
+            <Label htmlFor="vendor" className="text-sm font-medium">
+              {t("products.form.vendor")} <span className="text-destructive">*</span>
+            </Label>
+            <SearchableSelect
+              items={vendors as any}
+              placeholder={t("products.form.select_vendor")}
+              value={vendorId}
+              onChange={setVendorId}
+              isLoading={vendorsLoading}
+            />
+            {errors.vendor && (
+              <p className="text-destructive text-xs mt-1">{errors.vendor}</p>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="used" className="space-y-4">
+          <div>
+            <Label htmlFor="customer" className="text-sm font-medium">
+              {t("products.form.customer")} <span className="text-destructive">*</span>
+            </Label>
+            <SearchableSelect
+              items={customers as any}
+              placeholder={t("products.form.select_customer")}
+              value={vendorId}
+              onChange={setVendorId}
+              isLoading={customersLoading}
+            />
+            {errors.vendor && (
+              <p className="text-destructive text-xs mt-1">{errors.vendor}</p>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+
       <div>
         <Label htmlFor="brand" className="text-sm font-medium">
           {t("products.form.brand")} <span className="text-destructive">*</span>
@@ -538,7 +627,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
           {t("products.form.phone_model")} <span className="text-destructive">*</span>
         </Label>
         <PhoneModelAutocomplete
-          models={models}
+          models={models as any}
           value={modelDisplay}
           onChange={handleModelChange}
           isLoading={modelsLoading}
@@ -596,7 +685,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
             <div className="flex gap-2">
               <Input
                 id="imei"
-                value={imei || ''}
+                value={imei}
                 onChange={(e) => setImei(e.target.value)}
                 placeholder={t("products.form.enter_or_scan_imei")}
                 className="flex-1"
@@ -707,18 +796,31 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       )}
 
       <div>
-        <label htmlFor="serial" className="text-sm font-medium">
+        <Label htmlFor="serialNumber" className="text-sm font-medium">
           {t("products.form.serial_input")}
-        </label>
+        </Label>
         <Input 
-        type="text" 
-        id="serial"
-        value={serialNumber || ''}
-        placeholder={t("products.form.serial_placeholder")}
-        onChange={(e) => setSerialNumber(e.target.value)}
-        data-testid="input-serial"
+          type="text" 
+          id="serialNumber"
+          value={serialNumber}
+          placeholder={t("products.form.serial_placeholder")}
+          onChange={(e) => setSerialNumber(e.target.value)}
+          data-testid="input-serial"
         />
-        
+      </div>
+
+      <div>
+        <Label htmlFor="barcode" className="text-sm font-medium">
+          {t("products.form.barcode")}
+        </Label>
+        <Input 
+          type="text" 
+          id="barcode"
+          value={barcode}
+          placeholder={t("products.form.barcode_placeholder")}
+          onChange={(e) => setBarcode(e.target.value)}
+          data-testid="input-barcode"
+        />
       </div>
 
       <div>
@@ -784,17 +886,16 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       )}
 
       <div>
-        <label htmlFor="serial" className="text-sm font-medium">
-        {t("products.form.notes")}
-        </label>
+        <Label htmlFor="notes" className="text-sm font-medium">
+          {t("products.form.notes")}
+        </Label>
         <Textarea 
-        id="serial"
-        value={notes}
-        placeholder={t("products.form.notes_placeholder")}
-        onChange={(e) => setSerialNumber(e.target.value)}
-        data-testid="input-notes"
+          id="notes"
+          value={notes}
+          placeholder={t("products.form.notes_placeholder")}
+          onChange={(e) => setNotes(e.target.value)}
+          data-testid="input-notes"
         />
-        
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
