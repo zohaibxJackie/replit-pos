@@ -92,17 +92,17 @@ export default function UpdateProductForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Fetch variants
-  const { data: variantsData, isLoading: variantsLoading } = useQuery({
-    queryKey: ['/api/products/variants'],
-    queryFn: () => api.products.getVariants(),
-  });
+  // const { data: variantsData, isLoading: variantsLoading } = useQuery({
+  //   queryKey: ['/api/products/variants'],
+  //   queryFn: () => api.products.getVariants(),
+  // });
 
   const { data: taxesData } = useQuery({
     queryKey: ['/api/taxes'],
     queryFn: () => api.taxes.getAll(),
   });
 
-  const variants = (variantsData?.variants || []) as any[];
+  // const variants = (variantsData?.variants || []) as any[];
   const taxes = (taxesData?.taxes || []) as Tax[];
 
   const handleChange = (field: keyof UpdateProductPayload, value: any) => {
@@ -154,7 +154,7 @@ export default function UpdateProductForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label htmlFor="variantId">{t("admin.products.form.variant")}</Label>
         <Select
           value={formData.variantId || "none"}
@@ -172,7 +172,7 @@ export default function UpdateProductForm({
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </div> */}
 
       <div className="space-y-2">
         <Label htmlFor="primaryImei">{t("admin.products.form.primary_imei")}</Label>
