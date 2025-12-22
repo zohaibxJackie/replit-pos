@@ -537,6 +537,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       return;
     }
 
+    // main payload or data that will be sent to backend for adding single mobile
     const payload: MobileProductPayload = {
       brand,
       model: selectedModel.name,
@@ -556,6 +557,7 @@ export function MobileProductForm({ onSubmit, onCancel, initialData, shopId, isE
       vendorType: conditionType === "new" ? "vendor" : "customer",
       serialNumber: serialNumber || undefined,
       barcode: barcode || undefined, 
+      lowStockThreshold: lowStockThreshold || 0
     };
 
     onSubmit(payload);

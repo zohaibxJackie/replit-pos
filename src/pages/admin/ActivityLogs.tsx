@@ -126,7 +126,16 @@ export default function ActivityLogs() {
       key: "createdAt", 
       label: t('admin.activity_log.date'),
       filterType: "none" as const,
-      render: (log: ActivityLog) => format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm'),
+      render: (log: ActivityLog) => {
+        try {
+          if (!log.createdAt) return '-';
+          const date = new Date(log.createdAt);
+          if (isNaN(date.getTime())) return '-';
+          return format(date, 'dd/MM/yyyy HH:mm');
+        } catch {
+          return '-';
+        }
+      },
     },
     { 
       key: "action", 
