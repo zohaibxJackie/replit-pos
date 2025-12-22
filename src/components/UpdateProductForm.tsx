@@ -74,7 +74,8 @@ export default function UpdateProductForm({
 }: UpdateProductFormProps) {
   const { t } = useTranslation();
 
-  const [formData, setFormData] = useState<UpdateProductPayload>({
+  // Create initial state object once
+  const getInitialFormData = () => ({
     variantId: initialData?.variantId || "",
     primaryImei: initialData?.primaryImei || "",
     secondaryImei: initialData?.secondaryImei || "",
@@ -87,26 +88,8 @@ export default function UpdateProductForm({
     lowStockThreshold: initialData?.lowStockThreshold || 5,
   });
 
+  const [formData, setFormData] = useState<UpdateProductPayload>(getInitialFormData());
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Sync form data when initialData changes
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        variantId: initialData.variantId || "",
-        primaryImei: initialData.primaryImei || "",
-        secondaryImei: initialData.secondaryImei || "",
-        serialNumber: initialData.serialNumber || "",
-        barcode: initialData.barcode || "",
-        purchasePrice: initialData.purchasePrice,
-        salePrice: initialData.salePrice,
-        notes: initialData.notes || "",
-        taxId: initialData.taxId || "",
-        lowStockThreshold: initialData.lowStockThreshold || 5,
-      });
-      setErrors({});
-    }
-  }, [initialData]);
 
   // Fetch variants
   const { data: variantsData, isLoading: variantsLoading } = useQuery({
