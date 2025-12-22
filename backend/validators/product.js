@@ -18,6 +18,16 @@ export const createStockSchema = z.object({
 });
 
 export const updateStockItemSchema = z.object({
+  // variantId,
+  //     primaryImei,
+  //     secondaryImei,
+  //     serialNumber,
+  //     barcode, -------
+  //     purchasePrice, -----
+  //     salePrice, -----
+  //     notes, ----- 
+  //     taxId, -------
+  //     lowStockThreshold ------
   barcode: z.string().optional().nullable(),
   purchasePrice: z.union([z.number().positive('Purchase price must be positive'), z.null()]).optional(),
   salePrice: z.union([z.number().positive('Sale price must be positive'), z.null()]).optional(),
@@ -25,7 +35,12 @@ export const updateStockItemSchema = z.object({
   lowStockThreshold: z.number().int().min(0).optional(),
   condition: z.enum(['new', 'used']).optional(),
   stockStatus: z.enum(['in_stock', 'reserved', 'sold', 'transferred', 'returned', 'defective']).optional(),
-  notes: z.string().optional().nullable()
+  notes: z.string().optional().nullable(),
+  taxId: z.string().uuid().optional().nullable(),
+  variantId: z.string().uuid(),
+  primaryImei: z.string().optional().nullable(),
+  secondaryImei: z.string().optional().nullable(),
+  serialNumber: z.string().optional().nullable(),
 }).strict();
 
 export const bulkCreateStockSchema = z.object({

@@ -566,72 +566,238 @@ export const bulkCreateProducts = async (req, res) => {
   }
 };
 
+// export const updateProduct = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { 
+//       barcode,
+//       purchasePrice,
+//       salePrice,
+//       vendorId,
+//       lowStockThreshold,
+//       notes,
+//       condition
+//     } = req.validatedBody;
+
+//     const userShopIds = req.userShopIds || [];
+
+//     const [existingStock] = await db.select().from(stock).where(
+//       and(eq(stock.id, id), inArray(stock.shopId, userShopIds))
+//     ).limit(1);
+
+//     if (!existingStock) {
+//       return res.status(404).json({ error: req.t('product.not_found') });
+//     }
+
+//     if (vendorId !== undefined && vendorId !== null) {
+//       const [vendorExists] = await db.select().from(vendors).where(
+//         and(eq(vendors.id, vendorId), eq(vendors.shopId, existingStock.shopId))
+//       ).limit(1);
+//       if (!vendorExists) {
+//         return res.status(400).json({ error: req.t('product.invalid_vendor') });
+//       }
+//     }
+
+//     if (barcode !== undefined && barcode !== null) {
+//       if (!(await checkBarcodeUniqueness(barcode, existingStock.shopId, id))) {
+//         return res.status(409).json({ error: req.t('product.barcode_exists') });
+//       }
+//     }
+
+//     const updateData = { updatedAt: new Date() };
+//     if (barcode !== undefined) updateData.barcode = barcode;
+//     if (purchasePrice !== undefined) updateData.purchasePrice = purchasePrice != null ? purchasePrice.toString() : null;
+//     if (salePrice !== undefined && salePrice != null) updateData.salePrice = salePrice.toString();
+//     if (vendorId !== undefined) updateData.vendorId = vendorId;
+//     if (lowStockThreshold !== undefined) updateData.lowStockThreshold = lowStockThreshold;
+//     if (notes !== undefined) updateData.notes = notes;
+//     if (condition !== undefined) updateData.condition = condition;
+
+//     const [updatedStock] = await db.update(stock)
+//       .set(updateData)
+//       .where(eq(stock.id, id))
+//       .returning();
+
+//     try {
+//       await logActivity(req.user?.id, 'update', 'stock', id, {
+//         changes: updateData
+//       }, req);
+//     } catch (logError) {
+//       console.error('Activity logging failed:', logError);
+//     }
+
+//     res.json({ product: updatedStock });
+//   } catch (error) {
+//     console.error('Update product error:', error);
+//     res.status(500).json({ error: req.t('product.update_failed') });
+//   }
+// };
+
 export const updateProduct = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { 
+    const stockId = req.params.id;
+    const {
+      variantId,
+      primaryImei,
+      secondaryImei,
+      serialNumber,
       barcode,
       purchasePrice,
       salePrice,
-      vendorId,
-      lowStockThreshold,
       notes,
-      condition
+      taxId,
+      lowStockThreshold
     } = req.validatedBody;
 
-    const userShopIds = req.userShopIds || [];
+    if (!stockId) {
+      return res.status(400).json({ error: 'Stock ID is required' });
+    }
 
-    const [existingStock] = await db.select().from(stock).where(
-      and(eq(stock.id, id), inArray(stock.shopId, userShopIds))
-    ).limit(1);
+    const [existingStock] = await db
+      .select()
+      .from(stock)
+      .where(eq(stock.id, stockId))
+      .limit(1);
 
     if (!existingStock) {
-      return res.status(404).json({ error: req.t('product.not_found') });
+      return res.status(404).json({ error: 'Stock not found' });
     }
 
-    if (vendorId !== undefined && vendorId !== null) {
-      const [vendorExists] = await db.select().from(vendors).where(
-        and(eq(vendors.id, vendorId), eq(vendors.shopId, existingStock.shopId))
-      ).limit(1);
-      if (!vendorExists) {
-        return res.status(400).json({ error: req.t('product.invalid_vendor') });
+    // 🔐 Shop access check
+    const hasFullAccess =
+      req.user?.role === 'sales_person' || req.user?.role === 'admin';
+
+    if (
+      !hasFullAccess &&
+      req.userShopIds?.length > 0 &&
+      !req.userShopIds.includes(existingStock.shopId)
+    ) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // ✅ Variant validation
+    if (variantId && variantId !== existingStock.variantId) {
+      const [variantExists] = await db
+        .select()
+        .from(variant)
+        .where(eq(variant.id, variantId))
+        .limit(1);
+
+      if (!variantExists) {
+        return res.status(400).json({ error: 'Invalid variant' });
       }
     }
 
-    if (barcode !== undefined && barcode !== null) {
-      if (!(await checkBarcodeUniqueness(barcode, existingStock.shopId, id))) {
-        return res.status(409).json({ error: req.t('product.barcode_exists') });
+    // ✅ Serial uniqueness
+    if (serialNumber && serialNumber !== existingStock.serialNumber) {
+      const [serialExists] = await db
+        .select()
+        .from(stock)
+        .where(eq(stock.serialNumber, serialNumber))
+        .limit(1);
+
+      if (serialExists) {
+        return res.status(409).json({ error: 'Serial number already exists' });
       }
     }
 
+    // ✅ Barcode uniqueness
+    if (barcode && barcode !== existingStock.barcode) {
+      if (!(await checkBarcodeUniqueness(barcode, existingStock.shopId))) {
+        return res.status(409).json({ error: 'Barcode already exists' });
+      }
+    }
+
+    // ✅ IMEI uniqueness
+    if (primaryImei && primaryImei !== existingStock.primaryImei) {
+      if (!(await checkImeiUniqueness(primaryImei))) {
+        return res.status(409).json({ error: 'IMEI already exists' });
+      }
+    }
+
+    if (secondaryImei && secondaryImei !== existingStock.secondaryImei) {
+      if (!(await checkImeiUniqueness(secondaryImei))) {
+        return res.status(409).json({ error: 'IMEI already exists' });
+      }
+    }
+
+    if (primaryImei && secondaryImei && primaryImei === secondaryImei) {
+      return res
+        .status(400)
+        .json({ error: 'Primary and Secondary IMEI cannot be same' });
+    }
+
+    // ✅ Tax validation
+    if (taxId) {
+      const [tax] = await db.select().from(taxes).where(eq(taxes.id, taxId));
+      if (!tax) {
+        return res.status(400).json({ error: 'Invalid tax id' });
+      }
+    }
+
+    // 🧠 Build update payload
     const updateData = { updatedAt: new Date() };
-    if (barcode !== undefined) updateData.barcode = barcode;
-    if (purchasePrice !== undefined) updateData.purchasePrice = purchasePrice != null ? purchasePrice.toString() : null;
-    if (salePrice !== undefined && salePrice != null) updateData.salePrice = salePrice.toString();
-    if (vendorId !== undefined) updateData.vendorId = vendorId;
-    if (lowStockThreshold !== undefined) updateData.lowStockThreshold = lowStockThreshold;
-    if (notes !== undefined) updateData.notes = notes;
-    if (condition !== undefined) updateData.condition = condition;
 
-    const [updatedStock] = await db.update(stock)
+    if (variantId !== undefined) updateData.variantId = variantId;
+    if (primaryImei !== undefined)
+      updateData.primaryImei = primaryImei || null;
+    if (secondaryImei !== undefined)
+      updateData.secondaryImei = secondaryImei || null;
+    if (serialNumber !== undefined)
+      updateData.serialNumber = serialNumber || null;
+    if (barcode !== undefined) updateData.barcode = barcode;
+    if (purchasePrice !== undefined)
+      updateData.purchasePrice =
+        purchasePrice != null ? purchasePrice.toString() : null;
+    if (salePrice !== undefined)
+      updateData.salePrice =
+        salePrice != null ? salePrice.toString() : null;
+    if (notes !== undefined) updateData.notes = notes;
+    if (taxId !== undefined) updateData.taxId = taxId;
+    if (lowStockThreshold !== undefined)
+      updateData.lowStockThreshold = lowStockThreshold;
+
+    // 🔄 Update stock
+    const [updatedStock] = await db
+      .update(stock)
       .set(updateData)
-      .where(eq(stock.id, id))
+      .where(eq(stock.id, stockId))
       .returning();
 
+    // 🧾 Activity log (NOW ADDED)
     try {
-      await logActivity(req.user?.id, 'update', 'stock', id, {
-        changes: updateData
-      }, req);
+      await logActivity(
+        req.user?.id,
+        'update',
+        'stock',
+        stockId,
+        {
+          before: {
+            barcode: existingStock.barcode,
+            salePrice: existingStock.salePrice,
+            primaryImei: existingStock.primaryImei,
+            secondaryImei: existingStock.secondaryImei
+          },
+          after: {
+            barcode: updatedStock.barcode,
+            salePrice: updatedStock.salePrice,
+            primaryImei: updatedStock.primaryImei,
+            secondaryImei: updatedStock.secondaryImei
+          }
+        },
+        req
+      );
     } catch (logError) {
       console.error('Activity logging failed:', logError);
     }
 
-    res.json({ product: updatedStock });
+    res.status(200).json({ product: updatedStock });
   } catch (error) {
-    console.error('Update product error:', error);
     res.status(500).json({ error: req.t('product.update_failed') });
   }
 };
+
+
 
 export const updateStockStatus = async (req, res) => {
   try {
