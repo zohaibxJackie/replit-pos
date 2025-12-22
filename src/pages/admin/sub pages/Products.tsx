@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import FormPopupModal from "@/components/ui/FormPopupModal";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 import { useTitle } from '@/context/TitleContext';
 import { MobileProductForm, MobileProductPayload } from "@/components/MobileProductForm";
-import UpdateProductForm, { type UpdateProductPayload as UpdatePayload } from "@/components/UpdateProductForm";
 import InterStockTransferModal from "@/components/InterStockTransferModal";
 import { api } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -63,6 +64,7 @@ interface StockItem {
   condition: string;
   vendorId?: string;
   sku?: variant;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -213,6 +215,17 @@ export default function Products() {
 
   const openEditModal = (stock: StockItem) => {
     setCurrentStock(stock);
+    setUpdateFormData({
+      primaryImei: stock.primaryImei || '',
+      secondaryImei: stock.secondaryImei || '',
+      serialNumber: stock.serialNumber || '',
+      barcode: stock.barcode || '',
+      purchasePrice: stock.purchasePrice ? parseFloat(stock.purchasePrice) : undefined,
+      salePrice: parseFloat(stock.salePrice),
+      notes: stock.notes || '',
+      lowStockThreshold: 5,
+    });
+    setUpdateErrors({});
     setIsModalOpen(true);
   };
 
@@ -262,12 +275,70 @@ export default function Products() {
     }
   };
 
-  const handleUpdateProductSubmit = (payload: UpdatePayload) => {
-    if (!currentStock) return;
+  const [updateFormData, setUpdateFormData] = useState<{
+    primaryImei?: string;
+    secondaryImei?: string;
+    serialNumber?: string;
+    barcode?: string;
+    purchasePrice?: number;
+    salePrice?: number;
+    notes?: string;
+    taxId?: string;
+    lowStockThreshold?: number;
+  }>({});
+  const [updateErrors, setUpdateErrors] = useState<Record<string, string>>({});
+
+  const { data: taxesData } = useQuery({
+    queryKey: ['/api/taxes'],
+    queryFn: () => api.taxes.getAll(),
+  });
+
+  const taxes = (taxesData?.taxes || []) as Array<{ id: string; name: string }>;
+
+  const handleUpdateFieldChange = (field: string, value: any) => {
+    setUpdateFormData(prev => ({
+      ...prev,
+      [field]: value === "" ? undefined : value,
+    }));
+    if (updateErrors[field]) {
+      setUpdateErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateUpdateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (updateFormData.purchasePrice !== undefined && updateFormData.purchasePrice < 0) {
+      newErrors.purchasePrice = "Purchase price cannot be negative";
+    }
+
+    if (updateFormData.salePrice !== undefined && updateFormData.salePrice < 0) {
+      newErrors.salePrice = "Sale price cannot be negative";
+    }
+
+    if (updateFormData.primaryImei && updateFormData.secondaryImei && updateFormData.primaryImei === updateFormData.secondaryImei) {
+      newErrors.secondaryImei = "Primary and Secondary IMEI cannot be the same";
+    }
+
+    if (updateFormData.lowStockThreshold !== undefined && updateFormData.lowStockThreshold < 0) {
+      newErrors.lowStockThreshold = "Low stock threshold cannot be negative";
+    }
+
+    setUpdateErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUpdateProductSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentStock || !validateUpdateForm()) return;
     
     updateProductMutation.mutate({
       id: currentStock.id,
-      data: payload
+      data: updateFormData
     });
   };
 
@@ -440,23 +511,172 @@ export default function Products() {
 
       <FormPopupModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setCurrentStock(null); }}>
         {currentStock ? (
-          <UpdateProductForm
-            onSubmit={handleUpdateProductSubmit}
-            onCancel={() => { setIsModalOpen(false); setCurrentStock(null); }}
-            initialData={{
-              variantId: currentStock.variantId,
-              primaryImei: currentStock.primaryImei || '',
-              secondaryImei: currentStock.secondaryImei || '',
-              serialNumber: currentStock.serialNumber || '',
-              barcode: currentStock.barcode || '',
-              purchasePrice: currentStock.purchasePrice ? parseFloat(currentStock.purchasePrice) : undefined,
-              salePrice: parseFloat(currentStock.salePrice),
-              notes: currentStock.notes || '',
-              lowStockThreshold: 5,
-            }}
-            shopId={currentStock.shopId}
-            isLoading={updateProductMutation.isPending}
-          />
+          <form onSubmit={handleUpdateProductSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="primaryImei">{t("admin.products.form.primary_imei")}</Label>
+              <Input
+                id="primaryImei"
+                type="text"
+                placeholder="Enter primary IMEI"
+                value={updateFormData.primaryImei || ''}
+                onChange={(e) => handleUpdateFieldChange("primaryImei", e.target.value)}
+                data-testid="input-primary-imei-update"
+              />
+              {updateErrors.primaryImei && (
+                <p className="text-sm text-destructive">{updateErrors.primaryImei}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="secondaryImei">{t("admin.products.form.secondary_imei")}</Label>
+              <Input
+                id="secondaryImei"
+                type="text"
+                placeholder="Enter secondary IMEI (optional)"
+                value={updateFormData.secondaryImei || ''}
+                onChange={(e) => handleUpdateFieldChange("secondaryImei", e.target.value)}
+                data-testid="input-secondary-imei-update"
+              />
+              {updateErrors.secondaryImei && (
+                <p className="text-sm text-destructive">{updateErrors.secondaryImei}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="serialNumber">{t("admin.products.form.serial_number")}</Label>
+              <Input
+                id="serialNumber"
+                type="text"
+                placeholder="Enter serial number (optional)"
+                value={updateFormData.serialNumber || ''}
+                onChange={(e) => handleUpdateFieldChange("serialNumber", e.target.value)}
+                data-testid="input-serial-number-update"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="barcode">{t("admin.products.form.barcode")}</Label>
+              <Input
+                id="barcode"
+                type="text"
+                placeholder="Enter barcode (optional)"
+                value={updateFormData.barcode || ''}
+                onChange={(e) => handleUpdateFieldChange("barcode", e.target.value)}
+                data-testid="input-barcode-update"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="purchasePrice">{t("admin.products.form.purchase_price")}</Label>
+                <Input
+                  id="purchasePrice"
+                  type="number"
+                  placeholder="0"
+                  step="0.01"
+                  value={updateFormData.purchasePrice ?? ''}
+                  onChange={(e) => handleUpdateFieldChange("purchasePrice", e.target.value ? parseFloat(e.target.value) : undefined)}
+                  data-testid="input-purchase-price-update"
+                />
+                {updateErrors.purchasePrice && (
+                  <p className="text-sm text-destructive">{updateErrors.purchasePrice}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="salePrice">{t("admin.products.form.sale_price")}</Label>
+                <Input
+                  id="salePrice"
+                  type="number"
+                  placeholder="0"
+                  step="0.01"
+                  value={updateFormData.salePrice ?? ''}
+                  onChange={(e) => handleUpdateFieldChange("salePrice", e.target.value ? parseFloat(e.target.value) : undefined)}
+                  data-testid="input-sale-price-update"
+                />
+                {updateErrors.salePrice && (
+                  <p className="text-sm text-destructive">{updateErrors.salePrice}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="taxId">{t("admin.products.form.tax")}</Label>
+              <Select
+                value={updateFormData.taxId || "none"}
+                onValueChange={(value) =>
+                  handleUpdateFieldChange("taxId", value === "none" ? undefined : value)
+                }
+              >
+                <SelectTrigger id="taxId" data-testid="select-tax-update">
+                  <SelectValue placeholder={t("admin.products.form.select_tax")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    {t("admin.products.form.no_tax")}
+                  </SelectItem>
+                  {taxes.map((tax) => (
+                    <SelectItem key={tax.id} value={tax.id}>
+                      {tax.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lowStockThreshold">{t("admin.products.form.low_stock_threshold")}</Label>
+              <Input
+                id="lowStockThreshold"
+                type="number"
+                placeholder="5"
+                value={updateFormData.lowStockThreshold ?? ''}
+                onChange={(e) => handleUpdateFieldChange("lowStockThreshold", e.target.value ? parseInt(e.target.value) : undefined)}
+                data-testid="input-low-stock-threshold-update"
+              />
+              {updateErrors.lowStockThreshold && (
+                <p className="text-sm text-destructive">{updateErrors.lowStockThreshold}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">{t("admin.products.form.notes")}</Label>
+              <Textarea
+                id="notes"
+                placeholder="Enter notes (optional)"
+                value={updateFormData.notes || ''}
+                onChange={(e) => handleUpdateFieldChange("notes", e.target.value)}
+                data-testid="textarea-notes-update"
+                className="min-h-20"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setIsModalOpen(false); setCurrentStock(null); }}
+                disabled={updateProductMutation.isPending}
+                data-testid="button-cancel-update"
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateProductMutation.isPending}
+                data-testid="button-update-product"
+              >
+                {updateProductMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {t("common.updating")}
+                  </>
+                ) : (
+                  t("common.update")
+                )}
+              </Button>
+            </div>
+          </form>
         ) : (
           <>
             <div className="mb-4">
