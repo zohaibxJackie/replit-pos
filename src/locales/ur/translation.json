@@ -322,6 +322,21 @@
         "imei": "IMEI/سیریل",
         "stock": "اسٹاک",
         "sale_price": "فروخت کی قیمت"
+      },
+      "form": {
+        "variant": "متغیر",
+        "select_variant": "متغیر منتخب کریں",
+        "primary_imei": "بنیادی IMEI",
+        "secondary_imei": "ثانوی IMEI",
+        "serial_number": "سیریل نمبر",
+        "barcode": "بار کوڈ",
+        "purchase_price": "خریدکی قیمت",
+        "sale_price": "فروخت کی قیمت",
+        "tax": "ٹیکس",
+        "select_tax": "ٹیکس منتخب کریں (اختیاری)",
+        "no_tax": "کوئی ٹیکس نہیں",
+        "low_stock_threshold": "کم اسٹاک کی حد",
+        "notes": "نوٹس"
       }
     },
     "common": {

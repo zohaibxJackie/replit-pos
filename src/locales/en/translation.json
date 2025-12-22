@@ -356,7 +356,22 @@
       "stock": "Stock",
       "confirm_transfer": "Confirm Transfer",
       "confirm_transfer_message": "Are you sure you want to transfer this product?",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "form": {
+        "variant": "Variant",
+        "select_variant": "Select a variant",
+        "primary_imei": "Primary IMEI",
+        "secondary_imei": "Secondary IMEI",
+        "serial_number": "Serial Number",
+        "barcode": "Barcode",
+        "purchase_price": "Purchase Price",
+        "sale_price": "Sale Price",
+        "tax": "Tax",
+        "select_tax": "Select Tax (Optional)",
+        "no_tax": "No Tax",
+        "low_stock_threshold": "Low Stock Threshold",
+        "notes": "Notes"
+      }
     },
     "generic": {
       "title": "Generic Products",
