@@ -663,19 +663,6 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ error: 'Stock not found' });
     }
 
-    // 🔐 Shop access check
-    const hasFullAccess =
-      req.user?.role === 'sales_person' || req.user?.role === 'admin';
-
-    if (
-      !hasFullAccess &&
-      req.userShopIds?.length > 0 &&
-      !req.userShopIds.includes(existingStock.shopId)
-    ) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // ✅ Variant validation
     if (variantId && variantId !== existingStock.variantId) {
       const [variantExists] = await db
         .select()
@@ -688,7 +675,6 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    // ✅ Serial uniqueness
     if (serialNumber && serialNumber !== existingStock.serialNumber) {
       const [serialExists] = await db
         .select()
@@ -701,14 +687,12 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    // ✅ Barcode uniqueness
     if (barcode && barcode !== existingStock.barcode) {
       if (!(await checkBarcodeUniqueness(barcode, existingStock.shopId))) {
         return res.status(409).json({ error: 'Barcode already exists' });
       }
     }
 
-    // ✅ IMEI uniqueness
     if (primaryImei && primaryImei !== existingStock.primaryImei) {
       if (!(await checkImeiUniqueness(primaryImei))) {
         return res.status(409).json({ error: 'IMEI already exists' });
@@ -727,15 +711,12 @@ export const updateProduct = async (req, res) => {
         .json({ error: 'Primary and Secondary IMEI cannot be same' });
     }
 
-    // ✅ Tax validation
     if (taxId) {
       const [tax] = await db.select().from(taxes).where(eq(taxes.id, taxId));
       if (!tax) {
         return res.status(400).json({ error: 'Invalid tax id' });
       }
     }
-
-    // 🧠 Build update payload
     const updateData = { updatedAt: new Date() };
 
     if (variantId !== undefined) updateData.variantId = variantId;
@@ -757,14 +738,14 @@ export const updateProduct = async (req, res) => {
     if (lowStockThreshold !== undefined)
       updateData.lowStockThreshold = lowStockThreshold;
 
-    // 🔄 Update stock
+    //  Update stock
     const [updatedStock] = await db
       .update(stock)
       .set(updateData)
       .where(eq(stock.id, stockId))
       .returning();
 
-    // 🧾 Activity log (NOW ADDED)
+    // Activity log
     try {
       await logActivity(
         req.user?.id,

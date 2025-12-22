@@ -155,7 +155,7 @@ export default function UpdateProductForm({
       <div className="space-y-2">
         <Label htmlFor="variantId">{t("admin.products.form.variant")}</Label>
         <Select
-          value={formData.variantId || ""}
+          value={formData.variantId || "none"}
           onValueChange={(value) => handleChange("variantId", value)}
           disabled={variantsLoading}
         >
@@ -185,7 +185,7 @@ export default function UpdateProductForm({
           id="primaryImei"
           type="text"
           placeholder="Enter primary IMEI"
-          value={formData.primaryImei || ""}
+          value={formData.primaryImei || "none"}
           onChange={(e) => handleChange("primaryImei", e.target.value)}
           data-testid="input-primary-imei-update"
         />
@@ -200,7 +200,7 @@ export default function UpdateProductForm({
           id="secondaryImei"
           type="text"
           placeholder="Enter secondary IMEI (optional)"
-          value={formData.secondaryImei || ""}
+          value={formData.secondaryImei || "none"}
           onChange={(e) => handleChange("secondaryImei", e.target.value)}
           data-testid="input-secondary-imei-update"
         />
@@ -215,7 +215,7 @@ export default function UpdateProductForm({
           id="serialNumber"
           type="text"
           placeholder="Enter serial number (optional)"
-          value={formData.serialNumber || ""}
+          value={formData.serialNumber || "none"}
           onChange={(e) => handleChange("serialNumber", e.target.value)}
           data-testid="input-serial-number-update"
         />
@@ -227,7 +227,7 @@ export default function UpdateProductForm({
           id="barcode"
           type="text"
           placeholder="Enter barcode (optional)"
-          value={formData.barcode || ""}
+          value={formData.barcode || "none"}
           onChange={(e) => handleChange("barcode", e.target.value)}
           data-testid="input-barcode-update"
         />
@@ -241,7 +241,7 @@ export default function UpdateProductForm({
             type="number"
             placeholder="0"
             step="0.01"
-            value={formData.purchasePrice ?? ""}
+            value={formData.purchasePrice ?? "none"}
             onChange={(e) => handleChange("purchasePrice", e.target.value ? parseFloat(e.target.value) : undefined)}
             data-testid="input-purchase-price-update"
           />
@@ -257,7 +257,7 @@ export default function UpdateProductForm({
             type="number"
             placeholder="0"
             step="0.01"
-            value={formData.salePrice ?? ""}
+            value={formData.salePrice ?? "none"}
             onChange={(e) => handleChange("salePrice", e.target.value ? parseFloat(e.target.value) : undefined)}
             data-testid="input-sale-price-update"
           />
@@ -270,14 +270,18 @@ export default function UpdateProductForm({
       <div className="space-y-2">
         <Label htmlFor="taxId">{t("admin.products.form.tax")}</Label>
         <Select
-          value={formData.taxId || ""}
-          onValueChange={(value) => handleChange("taxId", value)}
+          value={formData.taxId || "none"}
+          onValueChange={(value) =>
+            handleChange("taxId", value === "none" ? undefined : value)
+          }
         >
           <SelectTrigger id="taxId" data-testid="select-tax-update">
             <SelectValue placeholder={t("admin.products.form.select_tax")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{t("admin.products.form.no_tax")}</SelectItem>
+            <SelectItem value="none">
+              {t("admin.products.form.no_tax")}
+            </SelectItem>
             {taxes.map((tax: Tax) => (
               <SelectItem key={tax.id} value={tax.id}>
                 {tax.name}
@@ -285,6 +289,7 @@ export default function UpdateProductForm({
             ))}
           </SelectContent>
         </Select>
+
       </div>
 
       <div className="space-y-2">
@@ -293,7 +298,7 @@ export default function UpdateProductForm({
           id="lowStockThreshold"
           type="number"
           placeholder="5"
-          value={formData.lowStockThreshold ?? ""}
+          value={formData.lowStockThreshold ?? "none"}
           onChange={(e) => handleChange("lowStockThreshold", e.target.value ? parseInt(e.target.value) : undefined)}
           data-testid="input-low-stock-threshold-update"
         />
@@ -307,7 +312,7 @@ export default function UpdateProductForm({
         <Textarea
           id="notes"
           placeholder="Enter notes (optional)"
-          value={formData.notes || ""}
+          value={formData.notes || "none"}
           onChange={(e) => handleChange("notes", e.target.value)}
           data-testid="textarea-notes-update"
           className="min-h-20"
