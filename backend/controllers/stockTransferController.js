@@ -26,11 +26,11 @@ export const getStockTransfers = async (req, res) => {
 
 export const createStockTransfer = async (req, res) => {
   try {
-    const { stockId, fromShopId, toShopId, notes } = req.body;
+    const { productId, fromShopId, toShopId, quantity, notes } = req.body;
     const userId = req.user.id;
     const userShopIds = req.userShopIds || [];
 
-    if (!fromShopId || !toShopId) {
+    if (!productId || !fromShopId || !toShopId || !quantity) {
       return res.status(400).json({ error: req.t('stock_transfer.missing_fields') });
     }
 
@@ -53,11 +53,9 @@ export const createStockTransfer = async (req, res) => {
 
     const [fromShop] = await db.select().from(shops).where(eq(shops.id, fromShopId)).limit(1);
 
-    if (!stockId) {
-      return res.status(400).json({ error: req.t('stock_transfer.missing_fields') || 'Stock ID is required' });
-    }
-
-    const [stockItem] = await db.select({
+    // Get available stock items for this product in the source shop
+    // The productId from frontend could be the variant ID or product ID, so we'll fetch by variant first
+    const availableStockItems = await db.select({
       id: stock.id,
       shopId: stock.shopId,
       variantId: stock.variantId,
@@ -85,27 +83,27 @@ export const createStockTransfer = async (req, res) => {
       .leftJoin(brand, eq(product.brandId, brand.id))
       .where(
         and(
-          eq(stock.id, stockId),
           eq(stock.shopId, fromShopId),
           eq(stock.stockStatus, 'in_stock'),
           eq(stock.isActive, true),
-          eq(stock.isSold, false)
+          eq(stock.isSold, false),
+          or(
+            eq(variant.id, productId),
+            eq(product.id, productId)
+          )
         )
       )
-      .limit(1);
+      .limit(quantity);
 
-    if (!stockItem) {
-      return res.status(404).json({ error: req.t('stock_transfer.stock_not_found') || 'Stock item not found or not available for transfer' });
+    if (availableStockItems.length === 0) {
+      return res.status(404).json({ error: req.t('stock_transfer.stock_not_found') || 'No available stock items for transfer' });
     }
 
-    await db.update(stock)
-      .set({ 
-        shopId: toShopId,
-        stockStatus: 'in_stock',
-        updatedAt: new Date()
-      })
-      .where(eq(stock.id, stockId));
+    if (availableStockItems.length < quantity) {
+      return res.status(400).json({ error: `Only ${availableStockItems.length} items available, requested ${quantity}` });
+    }
 
+    // Create transfer record
     const [newTransfer] = await db.insert(stockTransfers).values({
       fromShopId,
       toShopId,
@@ -114,19 +112,35 @@ export const createStockTransfer = async (req, res) => {
       createdBy: userId
     }).returning();
 
-    await db.insert(stockTransferItems).values({
-      stockTransferId: newTransfer.id,
-      stockId
-    });
+    // Update shop for selected stock items and create transfer items
+    const stockIds = availableStockItems.slice(0, quantity).map(item => item.id);
+    
+    await db.update(stock)
+      .set({ 
+        shopId: toShopId,
+        stockStatus: 'in_stock',
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(stock.shopId, fromShopId),
+          inArray(stock.id, stockIds)
+        )
+      );
+
+    // Create transfer items
+    for (const stockId of stockIds) {
+      await db.insert(stockTransferItems).values({
+        stockTransferId: newTransfer.id,
+        stockId
+      });
+    }
 
     try {
       await logActivity(userId, 'transfer', 'stock_transfer', newTransfer.id, {
-        stockId,
-        variantName: stockItem.variant?.variantName,
-        productName: stockItem.product?.name,
-        primaryImei: stockItem.primaryImei,
-        secondaryImei: stockItem.secondaryImei,
-        barcode: stockItem.barcode,
+        productId,
+        quantity: quantity,
+        itemsTransferred: stockIds.length,
         fromShopId,
         fromShopName: fromShop?.name,
         toShopId,
@@ -136,7 +150,7 @@ export const createStockTransfer = async (req, res) => {
       console.error('Activity logging failed:', logError);
     }
 
-    res.status(201).json({ transfer: newTransfer, stockItem });
+    res.status(201).json({ transfer: newTransfer, transferredCount: stockIds.length });
   } catch (error) {
     console.error('Create stock transfer error:', error);
     res.status(500).json({ error: req.t('stock_transfer.create_failed') });

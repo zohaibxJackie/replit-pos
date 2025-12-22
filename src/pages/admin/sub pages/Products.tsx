@@ -95,7 +95,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function Products() {
-  useAuth("catalogProducts");
+  const { user } = useAuth("catalogProducts");
   const { toast } = useToast();
   const { t } = useTranslation();
   const { setTitle } = useTitle();
@@ -486,16 +486,18 @@ export default function Products() {
             <span className="hidden sm:inline">{t("admin.products.add_mobile")}</span>
             <span className="sm:hidden">{t("admin.products.new")}</span>
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={openInterStockModal} 
-            disabled={!hasShops}
-            data-testid="button-inter-stock"
-          >
-            <ArrowRightLeft className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">{t("admin.products.inter_stock_transfer")}</span>
-            <span className="sm:hidden">{t("admin.products.transfer")}</span>
-          </Button>
+          {user?.role === 'admin' && (
+            <Button 
+              variant="outline" 
+              onClick={openInterStockModal} 
+              disabled={!hasShops}
+              data-testid="button-inter-stock"
+            >
+              <ArrowRightLeft className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">{t("admin.products.inter_stock_transfer")}</span>
+              <span className="sm:hidden">{t("admin.products.transfer")}</span>
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
