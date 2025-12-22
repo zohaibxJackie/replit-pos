@@ -93,26 +93,17 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
   };
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ['/api/products', { shopId: sourceShopId, limit: 100 }],
-    queryFn: () => api.products.getAll({ shopId: sourceShopId, limit: 100, productCategory: 'mobile' }),
+    queryKey: ['/api/products', { shopId: sourceShopId, search: searchQuery, limit: 100, productCategory: 'mobile' }],
+    queryFn: () => api.products.getAll({ 
+      shopId: sourceShopId, 
+      search: searchQuery,
+      limit: 100,
+      productCategory: 'mobile'
+    }),
     enabled: !!sourceShopId && isOpen,
   });
 
-  const filteredProducts = useMemo(() => {
-    const products = productsData?.products || [];
-    if (!searchQuery) return products.filter(p => (p.stock ?? 0) > 0);
-    
-    const query = searchQuery.toLowerCase();
-    return products.filter(p => 
-      (p.stock ?? 0) > 0 && (
-        p.customName?.toLowerCase().includes(query) ||
-        p.imei1?.toLowerCase().includes(query) ||
-        p.imei2?.toLowerCase().includes(query) ||
-        p.barcode?.toLowerCase().includes(query) ||
-        p.sku?.toLowerCase().includes(query)
-      )
-    );
-  }, [productsData, searchQuery]);
+  const products = productsData?.products || [];
 
   const availableTargetShops = useMemo(() => {
     return shops.filter(s => s.id !== sourceShopId);
@@ -122,7 +113,21 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
   const targetShopName = shops.find(s => s.id === targetShopId)?.name || "";
 
   const stockTransferMutation = useMutation({
-    mutationFn: (data: Parameters<typeof api.stockTransfers.create>[0]) => api.stockTransfers.create(data),
+    mutationFn: async (data: { productId: string; fromShopId: string; toShopId: string; quantity: number; notes?: string }) => {
+      const response = await fetch('/api/stock-transfers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: data.productId,
+          fromShopId: data.fromShopId,
+          toShopId: data.toShopId,
+          quantity: data.quantity,
+          notes: data.notes
+        })
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({ 
@@ -171,9 +176,10 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
     if (!selectedProduct || !targetShopId) return;
     
     stockTransferMutation.mutate({
-      stockId: selectedProduct.id,
+      productId: selectedProduct.id,
       fromShopId: sourceShopId,
       toShopId: targetShopId,
+      quantity: transferQty,
     });
     setShowConfirmation(false);
   };
@@ -251,14 +257,14 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : filteredProducts.length === 0 ? (
+                ) : products.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                     <Package className="h-8 w-8 mb-2 opacity-50" />
                     <p>{t("admin.products.no_products_in_stock")}</p>
                   </div>
                 ) : (
                   <div className="p-2 space-y-2">
-                    {filteredProducts.map((product) => (
+                    {products.map((product) => (
                       <Card
                         key={product.id}
                         className={`p-3 cursor-pointer transition-colors hover-elevate ${
