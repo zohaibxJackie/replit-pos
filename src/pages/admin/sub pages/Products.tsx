@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Loader2, ArrowRightLeft } from "lucide-react";
+import { Plus, Edit, Loader2, ArrowRightLeft, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import FormPopupModal from "@/components/ui/FormPopupModal";
@@ -16,6 +16,15 @@ import { MobileProductForm, MobileProductPayload } from "@/components/MobileProd
 import InterStockTransferModal from "@/components/InterStockTransferModal";
 import { api } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectTrigger,
@@ -107,6 +116,8 @@ export default function Products() {
   const [isInterStockModalOpen, setIsInterStockModalOpen] = useState(false);
   const [currentStock, setCurrentStock] = useState<StockItem | null>(null);
   const [selectedShopId, setSelectedShopId] = useState<string>("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<StockItem | null>(null);
 
   const debouncedSearch = useDebounce(searchInput, 500);
 
@@ -206,6 +217,19 @@ export default function Products() {
     },
   });
 
+  const deleteProductMutation = useMutation({
+    mutationFn: (id: string) => api.products.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({ title: t("admin.products.product_deleted"), description: t("admin.products.product_deleted_desc") });
+      setDeleteConfirmOpen(false);
+      setProductToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: t("admin.products.error"), description: error.message, variant: "destructive" });
+    },
+  });
+
 
   const openCreateModal = () => {
     setCurrentStock(null);
@@ -231,6 +255,17 @@ export default function Products() {
 
   const openInterStockModal = () => {
     setIsInterStockModalOpen(true);
+  };
+
+  const openDeleteConfirm = (stock: StockItem) => {
+    setProductToDelete(stock);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (productToDelete) {
+      deleteProductMutation.mutate(productToDelete.id);
+    }
   };
 
   const handleMobileProductSubmit = (payload: MobileProductPayload) => {
@@ -495,6 +530,18 @@ export default function Products() {
               >
                 <Edit className="w-4 h-4" />
               </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDeleteConfirm(row);
+                }}
+                title={t("common.delete")}
+                data-testid={`button-delete-product-${row.id}`}
+              >
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
             </div>
           )}
         />
@@ -709,6 +756,47 @@ export default function Products() {
         onClose={() => setIsInterStockModalOpen(false)}
         shops={shops}
       />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent data-testid="dialog-delete-product-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("admin.products.delete_product")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("admin.products.delete_confirmation", { 
+                name: productToDelete?.variantName || "this product" 
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/20">
+            <p className="text-sm text-destructive font-medium">
+              {t("admin.products.delete_warning")}
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <AlertDialogCancel 
+              disabled={deleteProductMutation.isPending}
+              data-testid="button-cancel-delete"
+            >
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteProductMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {deleteProductMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t("common.deleting")}
+                </>
+              ) : (
+                t("common.delete")
+              )}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
