@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useCanAccess } from "@/hooks/useAuth";
 import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Loader2, ArrowRightLeft, Trash2 } from "lucide-react";
@@ -95,7 +95,8 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function Products() {
-  const { user } = useAuth("catalogProducts");
+  useAuth("catalogProducts");
+  const { canAccessComponent } = useCanAccess();
   const { toast } = useToast();
   const { t } = useTranslation();
   const { setTitle } = useTitle();
@@ -486,7 +487,7 @@ export default function Products() {
             <span className="hidden sm:inline">{t("admin.products.add_mobile")}</span>
             <span className="sm:hidden">{t("admin.products.new")}</span>
           </Button>
-          {user?.role === 'admin' && (
+          {canAccessComponent("interStockTransferButton") && (
             <Button 
               variant="outline" 
               onClick={openInterStockModal} 

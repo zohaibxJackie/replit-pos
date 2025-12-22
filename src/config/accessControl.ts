@@ -78,6 +78,7 @@ export const AccessControl = {
     editProductButton: ["admin", "super_admin"],
     addRepairJobButton: ["admin"],
     manageStaffButton: ["admin"],
+    interStockTransferButton: ["admin"],
   },
 };
 
