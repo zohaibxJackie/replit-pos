@@ -37,7 +37,7 @@ export const updateStockItemSchema = z.object({
   stockStatus: z.enum(['in_stock', 'reserved', 'sold', 'transferred', 'returned', 'defective']).optional(),
   notes: z.string().optional().nullable(),
   taxId: z.string().uuid().optional().nullable(),
-  variantId: z.string().uuid(),
+  variantId: z.string().uuid().optional().nullable(),
   primaryImei: z.string().optional().nullable(),
   secondaryImei: z.string().optional().nullable(),
   serialNumber: z.string().optional().nullable(),
