@@ -11,6 +11,7 @@ import { TablePagination } from "@/components/ui/tablepagination";
 import { TablePageSizeSelector } from "@/components/ui/tablepagesizeselector";
 import { useTitle } from '@/context/TitleContext';
 import { MobileProductForm, MobileProductPayload } from "@/components/MobileProductForm";
+import UpdateProductForm, { type UpdateProductPayload as UpdatePayload } from "@/components/UpdateProductForm";
 import InterStockTransferModal from "@/components/InterStockTransferModal";
 import { api } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -220,63 +221,54 @@ export default function Products() {
   };
 
   const handleMobileProductSubmit = (payload: MobileProductPayload) => {
+    if (!selectedShopId) {
+      toast({ title: t("admin.products.error"), description: t("admin.products.no_shop_selected"), variant: "destructive" });
+      return;
+    }
     
-    if (currentStock) {
-      updateProductMutation.mutate({
-        id: currentStock.id,
-        data: {
-          salePrice: payload.sellingPrice,
-          purchasePrice: payload.purchasePrice,
-          primaryImei: payload.imei,
-          secondaryImei: payload.imei2,
-          serialNumber: payload.serialNumber || null,
-          barcode: payload.barcode || null,
-          condition: payload.condition,
-          notes: payload.notes || null,
-          vendorId: payload.vendorId || null,
-        }
+    if (payload.quantity && payload.quantity > 1 && payload.imeis) {
+      bulkCreateProductMutation.mutate({
+        shopId: selectedShopId,
+        variantId: payload.variantId,
+        salePrice: payload.sellingPrice,
+        purchasePrice: payload.purchasePrice,
+        quantity: payload.quantity,
+        condition: payload.condition,
+        notes: payload.notes || null,
+        vendorId: payload.vendorId || null,
+        vendorType: payload.vendorType || 'vendor',
+        imeis: payload.imeis.map(e => ({ 
+          imei1: e.imei1, 
+          imei2: e.imei2 || null,
+        })),
       });
     } else {
-      if (!selectedShopId) {
-        toast({ title: t("admin.products.error"), description: t("admin.products.no_shop_selected"), variant: "destructive" });
-        return;
-      }
-      
-      if (payload.quantity && payload.quantity > 1 && payload.imeis) {
-        bulkCreateProductMutation.mutate({
-          shopId: selectedShopId,
-          variantId: payload.variantId,
-          salePrice: payload.sellingPrice,
-          purchasePrice: payload.purchasePrice,
-          quantity: payload.quantity,
-          condition: payload.condition,
-          notes: payload.notes || null,
-          vendorId: payload.vendorId || null,
-          vendorType: payload.vendorType || 'vendor',
-          imeis: payload.imeis.map(e => ({ 
-            imei1: e.imei1, 
-            imei2: e.imei2 || null,
-          })),
-        });
-      } else {
-        createProductMutation.mutate({
-          shopId: selectedShopId,
-          variantId: payload.variantId,
-          salePrice: payload.sellingPrice,
-          purchasePrice: payload.purchasePrice,
-          primaryImei: payload.imei,
-          secondaryImei: payload.imei2,
-          serialNumber: payload.serialNumber || null,
-          barcode: payload.barcode || null,
-          condition: payload.condition,
-          notes: payload.notes || null,
-          vendorId: payload.vendorId || null,
-          vendorType: payload.vendorType || 'vendor',
-          taxId: payload.taxId || undefined,
-          lowStockThreshold: payload.lowStockThreshold || 0
-        });
-      }
+      createProductMutation.mutate({
+        shopId: selectedShopId,
+        variantId: payload.variantId,
+        salePrice: payload.sellingPrice,
+        purchasePrice: payload.purchasePrice,
+        primaryImei: payload.imei,
+        secondaryImei: payload.imei2,
+        serialNumber: payload.serialNumber || null,
+        barcode: payload.barcode || null,
+        condition: payload.condition,
+        notes: payload.notes || null,
+        vendorId: payload.vendorId || null,
+        vendorType: payload.vendorType || 'vendor',
+        taxId: payload.taxId || undefined,
+        lowStockThreshold: payload.lowStockThreshold || 0
+      });
     }
+  };
+
+  const handleUpdateProductSubmit = (payload: UpdatePayload) => {
+    if (!currentStock) return;
+    
+    updateProductMutation.mutate({
+      id: currentStock.id,
+      data: payload
+    });
   };
 
 
@@ -447,43 +439,49 @@ export default function Products() {
       </div>
 
       <FormPopupModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setCurrentStock(null); }}>
-        {/* <h2 className="text-2xl font-semibold mb-4">
-          {currentStock ? t("admin.products.edit_product") : t("admin.products.add_mobile")}
-        </h2> */}
-        
-        {!currentStock && (
-          <div className="mb-4">
-            <Label>{t("admin.products.select_shop")}</Label>
-            <Select value={selectedShopId} onValueChange={setSelectedShopId}>
-              <SelectTrigger className="w-full" data-testid="select-shop-for-mobile">
-                <SelectValue placeholder={t("admin.products.select_shop")} />
-              </SelectTrigger>
-              <SelectContent>
-                {shops.map((shop) => (
-                  <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {currentStock ? (
+          <UpdateProductForm
+            onSubmit={handleUpdateProductSubmit}
+            onCancel={() => { setIsModalOpen(false); setCurrentStock(null); }}
+            initialData={{
+              variantId: currentStock.variantId,
+              primaryImei: currentStock.primaryImei || '',
+              secondaryImei: currentStock.secondaryImei || '',
+              serialNumber: currentStock.serialNumber || '',
+              barcode: currentStock.barcode || '',
+              purchasePrice: currentStock.purchasePrice ? parseFloat(currentStock.purchasePrice) : undefined,
+              salePrice: parseFloat(currentStock.salePrice),
+              notes: currentStock.notes || '',
+              lowStockThreshold: 5,
+            }}
+            shopId={currentStock.shopId}
+            isLoading={updateProductMutation.isPending}
+          />
+        ) : (
+          <>
+            <div className="mb-4">
+              <Label>{t("admin.products.select_shop")}</Label>
+              <Select value={selectedShopId} onValueChange={setSelectedShopId}>
+                <SelectTrigger className="w-full" data-testid="select-shop-for-mobile">
+                  <SelectValue placeholder={t("admin.products.select_shop")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {shops.map((shop) => (
+                    <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <MobileProductForm
+              onSubmit={handleMobileProductSubmit}
+              onCancel={() => { setIsModalOpen(false); setCurrentStock(null); }}
+              initialData={undefined}
+              shopId={selectedShopId || shops[0]?.id}
+              isEditing={false}
+            />
+          </>
         )}
-        
-        <MobileProductForm
-          onSubmit={handleMobileProductSubmit}
-          onCancel={() => { setIsModalOpen(false); setCurrentStock(null); }}
-          initialData={currentStock ? {
-            brand: currentStock.brandName || '',
-            model: currentStock.variantName,
-            color: currentStock.color || '',
-            memory: currentStock.storageSize,
-            imei: currentStock.primaryImei || '',
-            imei2: currentStock.secondaryImei,
-            sellingPrice: parseFloat(currentStock.salePrice),
-            purchasePrice: currentStock.purchasePrice ? parseFloat(currentStock.purchasePrice) : undefined,
-            variantId: currentStock.variantId,
-          } : undefined}
-          shopId={selectedShopId || shops[0]?.id}
-          isEditing={!!currentStock}
-        />
       </FormPopupModal>
 
       <InterStockTransferModal 
