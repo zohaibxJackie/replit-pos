@@ -94,7 +94,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['/api/products', { shopId: sourceShopId, limit: 100 }],
-    queryFn: () => api.products.getAll({ shopId: sourceShopId, limit: 100 }),
+    queryFn: () => api.products.getAll({ shopId: sourceShopId, limit: 100, productCategory: 'mobile' }),
     enabled: !!sourceShopId && isOpen,
   });
 
