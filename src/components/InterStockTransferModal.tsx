@@ -44,14 +44,21 @@ interface Shop {
 interface Product {
   id: string;
   shopId: string;
+  variantName?: string;
+  productName?: string;
+  brandName?: string;
   customName?: string;
   barcode?: string;
   salePrice: string;
   stock?: number;
   imei1?: string;
+  primaryImei?: string;
   imei2?: string;
+  secondaryImei?: string;
   sku?: string;
   categoryName?: string;
+  color?: string;
+  storageSize?: string;
   mobileCatalogId?: string;
 }
 
@@ -278,12 +285,14 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">
-                              {product.customName || `Product ${product.id.slice(0, 8)}`}
+                              {product.brandName} {product.variantName || product.productName || product.customName || 'Product'}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {product.imei1 && `IMEI: ${product.imei1}`}
-                              {product.imei2 && ` / ${product.imei2}`}
-                              {!product.imei1 && product.barcode && `Barcode: ${product.barcode}`}
+                              {product.color && `${product.color} `}
+                              {product.storageSize && `${product.storageSize} `}
+                              {(product.primaryImei || product.imei1) && `IMEI: ${product.primaryImei || product.imei1}`}
+                              {(product.secondaryImei || product.imei2) && ` / ${product.secondaryImei || product.imei2}`}
+                              {!product.primaryImei && !product.imei1 && product.barcode && `Barcode: ${product.barcode}`}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -304,12 +313,21 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                 <div className="space-y-3">
                   <div className="min-w-0">
                     <h4 className="font-semibold text-sm sm:text-base">{t("admin.products.selected_product")}</h4>
-                    <p className="text-xs sm:text-sm truncate">{selectedProduct.customName || `Product ${selectedProduct.id.slice(0, 8)}`}</p>
-                    {selectedProduct.imei1 && (
-                      <p className="text-xs text-muted-foreground truncate">IMEI1: {selectedProduct.imei1}</p>
+                    <p className="text-xs sm:text-sm truncate">
+                      {selectedProduct.brandName} {selectedProduct.variantName || selectedProduct.productName || selectedProduct.customName || 'Product'}
+                    </p>
+                    {(selectedProduct.color || selectedProduct.storageSize) && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {selectedProduct.color && `${selectedProduct.color}`}
+                        {selectedProduct.color && selectedProduct.storageSize && ' - '}
+                        {selectedProduct.storageSize && `${selectedProduct.storageSize}`}
+                      </p>
+                    )}
+                    {(selectedProduct.primaryImei || selectedProduct.imei1) && (
+                      <p className="text-xs text-muted-foreground truncate">IMEI: {selectedProduct.primaryImei || selectedProduct.imei1}</p>
                     )}
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      {t("admin.products.available_stock")}: <span className="font-medium">{selectedProduct.stock}</span>
+                      {t("admin.products.available_stock")}: <span className="font-medium">{selectedProduct.stock ?? 0}</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -328,7 +346,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setTransferQty(selectedProduct.stock)}
+                      onClick={() => setTransferQty(selectedProduct.stock ?? 1)}
                       data-testid="button-send-all"
                     >
                       {t("admin.products.send_all")}
