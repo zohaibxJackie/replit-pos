@@ -162,14 +162,7 @@ export default function UpdateProductForm({
           disabled={variantsLoading}
         >
           <SelectTrigger id="variantId" data-testid="select-variant-update">
-            {variantsLoading ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Loading...</span>
-              </div>
-            ) : (
-              <SelectValue placeholder={t("admin.products.form.select_variant")} />
-            )}
+            <SelectValue placeholder={variantsLoading ? "Loading..." : t("admin.products.form.select_variant")} />
           </SelectTrigger>
           <SelectContent>
             {variants.map((variant: MobileModel) => (
