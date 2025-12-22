@@ -204,7 +204,7 @@ export const api = {
       limit?: number; 
       search?: string; 
       status?: string;
-      productCategory: string;
+      productCategory?: string;
     }) => {
       const searchParams = new URLSearchParams();
       if (params?.shopId) searchParams.set('shopId', params.shopId);

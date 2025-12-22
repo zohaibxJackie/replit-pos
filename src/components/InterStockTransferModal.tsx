@@ -47,10 +47,11 @@ interface Product {
   customName?: string;
   barcode?: string;
   salePrice: string;
-  stock: number;
+  stock?: number;
   imei1?: string;
   imei2?: string;
-  categoryId: string;
+  sku?: string;
+  categoryName?: string;
   mobileCatalogId?: string;
 }
 
@@ -99,11 +100,11 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
 
   const filteredProducts = useMemo(() => {
     const products = productsData?.products || [];
-    if (!searchQuery) return products.filter(p => p.stock > 0);
+    if (!searchQuery) return products.filter(p => (p.stock ?? 0) > 0);
     
     const query = searchQuery.toLowerCase();
     return products.filter(p => 
-      p.stock > 0 && (
+      (p.stock ?? 0) > 0 && (
         p.customName?.toLowerCase().includes(query) ||
         p.imei1?.toLowerCase().includes(query) ||
         p.imei2?.toLowerCase().includes(query) ||
@@ -158,7 +159,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
       return;
     }
 
-    if (transferQty <= 0 || transferQty > selectedProduct.stock) {
+    if (transferQty <= 0 || transferQty > (selectedProduct.stock ?? 0)) {
       toast({ title: t("admin.products.error"), description: t("admin.products.insufficient_stock"), variant: "destructive" });
       return;
     }
@@ -170,10 +171,9 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
     if (!selectedProduct || !targetShopId) return;
     
     stockTransferMutation.mutate({
-      productId: selectedProduct.id,
+      stockId: selectedProduct.id,
       fromShopId: sourceShopId,
       toShopId: targetShopId,
-      quantity: transferQty,
     });
     setShowConfirmation(false);
   };
@@ -281,8 +281,8 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge variant={product.stock <= 5 ? "destructive" : "default"}>
-                              {t("admin.products.stock")}: {product.stock}
+                            <Badge variant={(product.stock ?? 0) <= 5 ? "destructive" : "default"}>
+                              {t("admin.products.stock")}: {product.stock ?? 0}
                             </Badge>
                           </div>
                         </div>
@@ -312,9 +312,9 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                       id="transfer-qty"
                       type="number"
                       min="1"
-                      max={selectedProduct.stock}
+                      max={selectedProduct.stock ?? 1}
                       value={transferQty}
-                      onChange={(e) => setTransferQty(Number(e.target.value))}
+                      onChange={(e) => setTransferQty(Number(e.target.value) || 1)}
                       className="w-16 sm:w-20 text-sm"
                       data-testid="input-transfer-qty"
                     />
