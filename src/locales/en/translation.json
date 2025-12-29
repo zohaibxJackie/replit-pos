@@ -405,7 +405,9 @@
           "ean": "EAN/SKU/UPC",
           "stock": "Stock",
           "buyPrice": "Buy Price",
-          "salePrice": "Sale Price"
+          "salePrice": "Sale Price",
+          "variant":"Variant",
+          "vendor":"Vendor"
         },
         "categories": {
           "mobiles": "Mobiles",
@@ -420,7 +422,9 @@
             "ean": "EAN/SKU/UPC",
             "stock": "Stock",
             "buyPrice": "Buy Price",
-            "salePrice": "Sale Price"
+            "salePrice": "Sale Price",
+            "variant": "Variant",
+            "vendor": "Vendor"
           }
         },
         "createCategory": {

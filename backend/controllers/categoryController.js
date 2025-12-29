@@ -1,31 +1,35 @@
-import { db } from '../config/database.js';
-import { category, product } from '../../shared/schema.js';
-import { eq, sql, ilike, and, desc } from 'drizzle-orm';
-import { createCategorySchema, updateCategorySchema } from '../validators/inventory.js';
+import { db } from "../config/database.js";
+import { categories, product } from "../../shared/schema.js";
+import { eq, sql, ilike, and, desc } from "drizzle-orm";
+import {
+  createCategorySchema,
+  updateCategorySchema,
+} from "../validators/inventory.js";
 
 export const getCategories = async (req, res) => {
   try {
     const { search, isActive } = req.query;
-    
+
     let conditions = [];
-    
+
     if (search) {
-      conditions.push(ilike(category.name, `%${search}%`));
-    }
-    
-    if (isActive !== undefined) {
-      conditions.push(eq(category.isActive, isActive === 'true'));
+      conditions.push(ilike(categories.name, `%${search}%`));
     }
 
-    const categoryList = await db.select()
-      .from(category)
+    if (isActive !== undefined) {
+      conditions.push(eq(categories.isActive, isActive === "true"));
+    }
+
+    const categoryList = await db
+      .select()
+      .from(categories)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(category.name);
+      .orderBy(categories.name);
 
     res.json({ categories: categoryList });
   } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({ error: req.t('category.fetch_failed') });
+    console.error("Get categories error:", error);
+    res.status(500).json({ error: req.t("category.fetch_failed") });
   }
 };
 
@@ -33,25 +37,28 @@ export const getCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [cat] = await db.select().from(category).where(
-      eq(category.id, id)
-    ).limit(1);
+    const [cat] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, id))
+      .limit(1);
 
     if (!cat) {
-      return res.status(404).json({ error: req.t('category.not_found') });
+      return res.status(404).json({ error: req.t("category.not_found") });
     }
 
-    const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
+    const [{ productCount }] = await db
+      .select({ productCount: sql`count(*)::int` })
       .from(product)
       .where(eq(product.categoryId, id));
 
     res.json({
       category: cat,
-      productCount
+      productCount,
     });
   } catch (error) {
-    console.error('Get category by id error:', error);
-    res.status(500).json({ error: req.t('category.fetch_failed') });
+    console.error("Get category by id error:", error);
+    res.status(500).json({ error: req.t("category.fetch_failed") });
   }
 };
 
@@ -59,59 +66,71 @@ export const createCategory = async (req, res) => {
   try {
     const validation = createCategorySchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res
+        .status(400)
+        .json({ error: validation.error.errors[0].message });
     }
 
     const { name, isActive } = validation.data;
 
-    const [newCategory] = await db.insert(category).values({
-      name,
-      isActive: isActive ?? true
-    }).returning();
+    const [newCategory] = await db
+      .insert(categories)
+      .values({
+        name,
+        isActive: isActive ?? true,
+      })
+      .returning();
 
     res.status(201).json({ category: newCategory });
   } catch (error) {
-    console.error('Create category error:', error);
-    if (error.code === '23505') {
-      return res.status(409).json({ error: req.t('category.already_exists') });
+    console.error("Create category error:", error);
+    if (error.code === "23505") {
+      return res.status(409).json({ error: req.t("category.already_exists") });
     }
-    res.status(500).json({ error: req.t('category.create_failed') });
+    res.status(500).json({ error: req.t("category.create_failed") });
   }
 };
 
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const validation = updateCategorySchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res
+        .status(400)
+        .json({ error: validation.error.errors[0].message });
     }
 
-    const [existingCategory] = await db.select().from(category).where(
-      eq(category.id, id)
-    ).limit(1);
+    const [existingCategory] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, id))
+      .limit(1);
 
     if (!existingCategory) {
-      return res.status(404).json({ error: req.t('category.not_found') });
+      return res.status(404).json({ error: req.t("category.not_found") });
     }
 
     const updateData = { updatedAt: new Date() };
-    if (validation.data.name !== undefined) updateData.name = validation.data.name;
-    if (validation.data.isActive !== undefined) updateData.isActive = validation.data.isActive;
+    if (validation.data.name !== undefined)
+      updateData.name = validation.data.name;
+    if (validation.data.isActive !== undefined)
+      updateData.isActive = validation.data.isActive;
 
-    const [updatedCategory] = await db.update(category)
+    const [updatedCategory] = await db
+      .update(categories)
       .set(updateData)
-      .where(eq(category.id, id))
+      .where(eq(categories.id, id))
       .returning();
 
     res.json({ category: updatedCategory });
   } catch (error) {
-    console.error('Update category error:', error);
-    if (error.code === '23505') {
-      return res.status(409).json({ error: req.t('category.already_exists') });
+    console.error("Update category error:", error);
+    if (error.code === "23505") {
+      return res.status(409).json({ error: req.t("category.already_exists") });
     }
-    res.status(500).json({ error: req.t('category.update_failed') });
+    res.status(500).json({ error: req.t("category.update_failed") });
   }
 };
 
@@ -119,29 +138,38 @@ export const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [existingCategory] = await db.select().from(category).where(
-      eq(category.id, id)
-    ).limit(1);
+    const [existingCategory] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, id))
+      .limit(1);
 
     if (!existingCategory) {
-      return res.status(404).json({ error: req.t('category.not_found') });
+      return res.status(404).json({ error: req.t("category.not_found") });
     }
 
-    const [{ productCount }] = await db.select({ productCount: sql`count(*)::int` })
+    const [{ productCount }] = await db
+      .select({ productCount: sql`count(*)::int` })
       .from(product)
       .where(eq(product.categoryId, id));
 
     if (productCount > 0) {
-      return res.status(400).json({ error: req.t('category.has_products') });
+      return res.status(400).json({ error: req.t("category.has_products") });
     }
 
-    await db.delete(category).where(eq(category.id, id));
+    await db.delete(categories).where(eq(categories.id, id));
 
-    res.json({ message: req.t('category.deleted') });
+    res.json({ message: req.t("category.deleted") });
   } catch (error) {
-    console.error('Delete category error:', error);
-    res.status(500).json({ error: req.t('category.delete_failed') });
+    console.error("Delete category error:", error);
+    res.status(500).json({ error: req.t("category.delete_failed") });
   }
 };
 
-export default { getCategories, getCategoryById, createCategory, updateCategory, deleteCategory };
+export default {
+  getCategories,
+  getCategoryById,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+};

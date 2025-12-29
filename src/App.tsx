@@ -13,7 +13,7 @@ import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
 import Profile from "@/pages/Profile";
 
-import { TitleProvider } from '@/context/TitleContext';
+import { TitleProvider } from "@/context/TitleContext";
 
 import SuperAdminDashboard from "@/pages/superadmin/Dashboard";
 import ManageAdmins from "@/pages/superadmin/Admins";
@@ -34,7 +34,6 @@ import SalesDetailPage from "./pages/admin/SalesDetailPage";
 import PrivateWallet from "@/pages/admin/PrivateWallet";
 import RechargePayments from "@/pages/admin/RechargePayment";
 import Products from "@/pages/admin/sub pages/Products";
-import AddProduct from "./pages/admin/sub pages/AddProduct";
 import Category from "./pages/admin/sub pages/Category";
 import AdminActivityLogs from "@/pages/admin/ActivityLogs";
 import DrawerOpenHistory from "@/pages/admin/DrawerOpenHistory";
@@ -94,9 +93,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
           <AppHeader />
-          <main className="flex-1 overflow-auto p-4">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto p-4">{children}</main>
         </div>
       </div>
     </SidebarProvider>
@@ -110,7 +107,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
-      
+
       {!isAuthenticated && (
         <Route path="/">
           <Redirect to="/login" />
@@ -118,191 +115,304 @@ function Router() {
       )}
       {/* Super admin routes */}
       <Route path="/super-admin/dashboard">
-        <ProtectedLayout><SuperAdminDashboard /></ProtectedLayout>
+        <ProtectedLayout>
+          <SuperAdminDashboard />
+        </ProtectedLayout>
       </Route>
       <Route path="/super-admin/admins">
-        <ProtectedLayout><ManageAdmins /></ProtectedLayout>
+        <ProtectedLayout>
+          <ManageAdmins />
+        </ProtectedLayout>
       </Route>
       <Route path="/super-admin/shops">
-        <ProtectedLayout><ShopManagement /></ProtectedLayout>
+        <ProtectedLayout>
+          <ShopManagement />
+        </ProtectedLayout>
       </Route>
       <Route path="/super-admin/users">
-        <ProtectedLayout><UserManagement /></ProtectedLayout>
+        <ProtectedLayout>
+          <UserManagement />
+        </ProtectedLayout>
       </Route>
       <Route path="/super-admin/pricing">
-        <ProtectedLayout><PricingPlans /></ProtectedLayout>
+        <ProtectedLayout>
+          <PricingPlans />
+        </ProtectedLayout>
       </Route>
       <Route path="/super-admin/feature-flags">
-        <ProtectedLayout><FeatureFlags /></ProtectedLayout>
+        <ProtectedLayout>
+          <FeatureFlags />
+        </ProtectedLayout>
       </Route>
       <Route path="/super-admin/activity-logs">
-        <ProtectedLayout><ActivityLogs /></ProtectedLayout>
+        <ProtectedLayout>
+          <ActivityLogs />
+        </ProtectedLayout>
       </Route>
       <Route path="/super-admin/analytics">
-        <ProtectedLayout><SystemAnalytics /></ProtectedLayout>
+        <ProtectedLayout>
+          <SystemAnalytics />
+        </ProtectedLayout>
       </Route>
 
       {/* Admin routes */}
       <Route path="/admin/dashboard">
-        <ProtectedLayout><AdminDashboard /></ProtectedLayout>
+        <ProtectedLayout>
+          <AdminDashboard />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/customer">
-        <ProtectedLayout><AdminClients /></ProtectedLayout>
+        <ProtectedLayout>
+          <AdminClients />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/providers">
-        <ProtectedLayout><Providers /></ProtectedLayout>
-      </Route>
-      <Route path={"/catalog/add-product"}>
-        <ProtectedLayout><AddProduct /></ProtectedLayout>
+        <ProtectedLayout>
+          <Providers />
+        </ProtectedLayout>
       </Route>
       <Route path="/catalog/categories">
-        <ProtectedLayout><Category /></ProtectedLayout>
+        <ProtectedLayout>
+          <Category />
+        </ProtectedLayout>
       </Route>
       <Route path="/catalog/manage-reasons">
-        <ProtectedLayout><ManageReasons /></ProtectedLayout>
+        <ProtectedLayout>
+          <ManageReasons />
+        </ProtectedLayout>
       </Route>
       <Route path="/catalog/manage-stock">
-        <ProtectedLayout><ManageStock /></ProtectedLayout>
+        <ProtectedLayout>
+          <ManageStock />
+        </ProtectedLayout>
       </Route>
       <Route path="/catalog/tax">
-        <ProtectedLayout><Tax /></ProtectedLayout>
+        <ProtectedLayout>
+          <Tax />
+        </ProtectedLayout>
       </Route>
       <Route path="/products/mobile">
-        <ProtectedLayout><Products /></ProtectedLayout>
+        <ProtectedLayout>
+          <Products />
+        </ProtectedLayout>
       </Route>
       <Route path="/products/generic">
-        <ProtectedLayout><GenericProducts /></ProtectedLayout>
+        <ProtectedLayout>
+          <GenericProducts />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/repair-book">
-        <ProtectedLayout><RepairBook /></ProtectedLayout>
+        <ProtectedLayout>
+          <RepairBook />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/close-today-turn">
-        <ProtectedLayout><CloseTodayTurn /></ProtectedLayout>
+        <ProtectedLayout>
+          <CloseTodayTurn />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/close-today-turn/:salespersonId">
-        <ProtectedLayout><SalesDetailPage /></ProtectedLayout>
+        <ProtectedLayout>
+          <SalesDetailPage />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/private-wallet">
-        <ProtectedLayout><PrivateWallet /></ProtectedLayout>
+        <ProtectedLayout>
+          <PrivateWallet />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/recharge-payments">
-        <ProtectedLayout><RechargePayments /></ProtectedLayout>
+        <ProtectedLayout>
+          <RechargePayments />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/activity-logs">
-        <ProtectedLayout><AdminActivityLogs /></ProtectedLayout>
+        <ProtectedLayout>
+          <AdminActivityLogs />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/sales">
-        <ProtectedLayout><SalesReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <SalesReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/available-stock">
-        <ProtectedLayout><AvailableStockReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <AvailableStockReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/stock-sold">
-        <ProtectedLayout><StockSoldReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <StockSoldReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/generic-products">
-        <ProtectedLayout><GenericProductsReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <GenericProductsReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/invoices">
-        <ProtectedLayout><InvoicesReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <InvoicesReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/contracts">
-        <ProtectedLayout><ContractsReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <ContractsReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/top-mobile-sales">
-        <ProtectedLayout><TopMobileSalesReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <TopMobileSalesReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/mobile-record">
-        <ProtectedLayout><MobileRecordReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <MobileRecordReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/mobile-low-stock">
-        <ProtectedLayout><MobileLowStockReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <MobileLowStockReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/generic-low-stock">
-        <ProtectedLayout><GenericLowStockReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <GenericLowStockReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/net-profit">
-        <ProtectedLayout><NetProfitReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <NetProfitReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/reports/sale-return">
-        <ProtectedLayout><SaleReturnReport /></ProtectedLayout>
+        <ProtectedLayout>
+          <SaleReturnReport />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/drawer-history">
-        <ProtectedLayout><DrawerOpenHistory /></ProtectedLayout>
+        <ProtectedLayout>
+          <DrawerOpenHistory />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/subscription">
-        <ProtectedLayout><Subscription /></ProtectedLayout>
+        <ProtectedLayout>
+          <Subscription />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/sale-managers">
-        <ProtectedLayout><SalesManagers /></ProtectedLayout>
+        <ProtectedLayout>
+          <SalesManagers />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/shops">
-        <ProtectedLayout><AdminShops /></ProtectedLayout>
+        <ProtectedLayout>
+          <AdminShops />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/repair-men">
-        <ProtectedLayout><RepairMen /></ProtectedLayout>
+        <ProtectedLayout>
+          <RepairMen />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/wholesalers">
-        <ProtectedLayout><Wholesalers /></ProtectedLayout>
+        <ProtectedLayout>
+          <Wholesalers />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/wholesalers/marketplace">
-        <ProtectedLayout><WholesalersMarketplace /></ProtectedLayout>
+        <ProtectedLayout>
+          <WholesalersMarketplace />
+        </ProtectedLayout>
       </Route>
       <Route path="/admin/purchase-orders">
-        <ProtectedLayout><AdminPurchaseOrders /></ProtectedLayout>
+        <ProtectedLayout>
+          <AdminPurchaseOrders />
+        </ProtectedLayout>
       </Route>
 
       {/* POS routes */}
       <Route path="/pos">
-        <ProtectedLayout><POS /></ProtectedLayout>
+        <ProtectedLayout>
+          <POS />
+        </ProtectedLayout>
       </Route>
       <Route path="/pos/sales">
-        <ProtectedLayout><RecentSales /></ProtectedLayout>
+        <ProtectedLayout>
+          <RecentSales />
+        </ProtectedLayout>
       </Route>
       <Route path="/pos/products">
-        <ProtectedLayout><POSProducts /></ProtectedLayout>
+        <ProtectedLayout>
+          <POSProducts />
+        </ProtectedLayout>
       </Route>
 
       {/* Repair Man routes */}
       <Route path="/repair-man/dashboard">
-        <ProtectedLayout><RepairManDashboard /></ProtectedLayout>
+        <ProtectedLayout>
+          <RepairManDashboard />
+        </ProtectedLayout>
       </Route>
       <Route path="/repair-man/services">
-        <ProtectedLayout><RepairManServices /></ProtectedLayout>
+        <ProtectedLayout>
+          <RepairManServices />
+        </ProtectedLayout>
       </Route>
       <Route path="/repair-man/job/:id">
-        <ProtectedLayout><RepairManJobDetails /></ProtectedLayout>
+        <ProtectedLayout>
+          <RepairManJobDetails />
+        </ProtectedLayout>
       </Route>
       <Route path="/repair-man/reports">
-        <ProtectedLayout><RepairManReports /></ProtectedLayout>
+        <ProtectedLayout>
+          <RepairManReports />
+        </ProtectedLayout>
       </Route>
       <Route path="/repair-man/parts-inventory">
-        <ProtectedLayout><RepairManPartsInventory /></ProtectedLayout>
+        <ProtectedLayout>
+          <RepairManPartsInventory />
+        </ProtectedLayout>
       </Route>
 
       {/* Wholesaler routes */}
       <Route path="/wholesaler/dashboard">
-        <ProtectedLayout><WholesalerDashboard /></ProtectedLayout>
+        <ProtectedLayout>
+          <WholesalerDashboard />
+        </ProtectedLayout>
       </Route>
       <Route path="/wholesaler/products">
-        <ProtectedLayout><WholesalerProducts /></ProtectedLayout>
+        <ProtectedLayout>
+          <WholesalerProducts />
+        </ProtectedLayout>
       </Route>
       <Route path="/wholesaler/orders">
-        <ProtectedLayout><WholesalerOrders /></ProtectedLayout>
+        <ProtectedLayout>
+          <WholesalerOrders />
+        </ProtectedLayout>
       </Route>
       <Route path="/wholesaler/customers">
-        <ProtectedLayout><WholesalerCustomers /></ProtectedLayout>
+        <ProtectedLayout>
+          <WholesalerCustomers />
+        </ProtectedLayout>
       </Route>
       <Route path="/wholesaler/invoices">
-        <ProtectedLayout><WholesalerInvoices /></ProtectedLayout>
+        <ProtectedLayout>
+          <WholesalerInvoices />
+        </ProtectedLayout>
       </Route>
       <Route path="/wholesaler/reports">
-        <ProtectedLayout><WholesalerReports /></ProtectedLayout>
+        <ProtectedLayout>
+          <WholesalerReports />
+        </ProtectedLayout>
       </Route>
 
       {/* Profile route - accessible by all authenticated users */}
       <Route path="/profile">
-        <ProtectedLayout><Profile /></ProtectedLayout>
+        <ProtectedLayout>
+          <Profile />
+        </ProtectedLayout>
       </Route>
 
       <Route path="/">
