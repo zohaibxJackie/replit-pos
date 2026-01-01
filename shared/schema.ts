@@ -103,7 +103,7 @@ export const vendorTypeEnum = pgEnum("vendor_type", [
 // ============================================================================
 
 // categories - global categories for products (e.g., Mobile, Accessories, Parts)
-export const categories = pgTable("categories", {
+export const categories = pgTable("category", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
@@ -118,7 +118,7 @@ export const categories = pgTable("categories", {
 });
 
 // Brand - global brands (e.g., Apple, Samsung, Xiaomi)
-export const brand = pgTable("brands", {
+export const brand = pgTable("brand", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
@@ -133,7 +133,7 @@ export const brand = pgTable("brands", {
 });
 
 // Product - global product names (e.g., iPhone 15 Pro, Galaxy S24)
-export const product = pgTable("products", {
+export const product = pgTable("product", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
@@ -152,7 +152,7 @@ export const product = pgTable("products", {
 // Variant - global product variants (e.g., iPhone 15 Pro 256GB)
 // variant_name is auto-generated from product name + storage_size
 // trackingMode determines if inventory is tracked per-unit (serialized) or by quantity (bulk)
-export const variant = pgTable("variants", {
+export const variant = pgTable("variant", {
   id: uuid("id").defaultRandom().primaryKey(), // ← Change from varchar to uuid
   productId: uuid("product_id").notNull(), // ← Change from varchar to uuid
   variantName: text("variant_name").notNull(),
