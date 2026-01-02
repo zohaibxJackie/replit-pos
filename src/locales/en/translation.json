@@ -1002,6 +1002,7 @@
       "select_tax": "Select tax (optional)",
       "final_price_with_tax": "Final Price (with tax)",
       "add_mobile": "Add Mobile",
+      "add_accessory":"Add Accessory",
       "update_mobile": "Update Mobile",
       "serial_input": "Serial Number",
       "serial_placeholder": "Enter serial number",
