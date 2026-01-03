@@ -477,8 +477,12 @@ export const api = {
   },
 
   vendors: {
-    getAll: (userId?: string) =>
-      request<{
+    getAll: (params?: { userId?: string; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.userId) searchParams.set("userId", params.userId);
+      if (params?.search) searchParams.set("search", params.search);
+      const query = searchParams.toString();
+      return request<{
         vendors: Array<{
           id: string;
           name: string;
@@ -487,7 +491,8 @@ export const api = {
           address?: string;
           createdAt: string;
         }>;
-      }>(userId ? `/api/vendors?userId=${userId}` : "/api/vendors"),
+      }>(query ? `/api/vendors?${query}` : "/api/vendors");
+    },
 
     getById: (id: string) =>
       request<{
