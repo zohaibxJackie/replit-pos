@@ -95,6 +95,9 @@ export default function GenericProducts() {
   const { setTitle } = useTitle();
   const queryClient = useQueryClient();
 
+  const authStorage = localStorage.getItem("auth-storage");
+  const authState = authStorage ? JSON.parse(authStorage)?.state : null;
+
   useEffect(() => {
     setTitle(t("admin.generic.title"));
     return () => setTitle("Business Dashboard");
@@ -102,8 +105,6 @@ export default function GenericProducts() {
 
   // ✅ Fixed: Proper state management for selectedShopId
   const [selectedShopId, setSelectedShopId] = useState<string>(() => {
-    const authStorage = localStorage.getItem("auth-storage");
-    const authState = authStorage ? JSON.parse(authStorage)?.state : null;
     return authState?.currentShop?.id || "";
   });
 
