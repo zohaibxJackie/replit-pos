@@ -407,7 +407,6 @@ export function MobileProductForm({
     },
     []
   );
-
   const { data: brandsData, isLoading: brandsLoading } = useQuery<{
     brands: Array<{ id: string; name: string }>;
   }>({

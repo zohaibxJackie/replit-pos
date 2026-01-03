@@ -16,7 +16,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Textarea } from "./ui/textarea";
 import { useAuthStore } from "@/store/authStore";
-import { variant } from "@shared/schema";
 
 type TaxType = "flat" | "percent";
 interface Tax {
@@ -38,28 +37,6 @@ interface AcessoryModel {
 interface AcessoryColor {
   id: string;
   color: string;
-}
-
-interface AccessoryVariant {
-  id: string; // variantId
-  displayName: string;
-  productName: string;
-  color?: string;
-  storageSize?: string;
-}
-
-interface Vendor {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-}
-
-interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
 }
 
 function SearchableSelect({
@@ -323,6 +300,7 @@ export function AccessoryProductForm({
   const [selectedModel, setSelectedModel] = useState<AcessoryModel | null>(
     null
   );
+
   const [modelDisplay, setModelDisplay] = useState<string>(
     initialData?.model || ""
   );
@@ -354,11 +332,16 @@ export function AccessoryProductForm({
 
   const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
+  const authStorage = localStorage.getItem("auth-storage");
+  const authState = authStorage ? JSON.parse(authStorage)?.state : null;
+
   useEffect(() => {
+    if (!authState?.user?.id) return;
+
     setVendorsLoading(true);
 
     api.vendors
-      .getAll()
+      .getAll({ userId: authState.user.id }) // ✅ FIX
       .then((res) => {
         setVendors(
           res.vendors.map((v) => ({
@@ -368,34 +351,12 @@ export function AccessoryProductForm({
         );
       })
       .finally(() => setVendorsLoading(false));
-  }, []);
-
-  const { data: variantsData, isLoading: variantsLoading } = useQuery({
-    queryKey: ["variants", brand],
-    queryFn: () =>
-      api.accessoryCatalog.getVariants({
-        brandId: brand, // ← brandId, NOT brand name
-        isActive: true,
-        limit: 100,
-      }),
-    enabled: !!brand,
-  });
+  }, [authState?.user?.id]);
 
   const { data: brandsData, isLoading: brandsLoading } = useQuery<{
     brands: Array<{ id: string; name: string }>;
   }>({
     queryKey: ["/api/products/brands"],
-  });
-
-  const { data: modelsData, isLoading: modelsLoading } = useQuery({
-    queryKey: [
-      `/api/products/catalog/accessories/variants?brand=${encodeURIComponent(
-        brand
-      )}`,
-      brand,
-    ],
-    queryFn: () => api.accessoryCatalog.getBrands(),
-    enabled: !!brand,
   });
 
   const colors: AcessoryColor[] = [];
@@ -408,20 +369,6 @@ export function AccessoryProductForm({
   const brands = useMemo(() => {
     return brandsData?.brands?.map((b) => ({ id: b.id, name: b.name })) || [];
   }, [brandsData]);
-
-  const variants: AccessoryVariant[] = useMemo(() => {
-    return (
-      variantsData?.variants.map((v) => ({
-        id: v.id,
-        displayName: `${v.productName}${
-          v.storageSize ? ` ${v.storageSize}` : ""
-        }${v.color ? ` - ${v.color}` : ""}`,
-        productName: v.productName,
-        color: v.color ?? undefined,
-        storageSize: v.storageSize ?? undefined,
-      })) || []
-    );
-  }, [variantsData]);
 
   const taxes = useMemo(() => {
     type TaxType = "flat" | "percent";
@@ -452,20 +399,8 @@ export function AccessoryProductForm({
     setModelDisplay("");
     setSelectedColor(null);
     setColorDisplay("");
+    setVariantId(newBrand.id);
   }, []);
-
-  const handleModelChange = useCallback(
-    (variant: AcessoryModel | null, displayValue: string) => {
-      setSelectedModel(variant);
-      setModelDisplay(displayValue);
-      if (variant) {
-        setSelectedColor(null);
-        setColorDisplay("");
-        setVariantId(variant.id);
-      }
-    },
-    []
-  );
 
   const handleColorChange = useCallback(
     (color: AcessoryColor | null, displayValue: string) => {
@@ -540,9 +475,9 @@ export function AccessoryProductForm({
       purchasePrice: parseFloat(purchasePrice),
       sellingPrice: parseFloat(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
-      category: "accessories",
+      category: "accessory",
       quantity: !isEditing && quantity > 1 ? quantity : undefined,
-      variantId: variantId,
+      variantId: variantId || "",
       notes: notes || undefined,
       vendorId: vendorId,
       vendorType: vendorType,
