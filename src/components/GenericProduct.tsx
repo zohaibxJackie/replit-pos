@@ -11,22 +11,23 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Loader2 } from "lucide-react";
-import { BarcodeScannerDialog } from "@/components/BarcodeScannerDialog";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Textarea } from "./ui/textarea";
 import { useAuthStore } from "@/store/authStore";
+import { variant } from "@shared/schema";
 
+type TaxType = "flat" | "percent";
 interface Tax {
   id: string;
   name: string;
-  type: "percent" | "flat";
+  type: TaxType;
   value: string;
   isActive: boolean;
 }
 
-interface MobileModel {
+interface AcessoryModel {
   id: string;
   name: string;
   memory?: string;
@@ -34,9 +35,17 @@ interface MobileModel {
   productId: string;
 }
 
-interface MobileColor {
+interface AcessoryColor {
   id: string;
   color: string;
+}
+
+interface AccessoryVariant {
+  id: string; // variantId
+  displayName: string;
+  productName: string;
+  color?: string;
+  storageSize?: string;
 }
 
 interface Vendor {
@@ -121,16 +130,16 @@ function SearchableSelect({
   );
 }
 
-function PhoneModelAutocomplete({
+function AccessoryModelAutocomplete({
   models,
   value,
   onChange,
   isLoading,
   disabled,
 }: {
-  models: MobileModel[];
+  models: AcessoryModel[];
   value: string;
-  onChange: (model: MobileModel | null, displayValue: string) => void;
+  onChange: (model: AcessoryModel | null, displayValue: string) => void;
   isLoading: boolean;
   disabled: boolean;
 }) {
@@ -155,7 +164,7 @@ function PhoneModelAutocomplete({
     setShowSuggestions(val.length > 0 && filteredModels.length > 0);
   };
 
-  const handleSelectModel = (model: MobileModel) => {
+  const handleSelectModel = (model: AcessoryModel) => {
     setInputValue(model.displayName);
     onChange(model, model.displayName);
     setShowSuggestions(false);
@@ -204,9 +213,9 @@ function ColorAutocomplete({
   isLoading,
   disabled,
 }: {
-  colors: MobileColor[];
+  colors: AcessoryColor[];
   value: string;
-  onChange: (color: MobileColor | null, displayValue: string) => void;
+  onChange: (color: AcessoryColor | null, displayValue: string) => void;
   isLoading: boolean;
   disabled: boolean;
 }) {
@@ -230,7 +239,7 @@ function ColorAutocomplete({
     setShowSuggestions(val.length > 0 && filteredColors.length > 0);
   };
 
-  const handleSelectColor = (color: MobileColor) => {
+  const handleSelectColor = (color: AcessoryColor) => {
     setInputValue(color.color);
     onChange(color, color.color);
     setShowSuggestions(false);
@@ -271,24 +280,16 @@ function ColorAutocomplete({
   );
 }
 
-export interface ImeiEntry {
-  imei1: string;
-  imei2: string;
-}
-
-export interface MobileProductPayload {
+export interface AccessoryProductPayload {
   brand: string;
   model: string;
   color: string;
-  imei: string;
-  imei2?: string;
   purchasePrice: number;
   sellingPrice: number;
   taxId?: string;
   mobileCatalogId?: string;
   category: string;
   quantity?: number;
-  imeis?: ImeiEntry[];
   variantId: string;
   condition: string;
   notes?: string;
@@ -300,38 +301,37 @@ export interface MobileProductPayload {
   lowStockThreshold?: number;
 }
 
-interface MobileProductFormProps {
-  onSubmit: (payload: MobileProductPayload) => void;
+interface AccessoryProductFormProps {
+  onSubmit: (payload: AccessoryProductPayload) => void;
   onCancel: () => void;
-  initialData?: Partial<MobileProductPayload>;
+  initialData?: Partial<AccessoryProductPayload>;
   shopId?: string;
   isEditing?: boolean;
 }
 
-export function MobileProductForm({
+export function AccessoryProductForm({
   onSubmit,
   onCancel,
   initialData,
   shopId,
   isEditing = false,
-}: MobileProductFormProps) {
+}: AccessoryProductFormProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
 
-  const [conditionType, setConditionType] = useState<"new" | "used">(
-    initialData?.condition === "used" ? "used" : "new"
-  );
   const [brand, setBrand] = useState<string>(initialData?.brand || "");
-  const [selectedModel, setSelectedModel] = useState<MobileModel | null>(null);
+  const [selectedModel, setSelectedModel] = useState<AcessoryModel | null>(
+    null
+  );
   const [modelDisplay, setModelDisplay] = useState<string>(
     initialData?.model || ""
   );
-  const [selectedColor, setSelectedColor] = useState<MobileColor | null>(null);
+  const [selectedColor, setSelectedColor] = useState<AcessoryColor | null>(
+    null
+  );
   const [colorDisplay, setColorDisplay] = useState<string>(
     initialData?.color || ""
   );
-  const [imei, setImei] = useState<string>(initialData?.imei || "");
-  const [imei2, setImei2] = useState<string>(initialData?.imei2 || "");
   const [purchasePrice, setPurchasePrice] = useState<string>(
     initialData?.purchasePrice?.toString() || ""
   );
@@ -341,72 +341,45 @@ export function MobileProductForm({
   const [taxId, setTaxId] = useState<string | undefined>(initialData?.taxId);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState<number>(1);
-  const [imeis, setImeis] = useState<ImeiEntry[]>([{ imei1: "", imei2: "" }]);
-  const [showScanner, setShowScanner] = useState(false);
-  const [showScanner2, setShowScanner2] = useState(false);
-  const [showBulkScanner, setShowBulkScanner] = useState(false);
-  const [activeScannerIndex, setActiveScannerIndex] = useState<number | null>(
-    null
-  );
-  const [activeScannerField, setActiveScannerField] = useState<
-    "imei1" | "imei2"
-  >("imei1");
   const [variantId, setVariantId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>(initialData?.notes || "");
   const [serialNumber, setSerialNumber] = useState<string>(
     initialData?.serialNumber || ""
   );
   const [barcode, setBarcode] = useState<string>(initialData?.barcode || "");
-  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || "");
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(0);
+  const vendorType = "VENDOR" as const;
 
-  const handleQuantityChange = useCallback((newQty: number) => {
-    const qty = Math.max(1, Math.min(100, newQty));
-    setQuantity(qty);
-    setImeis((prevImeis) => {
-      if (qty > prevImeis.length) {
-        return [
-          ...prevImeis,
-          ...Array(qty - prevImeis.length)
-            .fill(null)
-            .map(() => ({ imei1: "", imei2: "" })),
-        ];
-      } else {
-        return prevImeis.slice(0, qty);
-      }
-    });
+  const [vendorId, setVendorId] = useState<string>("");
+
+  const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  useEffect(() => {
+    setVendorsLoading(true);
+
+    api.vendors
+      .getAll()
+      .then((res) => {
+        setVendors(
+          res.vendors.map((v) => ({
+            id: v.id,
+            name: v.name,
+          }))
+        );
+      })
+      .finally(() => setVendorsLoading(false));
   }, []);
 
-  const updateImei = useCallback(
-    (index: number, field: "imei1" | "imei2", value: string) => {
-      setImeis((prev) =>
-        prev.map((entry, i) =>
-          i === index ? { ...entry, [field]: value } : entry
-        )
-      );
-    },
-    []
-  );
-
-  const handleBulkImeiScan = useCallback(
-    (scannedCode: string) => {
-      if (activeScannerIndex !== null) {
-        updateImei(activeScannerIndex, activeScannerField, scannedCode);
-      }
-      setShowBulkScanner(false);
-      setActiveScannerIndex(null);
-    },
-    [activeScannerIndex, activeScannerField, updateImei]
-  );
-
-  const openBulkScanner = useCallback(
-    (index: number, field: "imei1" | "imei2") => {
-      setActiveScannerIndex(index);
-      setActiveScannerField(field);
-      setShowBulkScanner(true);
-    },
-    []
-  );
+  const { data: variantsData, isLoading: variantsLoading } = useQuery({
+    queryKey: ["variants", brand],
+    queryFn: () =>
+      api.accessoryCatalog.getVariants({
+        brandId: brand, // ← brandId, NOT brand name
+        isActive: true,
+        limit: 100,
+      }),
+    enabled: !!brand,
+  });
 
   const { data: brandsData, isLoading: brandsLoading } = useQuery<{
     brands: Array<{ id: string; name: string }>;
@@ -415,52 +388,43 @@ export function MobileProductForm({
   });
 
   const { data: modelsData, isLoading: modelsLoading } = useQuery({
-    queryKey: ["/api/products/catalog/mobiles/models", brand],
-    queryFn: () => api.mobileCatalog.getModels(brand),
+    queryKey: [
+      `/api/products/catalog/accessories/variants?brand=${encodeURIComponent(
+        brand
+      )}`,
+      brand,
+    ],
+    queryFn: () => api.accessoryCatalog.getBrands(),
     enabled: !!brand,
   });
 
-  const { data: colorsData, isLoading: colorsLoading } = useQuery({
-    queryKey: [
-      "/api/products/catalog/mobiles/colors",
-      brand,
-      selectedModel?.name,
-      selectedModel?.memory,
-    ],
-    queryFn: () => api.mobileCatalog.getColors(selectedModel as any),
-    enabled: !!brand && !!selectedModel,
-  });
+  const colors: AcessoryColor[] = [];
 
   const { data: taxesData, isLoading: taxesLoading } = useQuery({
     queryKey: ["/api/taxes", { isActive: true }],
     queryFn: () => api.taxes.getAll({ isActive: true }),
   });
 
-  const { data: vendorsData, isLoading: vendorsLoading } = useQuery({
-    queryKey: ["/api/vendors", user?.id],
-    queryFn: () => api.vendors.getAll(user?.id),
-    enabled: conditionType === "new" && !!shopId,
-  });
-
-  const { data: customersData, isLoading: customersLoading } = useQuery({
-    queryKey: ["/api/customers"],
-    queryFn: () => api.customers.getAll({ limit: 1000 }),
-    enabled: conditionType === "used",
-  });
-
   const brands = useMemo(() => {
     return brandsData?.brands?.map((b) => ({ id: b.id, name: b.name })) || [];
   }, [brandsData]);
 
-  const models = useMemo(() => {
-    return modelsData?.models || [];
-  }, [modelsData]);
-
-  const colors = useMemo(() => {
-    return colorsData?.colors || [];
-  }, [colorsData]);
+  const variants: AccessoryVariant[] = useMemo(() => {
+    return (
+      variantsData?.variants.map((v) => ({
+        id: v.id,
+        displayName: `${v.productName}${
+          v.storageSize ? ` ${v.storageSize}` : ""
+        }${v.color ? ` - ${v.color}` : ""}`,
+        productName: v.productName,
+        color: v.color ?? undefined,
+        storageSize: v.storageSize ?? undefined,
+      })) || []
+    );
+  }, [variantsData]);
 
   const taxes = useMemo(() => {
+    type TaxType = "flat" | "percent";
     const taxList = taxesData?.taxes || [];
     return [
       {
@@ -482,14 +446,6 @@ export function MobileProductForm({
     ];
   }, [taxesData, t]);
 
-  const vendors = useMemo(() => {
-    return vendorsData?.vendors || [];
-  }, [vendorsData]);
-
-  const customers = useMemo(() => {
-    return customersData?.customers || [];
-  }, [customersData]);
-
   const handleBrandChange = useCallback((newBrand: string) => {
     setBrand(newBrand);
     setSelectedModel(null);
@@ -499,20 +455,20 @@ export function MobileProductForm({
   }, []);
 
   const handleModelChange = useCallback(
-    (model: MobileModel | null, displayValue: string) => {
-      setSelectedModel(model);
+    (variant: AcessoryModel | null, displayValue: string) => {
+      setSelectedModel(variant);
       setModelDisplay(displayValue);
-      if (model) {
+      if (variant) {
         setSelectedColor(null);
         setColorDisplay("");
-        setVariantId(model.id);
+        setVariantId(variant.id);
       }
     },
     []
   );
 
   const handleColorChange = useCallback(
-    (color: MobileColor | null, displayValue: string) => {
+    (color: AcessoryColor | null, displayValue: string) => {
       setSelectedColor(color);
       setColorDisplay(displayValue);
     },
@@ -533,26 +489,6 @@ export function MobileProductForm({
     }
   }, [sellingPrice, taxId, taxes]);
 
-  const handleIMEIScan = useCallback(
-    (scannedCode: string) => {
-      if (isEditing || quantity === 1) {
-        setImei(scannedCode);
-      }
-      setShowScanner(false);
-    },
-    [isEditing, quantity]
-  );
-
-  const handleIMEI2Scan = useCallback(
-    (scannedCode: string) => {
-      if (isEditing || quantity === 1) {
-        setImei2(scannedCode);
-      }
-      setShowScanner2(false);
-    },
-    [isEditing, quantity]
-  );
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -562,39 +498,15 @@ export function MobileProductForm({
     if (!selectedModel) {
       newErrors.model = t("products.form.select_model_from_list");
     }
-    if (colors.length > 0 && !selectedColor) {
-      newErrors.color = t("products.form.select_color_from_list");
-    } else if (colors.length === 0 && selectedModel && !colorDisplay.trim()) {
-      newErrors.color = t("products.form.color_required");
+    if (colorDisplay && colorDisplay.trim().length < 2) {
+      newErrors.color = t("products.form.invalid_color");
     }
+
     if (!purchasePrice || parseFloat(purchasePrice) <= 0) {
       newErrors.purchasePrice = t("products.form.purchase_price_required");
     }
     if (!sellingPrice || parseFloat(sellingPrice) <= 0) {
       newErrors.sellingPrice = t("products.form.selling_price_required");
-    }
-
-    if (isEditing || quantity === 1) {
-      if (!imei.trim()) newErrors.imei = t("products.form.imei_required");
-    } else {
-      if (imeis.length !== quantity) {
-        newErrors.quantity = t("products.form.imei_count_mismatch");
-      }
-      imeis.forEach((entry, index) => {
-        if (!entry.imei1.trim()) {
-          newErrors[`imei_${index}`] = t(
-            "products.form.imei_required_for_phone",
-            { number: index + 1 }
-          );
-        }
-      });
-    }
-
-    if (conditionType === "new" && !vendorId) {
-      newErrors.vendor = t("products.form.vendor_required");
-    }
-    if (conditionType === "used" && !vendorId) {
-      newErrors.vendor = t("products.form.customer_required");
     }
 
     setErrors(newErrors);
@@ -606,31 +518,34 @@ export function MobileProductForm({
     if (!selectedModel) {
       return;
     }
+    if (!variantId) {
+      newErrors.model = "Variant selection is required";
+    }
+    if (!vendorType) {
+      setErrors({ vendorType: "Vendor type is required" });
+      return;
+    }
+
+    if (!vendorId) {
+      setErrors({ vendorId: "Vendor is required" });
+      return;
+    }
 
     // main payload or data that will be sent to backend for adding single mobile
-    const payload: MobileProductPayload = {
+    const payload: AccessoryProductPayload = {
       brand,
-      model: selectedModel.name,
-      color: selectedColor?.color || colorDisplay.trim(),
-      imei:
-        isEditing || quantity === 1
-          ? imei.trim()
-          : imeis[0]?.imei1.trim() || "",
-      imei2:
-        isEditing || quantity === 1
-          ? imei2.trim() || undefined
-          : imeis[0]?.imei2.trim() || undefined,
+      color:
+        selectedColor?.color ||
+        (colorDisplay.trim() ? colorDisplay.trim() : undefined),
       purchasePrice: parseFloat(purchasePrice),
       sellingPrice: parseFloat(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
-      category: "mobile",
+      category: "accessories",
       quantity: !isEditing && quantity > 1 ? quantity : undefined,
-      imeis: !isEditing && quantity > 1 ? imeis : undefined,
-      variantId: variantId || "",
-      condition: conditionType,
+      variantId: variantId,
       notes: notes || undefined,
-      vendorId: vendorId || undefined,
-      vendorType: conditionType === "new" ? "vendor" : "customer",
+      vendorId: vendorId,
+      vendorType: vendorType,
       serialNumber: serialNumber || undefined,
       barcode: barcode || undefined,
       lowStockThreshold: lowStockThreshold || 0,
@@ -641,59 +556,22 @@ export function MobileProductForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Tabs
-        defaultValue={conditionType}
-        onValueChange={(val) => setConditionType(val as "new" | "used")}
-        className="w-full"
-      >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="new" data-testid="tab-new-mobile">
-            {t("products.form.new_mobile") || "New"}
-          </TabsTrigger>
-          <TabsTrigger value="used" data-testid="tab-used-mobile">
-            {t("products.form.used_mobile") || "Used"}
-          </TabsTrigger>
-        </TabsList>
+      <div>
+        <Label className="text-sm font-medium">
+          Select Vendor <span className="text-destructive">*</span>
+        </Label>
 
-        <TabsContent value="new" className="space-y-4">
-          <div>
-            <Label htmlFor="vendor" className="text-sm font-medium">
-              {t("products.form.vendor")}{" "}
-              <span className="text-destructive">*</span>
-            </Label>
-            <SearchableSelect
-              items={vendors as any}
-              placeholder={t("products.form.select_vendor")}
-              value={vendorId}
-              onChange={setVendorId}
-              isLoading={vendorsLoading}
-            />
-            {errors.vendor && (
-              <p className="text-destructive text-xs mt-1">{errors.vendor}</p>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="used" className="space-y-4">
-          <div>
-            <Label htmlFor="customer" className="text-sm font-medium">
-              {t("products.form.customer")}{" "}
-              <span className="text-destructive">*</span>
-            </Label>
-            <SearchableSelect
-              items={customers as any}
-              placeholder={t("products.form.select_customer")}
-              value={vendorId}
-              onChange={setVendorId}
-              isLoading={customersLoading}
-            />
-            {errors.vendor && (
-              <p className="text-destructive text-xs mt-1">{errors.vendor}</p>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-
+        <SearchableSelect
+          items={vendors}
+          value={vendorId}
+          onChange={setVendorId}
+          placeholder="Select vendor"
+          isLoading={vendorsLoading}
+        />
+        {errors.vendorId && (
+          <p className="text-destructive text-xs mt-1">{errors.vendorId}</p>
+        )}
+      </div>
       <div>
         <Label htmlFor="brand" className="text-sm font-medium">
           {t("products.form.brand")} <span className="text-destructive">*</span>
@@ -709,199 +587,23 @@ export function MobileProductForm({
           <p className="text-destructive text-xs mt-1">{errors.brand}</p>
         )}
       </div>
-
-      <div>
-        <Label htmlFor="model" className="text-sm font-medium">
-          {t("products.form.phone_model")}{" "}
-          <span className="text-destructive">*</span>
-        </Label>
-        <PhoneModelAutocomplete
-          models={models as any}
-          value={modelDisplay}
-          onChange={handleModelChange}
-          isLoading={modelsLoading}
-          disabled={!brand}
-        />
-        {errors.model && (
-          <p className="text-destructive text-xs mt-1">{errors.model}</p>
-        )}
-      </div>
-
       <div>
         <Label htmlFor="color" className="text-sm font-medium">
-          {t("products.form.color")} <span className="text-destructive">*</span>
+          {t("products.form.color")}
+          <span className="text-muted-foreground text-xs ml-1">(optional)</span>
         </Label>
         <ColorAutocomplete
-          colors={colors}
+          colors={[]} // ← no backend dependency
           value={colorDisplay}
           onChange={handleColorChange}
-          isLoading={colorsLoading}
-          disabled={!selectedModel}
+          isLoading={false}
+          disabled={!brand}
         />
+
         {errors.color && (
           <p className="text-destructive text-xs mt-1">{errors.color}</p>
         )}
       </div>
-
-      {!isEditing && conditionType === "new" && (
-        <div>
-          <Label htmlFor="quantity" className="text-sm font-medium">
-            {t("products.form.quantity")}{" "}
-            <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="quantity"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={100}
-            value={quantity}
-            onChange={(e) =>
-              handleQuantityChange(parseInt(e.target.value) || 1)
-            }
-            placeholder={t("products.form.enter_quantity")}
-            data-testid="input-quantity"
-          />
-          <p className="text-muted-foreground text-xs mt-1">
-            {t("products.form.quantity_hint")}
-          </p>
-        </div>
-      )}
-
-      {isEditing || quantity === 1 ? (
-        <>
-          <div>
-            <Label htmlFor="imei" className="text-sm font-medium">
-              {t("products.form.imei")}{" "}
-              <span className="text-destructive">*</span>
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="imei"
-                value={imei}
-                onChange={(e) => setImei(e.target.value)}
-                placeholder={t("products.form.enter_or_scan_imei")}
-                className="flex-1"
-                data-testid="input-imei"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setShowScanner(true)}
-                data-testid="button-scan-imei"
-              >
-                <Camera className="w-4 h-4" />
-              </Button>
-            </div>
-            {errors.imei && (
-              <p className="text-destructive text-xs mt-1">{errors.imei}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="imei2" className="text-sm font-medium">
-              {t("products.form.imei2")}{" "}
-              <span className="text-muted-foreground text-xs">
-                ({t("products.form.optional")})
-              </span>
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="imei2"
-                value={imei2}
-                onChange={(e) => setImei2(e.target.value)}
-                placeholder={t("products.form.enter_or_scan_imei2")}
-                className="flex-1"
-                data-testid="input-imei2"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setShowScanner2(true)}
-                data-testid="button-scan-imei2"
-              >
-                <Camera className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="space-y-4">
-          <Label className="text-sm font-medium">
-            {t("products.form.imei_entries")}{" "}
-            <span className="text-destructive">*</span>
-          </Label>
-          <div className="max-h-64 overflow-y-auto space-y-3 border rounded-md p-3">
-            {imeis.map((entry, index) => (
-              <div key={index} className="p-3 bg-muted/50 rounded-md space-y-2">
-                <div className="font-medium text-sm text-muted-foreground">
-                  {t("products.form.phone_number", { number: index + 1 })}
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <div className="flex-1 min-w-[200px]">
-                    <Label className="text-xs">
-                      {t("products.form.imei")} 1 *
-                    </Label>
-                    <div className="flex gap-1">
-                      <Input
-                        value={entry.imei1}
-                        onChange={(e) =>
-                          updateImei(index, "imei1", e.target.value)
-                        }
-                        placeholder={t("products.form.imei")}
-                        className="flex-1"
-                        data-testid={`input-imei1-${index}`}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => openBulkScanner(index, "imei1")}
-                        data-testid={`button-scan-imei1-${index}`}
-                      >
-                        <Camera className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {errors[`imei_${index}`] && (
-                      <p className="text-destructive text-xs mt-1">
-                        {errors[`imei_${index}`]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <Label className="text-xs">
-                      {t("products.form.imei")} 2
-                    </Label>
-                    <div className="flex gap-1">
-                      <Input
-                        value={entry.imei2}
-                        onChange={(e) =>
-                          updateImei(index, "imei2", e.target.value)
-                        }
-                        placeholder={t("products.form.optional")}
-                        className="flex-1"
-                        data-testid={`input-imei2-${index}`}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => openBulkScanner(index, "imei2")}
-                        data-testid={`button-scan-imei2-${index}`}
-                      >
-                        <Camera className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div>
         <Label htmlFor="serialNumber" className="text-sm font-medium">
           {t("products.form.serial_input")}
@@ -915,7 +617,6 @@ export function MobileProductForm({
           data-testid="input-serial"
         />
       </div>
-
       <div>
         <Label htmlFor="barcode" className="text-sm font-medium">
           {t("products.form.barcode")}
@@ -929,24 +630,20 @@ export function MobileProductForm({
           data-testid="input-barcode"
         />
       </div>
-
-      {conditionType === "new" && (
-        <div>
-          <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
-            {t("products.form.lowStockThreshold")}
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            id="lowStockThreshold"
-            value={lowStockThreshold}
-            placeholder={t("products.form.lowStockThreshold_placeholder")}
-            onChange={(e) => setLowStockThreshold(Number(e.target.value))}
-            data-testid="input-lowStockThreshold"
-          />
-        </div>
-      )}
-
+      <div>
+        <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
+          {t("products.form.lowStockThreshold")}
+        </Label>
+        <Input
+          type="number"
+          min={0}
+          id="lowStockThreshold"
+          value={lowStockThreshold}
+          placeholder={t("products.form.lowStockThreshold_placeholder")}
+          onChange={(e) => setLowStockThreshold(Number(e.target.value))}
+          data-testid="input-lowStockThreshold"
+        />
+      </div>
       <div>
         <Label htmlFor="purchasePrice" className="text-sm font-medium">
           {t("products.form.purchase_price")}{" "}
@@ -968,7 +665,6 @@ export function MobileProductForm({
           </p>
         )}
       </div>
-
       <div>
         <Label htmlFor="sellingPrice" className="text-sm font-medium">
           {t("products.form.selling_price")}{" "}
@@ -988,7 +684,6 @@ export function MobileProductForm({
           <p className="text-destructive text-xs mt-1">{errors.sellingPrice}</p>
         )}
       </div>
-
       <div>
         <Label htmlFor="tax" className="text-sm font-medium">
           {t("products.form.tax")}
@@ -1001,7 +696,6 @@ export function MobileProductForm({
           isLoading={taxesLoading}
         />
       </div>
-
       {sellingPrice && parseFloat(sellingPrice) > 0 && (
         <div className="p-3 bg-muted rounded-md">
           <div className="flex justify-between items-center text-sm">
@@ -1014,7 +708,6 @@ export function MobileProductForm({
           </div>
         </div>
       )}
-
       <div>
         <Label htmlFor="notes" className="text-sm font-medium">
           {t("products.form.notes")}
@@ -1027,7 +720,6 @@ export function MobileProductForm({
           data-testid="input-notes"
         />
       </div>
-
       <div className="flex justify-end gap-2 pt-4">
         <Button
           type="button"
@@ -1040,30 +732,9 @@ export function MobileProductForm({
         <Button type="submit" data-testid="button-submit-mobile">
           {initialData
             ? t("products.form.update_mobile")
-            : t("products.form.add_mobile")}
+            : t("products.form.add_accessory")}
         </Button>
       </div>
-
-      <BarcodeScannerDialog
-        open={showScanner}
-        onOpenChange={setShowScanner}
-        onScanSuccess={handleIMEIScan}
-      />
-
-      <BarcodeScannerDialog
-        open={showScanner2}
-        onOpenChange={setShowScanner2}
-        onScanSuccess={handleIMEI2Scan}
-      />
-
-      <BarcodeScannerDialog
-        open={showBulkScanner}
-        onOpenChange={(open) => {
-          setShowBulkScanner(open);
-          if (!open) setActiveScannerIndex(null);
-        }}
-        onScanSuccess={handleBulkImeiScan}
-      />
     </form>
   );
 }

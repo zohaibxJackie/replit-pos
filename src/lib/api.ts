@@ -477,8 +477,12 @@ export const api = {
   },
 
   vendors: {
-    getAll: (userId?: string) =>
-      request<{
+    getAll: (params?: { userId?: string; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.userId) searchParams.set("userId", params.userId);
+      if (params?.search) searchParams.set("search", params.search);
+      const query = searchParams.toString();
+      return request<{
         vendors: Array<{
           id: string;
           name: string;
@@ -487,7 +491,8 @@ export const api = {
           address?: string;
           createdAt: string;
         }>;
-      }>(userId ? `/api/vendors?userId=${userId}` : "/api/vendors"),
+      }>(query ? `/api/vendors?${query}` : "/api/vendors");
+    },
 
     getById: (id: string) =>
       request<{
@@ -668,6 +673,53 @@ export const api = {
 
     getBrands: () =>
       request<{ brands: string[] }>("/api/products/catalog/accessories/brands"),
+
+    getVariants: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      categoryId?: string;
+      brandId?: string;
+      productId?: string;
+      isActive?: boolean;
+    }) => {
+      const searchParams = new URLSearchParams();
+
+      if (params?.page) searchParams.set("page", params.page.toString());
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+      if (params?.search) searchParams.set("search", params.search);
+      if (params?.categoryId) searchParams.set("categoryId", params.categoryId);
+      if (params?.brandId) searchParams.set("brandId", params.brandId);
+      if (params?.productId) searchParams.set("productId", params.productId);
+      if (params?.isActive !== undefined) {
+        searchParams.set("isActive", String(params.isActive));
+      }
+
+      const query = searchParams.toString();
+
+      return request<{
+        variants: Array<{
+          id: string; // ← variantId
+          productId: string;
+          variantName: string;
+          color: string | null;
+          storageSize: string | null;
+          sku: string;
+          isActive: boolean;
+          productName: string;
+          brandId: string;
+          brandName: string;
+          categoryId: string;
+          categoryName: string;
+        }>;
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }>(query ? `/api/variants?${query}` : "/api/variants");
+    },
   },
 
   taxes: {
