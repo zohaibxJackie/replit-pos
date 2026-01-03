@@ -123,6 +123,7 @@ export const brand = pgTable("brand", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),
+  category: text("category").notNull().default('mobile'),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -153,8 +154,8 @@ export const product = pgTable("product", {
 // variant_name is auto-generated from product name + storage_size
 // trackingMode determines if inventory is tracked per-unit (serialized) or by quantity (bulk)
 export const variant = pgTable("variant", {
-  id: uuid("id").defaultRandom().primaryKey(), // ← Change from varchar to uuid
-  productId: uuid("product_id").notNull(), // ← Change from varchar to uuid
+  id: varchar("id").default(sql`gen_random_uuid()`).primaryKey(), // ← Change from varchar to uuid
+  productId: varchar("product_id").notNull(), // ← Change from varchar to uuid
   variantName: text("variant_name").notNull(),
   color: text("color"),
   storageSize: text("storage_size"),
@@ -350,6 +351,7 @@ export const stockBatches = pgTable("stock_batches", {
   lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
   vendorId: varchar("vendor_id"),
   notes: text("notes"),
+  taxId: varchar("tax_id"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
