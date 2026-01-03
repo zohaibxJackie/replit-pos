@@ -199,8 +199,9 @@ export default function GenericProducts() {
 
   // ✅ Fetch Vendors
   const { data: vendorsData } = useQuery({
-    queryKey: ["/api/vendors"],
-    queryFn: () => api.vendors.getAll(),
+    queryKey: ["/api/vendors", authState?.user?.id],
+    queryFn: () => api.vendors.getAll({ userId: authState?.user?.id }),
+    enabled: !!authState?.user?.id,
   });
 
   // ✅ Fetch Taxes
