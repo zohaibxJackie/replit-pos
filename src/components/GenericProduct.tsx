@@ -258,21 +258,17 @@ function ColorAutocomplete({
 }
 
 export interface AccessoryProductPayload {
-  brand: string;
-  model: string;
   color: string;
   purchasePrice: number;
   sellingPrice: number;
   taxId?: string;
-  mobileCatalogId?: string;
+  accessoryCatalogId?: string;
   category: string;
   quantity?: number;
   variantId: string;
-  condition: string;
   notes?: string;
   vendorId: string;
   vendorType: string;
-  serialNumber?: string;
   barcode?: string;
   categoryId?: string;
   lowStockThreshold?: number;
@@ -321,9 +317,6 @@ export function AccessoryProductForm({
   const [quantity, setQuantity] = useState<number>(1);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>(initialData?.notes || "");
-  const [serialNumber, setSerialNumber] = useState<string>(
-    initialData?.serialNumber || ""
-  );
   const [barcode, setBarcode] = useState<string>(initialData?.barcode || "");
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(0);
   const vendorType = "VENDOR" as const;
@@ -341,7 +334,7 @@ export function AccessoryProductForm({
     setVendorsLoading(true);
 
     api.vendors
-      .getAll({ userId: authState.user.id }) // ✅ FIX
+      .getAll({ userId: authState.user.id })
       .then((res) => {
         setVendors(
           res.vendors.map((v) => ({
@@ -428,7 +421,6 @@ export function AccessoryProductForm({
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
-
     if (!brand) newErrors.brand = t("products.form.brand_required");
     if (!selectedModel) {
       newErrors.model = t("products.form.select_model_from_list");
@@ -481,11 +473,10 @@ export function AccessoryProductForm({
       notes: notes || undefined,
       vendorId: vendorId,
       vendorType: vendorType,
-      serialNumber: serialNumber || undefined,
       barcode: barcode || undefined,
       lowStockThreshold: lowStockThreshold || 0,
     };
-
+    console.log("FINAL PAYLOAD", payload);
     onSubmit(payload);
   };
 
@@ -540,19 +531,6 @@ export function AccessoryProductForm({
         )}
       </div>
       <div>
-        <Label htmlFor="serialNumber" className="text-sm font-medium">
-          {t("products.form.serial_input")}
-        </Label>
-        <Input
-          type="text"
-          id="serialNumber"
-          value={serialNumber}
-          placeholder={t("products.form.serial_placeholder")}
-          onChange={(e) => setSerialNumber(e.target.value)}
-          data-testid="input-serial"
-        />
-      </div>
-      <div>
         <Label htmlFor="barcode" className="text-sm font-medium">
           {t("products.form.barcode")}
         </Label>
@@ -567,14 +545,14 @@ export function AccessoryProductForm({
       </div>
       <div>
         <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
-          {t("products.form.lowStockThreshold")}
+          {t("products.form.quantity")}
         </Label>
         <Input
           type="number"
           min={0}
           id="lowStockThreshold"
           value={lowStockThreshold}
-          placeholder={t("products.form.lowStockThreshold_placeholder")}
+          placeholder={t("products.form.quantity_of_products")}
           onChange={(e) => setLowStockThreshold(Number(e.target.value))}
           data-testid="input-lowStockThreshold"
         />

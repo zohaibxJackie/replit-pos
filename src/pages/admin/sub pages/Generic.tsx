@@ -139,40 +139,29 @@ export default function GenericProducts() {
   });
 
   const shops = useMemo(() => shopsData?.shops || [], [shopsData]);
+  const [brandFilter, setBrandFilter] = useState<string | undefined>(undefined);
 
-  const { data: categoriesData } = useQuery({
-    queryKey: ["/api/categories"],
-    queryFn: () => api.categories.getAll(),
-  });
-
-  const categories = categoriesData?.categories || [];
-
-  const selectedCategoryId = categories.find((c) => c.name === "accessory")?.id;
-
-  const { data: productsData, isLoading } = useQuery({
+  const { data: accessoriesData, isLoading } = useQuery({
     queryKey: [
-      "/api/products",
+      "/api/products/catalog/accessories",
       {
         page,
         limit,
         search: debouncedSearch,
-        productCategory: "accessory",
-        status: statusFilter,
-        shopId: shopFilter,
+        brand: brandFilter,
       },
     ],
     queryFn: () =>
-      api.products.getAll({
+      api.accessoryCatalog.getAll({
         page,
         limit,
         search: debouncedSearch || undefined,
-        productCategory: "accessory",
-        status: statusFilter || undefined,
-        shopId: shopFilter || undefined,
+        brand: brandFilter || undefined,
       }),
   });
-  const products = productsData?.products || [];
-  const total = productsData?.pagination?.total || 0;
+
+  const products = accessoriesData?.accessories || [];
+  const total = accessoriesData?.pagination?.total || 0;
 
   // ✅ Fetch Vendors
   const { data: vendorsData } = useQuery({
@@ -180,24 +169,27 @@ export default function GenericProducts() {
     queryFn: () => api.vendors.getAll({ userId: authState?.user?.id }),
     enabled: !!authState?.user?.id,
   });
-
-  // ✅ Filtered products for stock management
   const searchedProducts = useMemo(() => {
     if (!stockSearch.trim()) return products;
+
+    const q = stockSearch.toLowerCase();
+
     return products.filter(
       (p) =>
-        (p.productName?.name || p.notes || "")
-          .toLowerCase()
-          .includes(stockSearch.toLowerCase()) ||
-        (p.barcode || "").toLowerCase().includes(stockSearch.toLowerCase())
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        (p.category?.toLowerCase().includes(q) ?? false)
     );
   }, [stockSearch, products]);
 
   // ✅ Product Mutations
   const createProductMutation = useMutation({
-    mutationFn: (data: any) => api.products.create(data),
+    mutationFn: (data: any) => api.accessoryCatalog.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/products/accessories"],
+      });
+
       toast({ title: "Product Added" });
       setIsModalOpen(false);
       setEditingProduct(null);
@@ -219,8 +211,10 @@ export default function GenericProducts() {
         purchasePrice: Number(data.buyPrice),
         notes: data.name,
       }),
+    // In updateProductMutation
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+
       toast({ title: "Product Updated" });
       setIsModalOpen(false);
       setEditingProduct(null);
@@ -238,7 +232,9 @@ export default function GenericProducts() {
       quantity: number;
     }) => api.products.updateStock(id, { type, quantity }),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/products/catalog/accessories"],
+      });
       let title = "";
       if (variables.type === "add") {
         title = "Stock Added";
@@ -281,15 +277,14 @@ export default function GenericProducts() {
         variantId: payload.variantId,
         salePrice: payload.sellingPrice,
         purchasePrice: payload.purchasePrice,
-        serialNumber: payload.serialNumber || null,
         barcode: payload.barcode || null,
-        condition: payload.condition,
         notes: payload.notes || null,
         vendorId: payload.vendorId,
         vendorType: payload.vendorType || "vendor",
         taxId: payload.taxId,
         lowStockThreshold: payload.lowStockThreshold || 0,
       });
+      console.log("FINAL PAYLOAD", payload);
     } catch (err) {
       console.error("Error creating product:", err);
       toast({ title: "Failed to create product", variant: "destructive" });
@@ -360,22 +355,6 @@ export default function GenericProducts() {
       label: "Category",
       filterType: "select",
       filterOptions: ["Accessory"],
-    },
-
-    {
-      key: "name",
-      label: "Product Name",
-      filterType: "text",
-    },
-    {
-      key: "brand",
-      label: "Brand",
-      filterType: "select",
-      options: brands.map((b) => ({
-        label: b.name,
-        value: b.id,
-      })),
-      loading: brandsLoading,
     },
     {
       key: "color",

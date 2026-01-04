@@ -639,6 +639,40 @@ export const api = {
   },
 
   accessoryCatalog: {
+    // ✅ NEW: Create accessory stock/product
+    create: (data: {
+      variantId: string;
+      shopId: string;
+      quantity: number;
+      purchasePrice?: number;
+      salePrice?: number;
+      vendorId?: string;
+      taxId?: string;
+      notes?: string;
+      barcode?: string;
+    }) => {
+      return request<{
+        success: boolean;
+        stockBatch: {
+          id: string;
+          variantId: string;
+          shopId: string;
+          quantity: number;
+          purchasePrice: string;
+          salePrice: string;
+          vendorId?: string;
+          taxId?: string;
+          notes?: string;
+          barcode?: string;
+          isActive: boolean;
+          createdAt: string;
+          updatedAt: string;
+        };
+      }>("/api/products/accessories", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
     getAll: (params?: {
       page?: number;
       limit?: number;
