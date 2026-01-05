@@ -28,7 +28,7 @@ router.post("/accessories", productController.createAccessoryStock);
 router.get("/catalog/accessories", productController.getAccessoryCatalog);
 router.get(
   "/catalog/accessories/brands",
-  productController.getAccessoryCatalogBrands
+  productController.getAccessoryCatalogModels
 );
 router.get("/barcode/:barcode", productController.getProductByBarcode);
 router.get("/imei/:imei", productController.getProductByImei);

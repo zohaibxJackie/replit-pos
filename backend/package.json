@@ -9,7 +9,9 @@
     "dev": "node --watch server.js",
     "setup-db": "tsx backend/scripts/setup-database.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
   "engines": {
     "node": ">=18.0.0"
   }
