@@ -375,6 +375,7 @@
         "select_tax": "Select Tax (Optional)",
         "no_tax": "No Tax",
         "low_stock_threshold": "Low Stock Threshold",
+        "quantity":"Quantity",
         "notes": "Notes"
       }
     },
@@ -1017,7 +1018,8 @@
       "barcode": "Barcode",
       "barcode_placeholder": "Enter unique barcode",
       "lowStockThreshold": "Low stock threshold",
-      "lowStockThreshold_placeholder": "Enter the minimum threshold"
+      "lowStockThreshold_placeholder": "Enter the minimum threshold",
+      "quantity_of_products":"Enter the minimum Quantity of Products"
     },
     "no_tax": "No Tax"
   },

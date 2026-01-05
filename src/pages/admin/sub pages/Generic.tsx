@@ -122,8 +122,6 @@ export default function GenericProducts() {
     "add"
   );
   const [stockSearch, setStockSearch] = useState("");
-  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
-  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [isManageStockOpen, setIsManageStockOpen] = useState(false);
   const [currentStock, setCurrentStock] = useState<StockItem | null>(null);
   const [categoryForm, setCategoryForm] = useState({ name: "", newName: "" });
@@ -134,29 +132,6 @@ export default function GenericProducts() {
 
   const debouncedSearch = useDebounce(searchInput, 500);
 
-  const [formData, setFormData] = useState({
-    categoryId: "",
-    variantId: "",
-    purchasePrice: 0,
-    salePrice: 0,
-    vendorType: "vendor" as "vendor" | "wholesaler" | "customer",
-    vendorId: "",
-    taxId: "",
-    notes: "",
-  });
-
-  // ✅ Fetch Categories (was missing)
-  const { data: categoriesData } = useQuery({
-    queryKey: ["/api/categories"],
-    queryFn: () => api.categories.getAll(),
-  });
-
-  // ✅ Derived categories list
-  const categoriesList = useMemo(
-    () => categoriesData?.categories || [],
-    [categoriesData]
-  );
-
   // ✅ Fetch Shops
   const { data: shopsData } = useQuery({
     queryKey: ["/api/shops/my-shops"],
@@ -164,39 +139,29 @@ export default function GenericProducts() {
   });
 
   const shops = useMemo(() => shopsData?.shops || [], [shopsData]);
+  const [brandFilter, setBrandFilter] = useState<string | undefined>(undefined);
 
-  // ✅ Fetch Products
-  const { data: productsData, isLoading } = useQuery({
+  const { data: accessoriesData, isLoading } = useQuery({
     queryKey: [
-      "/api/products",
+      "/api/products/catalog/accessories",
       {
         page,
         limit,
         search: debouncedSearch,
-        productCategory: "accessory", // ✅ Fixed: was "mobile"
-        status: statusFilter,
-        shopId: shopFilter,
+        brand: brandFilter,
       },
     ],
     queryFn: () =>
-      api.products.getAll({
+      api.accessoryCatalog.getAll({
         page,
         limit,
         search: debouncedSearch || undefined,
-        productCategory: "accessory",
-        status: statusFilter || undefined,
-        shopId: shopFilter || undefined,
+        brand: brandFilter || undefined,
       }),
   });
 
-  const products = productsData?.products || [];
-  const total = productsData?.pagination?.total || 0;
-
-  // ✅ Fetch Variants
-  const { data: variantsData } = useQuery({
-    queryKey: ["/api/variants"],
-    queryFn: () => api.variants.getAll(filters),
-  });
+  const products = accessoriesData?.accessories || [];
+  const total = accessoriesData?.pagination?.total || 0;
 
   // ✅ Fetch Vendors
   const { data: vendorsData } = useQuery({
@@ -204,30 +169,27 @@ export default function GenericProducts() {
     queryFn: () => api.vendors.getAll({ userId: authState?.user?.id }),
     enabled: !!authState?.user?.id,
   });
-
-  // ✅ Fetch Taxes
-  const { data: taxesData } = useQuery({
-    queryKey: ["/api/taxes"],
-    queryFn: () => api.taxes.getAll(),
-  });
-
-  // ✅ Filtered products for stock management
   const searchedProducts = useMemo(() => {
     if (!stockSearch.trim()) return products;
+
+    const q = stockSearch.toLowerCase();
+
     return products.filter(
       (p) =>
-        (p.productName?.name || p.notes || "")
-          .toLowerCase()
-          .includes(stockSearch.toLowerCase()) ||
-        (p.barcode || "").toLowerCase().includes(stockSearch.toLowerCase())
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        (p.category?.toLowerCase().includes(q) ?? false)
     );
   }, [stockSearch, products]);
 
   // ✅ Product Mutations
   const createProductMutation = useMutation({
-    mutationFn: (data: any) => api.products.create(data),
+    mutationFn: (data: any) => api.accessoryCatalog.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/products/accessories"],
+      });
+
       toast({ title: "Product Added" });
       setIsModalOpen(false);
       setEditingProduct(null);
@@ -249,14 +211,15 @@ export default function GenericProducts() {
         purchasePrice: Number(data.buyPrice),
         notes: data.name,
       }),
+    // In updateProductMutation
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+
       toast({ title: "Product Updated" });
       setIsModalOpen(false);
       setEditingProduct(null);
     },
   });
-
   // ✅ Stock Mutation
   const updateStockMutation = useMutation({
     mutationFn: ({
@@ -269,7 +232,9 @@ export default function GenericProducts() {
       quantity: number;
     }) => api.products.updateStock(id, { type, quantity }),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/products/catalog/accessories"],
+      });
       let title = "";
       if (variables.type === "add") {
         title = "Stock Added";
@@ -298,35 +263,6 @@ export default function GenericProducts() {
     });
   };
 
-  const handleOpenModal = (product?: any) => {
-    if (product) {
-      setEditingProduct(product);
-      setFormData({
-        categoryId: product.categoryId || "",
-        variantId: product.variantId || "",
-        purchasePrice: Number(product.purchasePrice) || 0,
-        salePrice: Number(product.salePrice) || 0,
-        vendorType: product.vendorType || "vendor",
-        vendorId: product.vendorId || "",
-        taxId: product.taxId || "",
-        notes: product.notes || "",
-      });
-    } else {
-      setEditingProduct(null);
-      setFormData({
-        categoryId: categoriesList[0]?.id || "",
-        variantId: variantsData?.variants?.[0]?.id || "",
-        purchasePrice: 0,
-        salePrice: 0,
-        vendorType: "vendor",
-        vendorId: vendorsData?.vendors?.[0]?.id || "",
-        taxId: taxesData?.taxes?.[0]?.id || "",
-        notes: "",
-      });
-    }
-    setIsModalOpen(true);
-  };
-
   const handleSubmitProduct = async (payload: AccessoryProductPayload) => {
     if (!selectedShopId || !payload.variantId || !payload.vendorId) {
       toast({
@@ -335,22 +271,20 @@ export default function GenericProducts() {
       });
       return;
     }
-    console.log("Variant Id", payload.variantId);
     try {
       createProductMutation.mutate({
         shopId: selectedShopId,
         variantId: payload.variantId,
         salePrice: payload.sellingPrice,
         purchasePrice: payload.purchasePrice,
-        serialNumber: payload.serialNumber || null,
         barcode: payload.barcode || null,
-        condition: payload.condition,
         notes: payload.notes || null,
         vendorId: payload.vendorId,
         vendorType: payload.vendorType || "vendor",
         taxId: payload.taxId,
         lowStockThreshold: payload.lowStockThreshold || 0,
       });
+      console.log("FINAL PAYLOAD", payload);
     } catch (err) {
       console.error("Error creating product:", err);
       toast({ title: "Failed to create product", variant: "destructive" });
@@ -381,6 +315,32 @@ export default function GenericProducts() {
       onAfterPrint: () => document.body.removeChild(container),
     });
   };
+  const { data: brandsData, isLoading: brandsLoading } = useQuery<{
+    brands: Array<{ id: string; name: string }>;
+  }>({
+    queryKey: ["/api/products/brands"],
+  });
+
+  const brands = useMemo(() => {
+    return brandsData?.brands?.map((b) => ({ id: b.id, name: b.name })) || [];
+  }, [brandsData]);
+
+  const handleOpenModal = (product?: any) => {
+    setCurrentStock(null);
+
+    if (product) {
+      setEditingProduct(product);
+    } else {
+      setEditingProduct(null);
+    }
+
+    // Wait until shops are loaded
+    if (shops.length > 0) {
+      setSelectedShopId(shops[0].id);
+    }
+
+    setIsModalOpen(true);
+  };
 
   const columns = [
     {
@@ -394,25 +354,12 @@ export default function GenericProducts() {
       key: "categoryName",
       label: "Category",
       filterType: "select",
-      filterOptions: categoriesData?.categories?.map((c) => c.name) || [],
-    },
-    {
-      key: "name",
-      label: "Product Name",
-      filterType: "text",
-    },
-    {
-      key: "variantName",
-      label: "Variant",
-      filterType: "select",
-      filterOptions: variantsData?.variants?.map((v) => v.variantName) || [],
+      filterOptions: ["Accessory"],
     },
     {
       key: "color",
       label: "Color",
-      filterType: "select",
-      filterOptions:
-        variantsData?.variants?.map((v) => v.color).filter(Boolean) || [],
+      filterType: "text",
     },
     {
       key: "purchasePrice",

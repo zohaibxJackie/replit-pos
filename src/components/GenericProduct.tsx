@@ -16,7 +16,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Textarea } from "./ui/textarea";
 import { useAuthStore } from "@/store/authStore";
-import { variant } from "@shared/schema";
 
 type TaxType = "flat" | "percent";
 interface Tax {
@@ -38,28 +37,6 @@ interface AcessoryModel {
 interface AcessoryColor {
   id: string;
   color: string;
-}
-
-interface AccessoryVariant {
-  id: string; // variantId
-  displayName: string;
-  productName: string;
-  color?: string;
-  storageSize?: string;
-}
-
-interface Vendor {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-}
-
-interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
 }
 
 function SearchableSelect({
@@ -281,21 +258,17 @@ function ColorAutocomplete({
 }
 
 export interface AccessoryProductPayload {
-  brand: string;
-  model: string;
   color: string;
   purchasePrice: number;
   sellingPrice: number;
   taxId?: string;
-  mobileCatalogId?: string;
+  accessoryCatalogId?: string;
   category: string;
   quantity?: number;
   variantId: string;
-  condition: string;
   notes?: string;
   vendorId: string;
   vendorType: string;
-  serialNumber?: string;
   barcode?: string;
   categoryId?: string;
   lowStockThreshold?: number;
@@ -323,6 +296,7 @@ export function AccessoryProductForm({
   const [selectedModel, setSelectedModel] = useState<AcessoryModel | null>(
     null
   );
+
   const [modelDisplay, setModelDisplay] = useState<string>(
     initialData?.model || ""
   );
@@ -343,9 +317,6 @@ export function AccessoryProductForm({
   const [quantity, setQuantity] = useState<number>(1);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>(initialData?.notes || "");
-  const [serialNumber, setSerialNumber] = useState<string>(
-    initialData?.serialNumber || ""
-  );
   const [barcode, setBarcode] = useState<string>(initialData?.barcode || "");
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(0);
   const vendorType = "VENDOR" as const;
@@ -354,11 +325,16 @@ export function AccessoryProductForm({
 
   const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
+  const authStorage = localStorage.getItem("auth-storage");
+  const authState = authStorage ? JSON.parse(authStorage)?.state : null;
+
   useEffect(() => {
+    if (!authState?.user?.id) return;
+
     setVendorsLoading(true);
 
     api.vendors
-      .getAll()
+      .getAll({ userId: authState.user.id })
       .then((res) => {
         setVendors(
           res.vendors.map((v) => ({
@@ -368,34 +344,12 @@ export function AccessoryProductForm({
         );
       })
       .finally(() => setVendorsLoading(false));
-  }, []);
-
-  const { data: variantsData, isLoading: variantsLoading } = useQuery({
-    queryKey: ["variants", brand],
-    queryFn: () =>
-      api.accessoryCatalog.getVariants({
-        brandId: brand, // ← brandId, NOT brand name
-        isActive: true,
-        limit: 100,
-      }),
-    enabled: !!brand,
-  });
+  }, [authState?.user?.id]);
 
   const { data: brandsData, isLoading: brandsLoading } = useQuery<{
     brands: Array<{ id: string; name: string }>;
   }>({
     queryKey: ["/api/products/brands"],
-  });
-
-  const { data: modelsData, isLoading: modelsLoading } = useQuery({
-    queryKey: [
-      `/api/products/catalog/accessories/variants?brand=${encodeURIComponent(
-        brand
-      )}`,
-      brand,
-    ],
-    queryFn: () => api.accessoryCatalog.getBrands(),
-    enabled: !!brand,
   });
 
   const colors: AcessoryColor[] = [];
@@ -408,20 +362,6 @@ export function AccessoryProductForm({
   const brands = useMemo(() => {
     return brandsData?.brands?.map((b) => ({ id: b.id, name: b.name })) || [];
   }, [brandsData]);
-
-  const variants: AccessoryVariant[] = useMemo(() => {
-    return (
-      variantsData?.variants.map((v) => ({
-        id: v.id,
-        displayName: `${v.productName}${
-          v.storageSize ? ` ${v.storageSize}` : ""
-        }${v.color ? ` - ${v.color}` : ""}`,
-        productName: v.productName,
-        color: v.color ?? undefined,
-        storageSize: v.storageSize ?? undefined,
-      })) || []
-    );
-  }, [variantsData]);
 
   const taxes = useMemo(() => {
     type TaxType = "flat" | "percent";
@@ -452,20 +392,8 @@ export function AccessoryProductForm({
     setModelDisplay("");
     setSelectedColor(null);
     setColorDisplay("");
+    setVariantId(newBrand.id);
   }, []);
-
-  const handleModelChange = useCallback(
-    (variant: AcessoryModel | null, displayValue: string) => {
-      setSelectedModel(variant);
-      setModelDisplay(displayValue);
-      if (variant) {
-        setSelectedColor(null);
-        setColorDisplay("");
-        setVariantId(variant.id);
-      }
-    },
-    []
-  );
 
   const handleColorChange = useCallback(
     (color: AcessoryColor | null, displayValue: string) => {
@@ -493,7 +421,6 @@ export function AccessoryProductForm({
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
-
     if (!brand) newErrors.brand = t("products.form.brand_required");
     if (!selectedModel) {
       newErrors.model = t("products.form.select_model_from_list");
@@ -540,17 +467,16 @@ export function AccessoryProductForm({
       purchasePrice: parseFloat(purchasePrice),
       sellingPrice: parseFloat(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
-      category: "accessories",
+      category: "accessory",
       quantity: !isEditing && quantity > 1 ? quantity : undefined,
-      variantId: variantId,
+      variantId: variantId || "",
       notes: notes || undefined,
       vendorId: vendorId,
       vendorType: vendorType,
-      serialNumber: serialNumber || undefined,
       barcode: barcode || undefined,
       lowStockThreshold: lowStockThreshold || 0,
     };
-
+    console.log("FINAL PAYLOAD", payload);
     onSubmit(payload);
   };
 
@@ -605,19 +531,6 @@ export function AccessoryProductForm({
         )}
       </div>
       <div>
-        <Label htmlFor="serialNumber" className="text-sm font-medium">
-          {t("products.form.serial_input")}
-        </Label>
-        <Input
-          type="text"
-          id="serialNumber"
-          value={serialNumber}
-          placeholder={t("products.form.serial_placeholder")}
-          onChange={(e) => setSerialNumber(e.target.value)}
-          data-testid="input-serial"
-        />
-      </div>
-      <div>
         <Label htmlFor="barcode" className="text-sm font-medium">
           {t("products.form.barcode")}
         </Label>
@@ -632,14 +545,14 @@ export function AccessoryProductForm({
       </div>
       <div>
         <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
-          {t("products.form.lowStockThreshold")}
+          {t("products.form.quantity")}
         </Label>
         <Input
           type="number"
           min={0}
           id="lowStockThreshold"
           value={lowStockThreshold}
-          placeholder={t("products.form.lowStockThreshold_placeholder")}
+          placeholder={t("products.form.quantity_of_products")}
           onChange={(e) => setLowStockThreshold(Number(e.target.value))}
           data-testid="input-lowStockThreshold"
         />

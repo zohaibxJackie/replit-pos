@@ -9,6 +9,7 @@ import {
   users,
   customers,
   taxes,
+  stockBatches,
 } from "../../shared/schema.js";
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from "drizzle-orm";
 import { paginationHelper } from "../utils/helpers.js";
@@ -35,11 +36,9 @@ export const getProducts = async (req, res) => {
     const userShopIds = req.userShopIds || [];
 
     if (userShopIds.length === 0) {
-      return res
-        .status(400)
-        .json({
-          error: req.t("product.shop_required") || "Shop ID is required",
-        });
+      return res.status(400).json({
+        error: req.t("product.shop_required") || "Shop ID is required",
+      });
     }
 
     const { offset, limit: pageLimit } = paginationHelper(page, limit);
@@ -71,11 +70,9 @@ export const getProducts = async (req, res) => {
     });
   } catch (error) {
     console.error("Get products error:", error);
-    res
-      .status(500)
-      .json({
-        error: req.t("product.fetch_failed") || "Failed to fetch products",
-      });
+    res.status(500).json({
+      error: req.t("product.fetch_failed") || "Failed to fetch products",
+    });
   }
 };
 
@@ -1318,53 +1315,133 @@ export const getMobileCatalog = async (req, res) => {
   }
 };
 
+export const createAccessoryStock = async (req, res) => {
+  try {
+    const {
+      variantId,
+      shopId,
+      quantity,
+      purchasePrice,
+      salePrice,
+      vendorId,
+      taxId,
+      notes,
+      barcode,
+    } = req.body;
+
+    const hasFullAccess =
+      req.user?.role === "super_admin" || req.user?.role === "admin";
+
+    if (
+      !hasFullAccess &&
+      req.userShopIds?.length > 0 &&
+      !req.userShopIds.includes(shopId)
+    ) {
+      return res.status(403).json({
+        error: req.t
+          ? req.t("product.shop_access_denied")
+          : "You do not have access to this shop",
+      });
+    }
+
+    const [variantExists] = await db
+      .select()
+      .from(variant)
+      .where(eq(variant.id, variantId))
+      .limit(1);
+
+    if (!variantExists) {
+      return res.status(400).json({
+        error: req.t ? req.t("product.invalid_variant") : "Invalid variant",
+      });
+    }
+
+    const [createdBatch] = await db
+      .insert(stockBatches)
+      .values({
+        variantId,
+        shopId,
+        quantity,
+        purchasePrice,
+        salePrice,
+        vendorId,
+        taxId,
+        notes,
+        barcode,
+      })
+      .returning();
+
+    return res.status(201).json({
+      success: true,
+      stockBatch: createdBatch,
+    });
+  } catch (error) {
+    console.error("Create accessory stock error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create accessory stock",
+    });
+  }
+};
+
 export const getAccessoryCatalog = async (req, res) => {
   try {
-    const { search, brand: brandName } = req.query;
+    const { search } = req.query;
 
-    let conditions = [eq(variant.isActive, true)];
-
+    // First, get the accessory category
     const [accessoryCategory] = await db
       .select()
       .from(categories)
-      .where(ilike(categories.name, "accessor%"))
+      .where(ilike(categories.name, "%accessory%"))
       .limit(1);
-    if (accessoryCategory) {
-      conditions.push(eq(product.categoryId, accessoryCategory.id));
+
+    if (!accessoryCategory) {
+      return res.json({ catalog: [] });
     }
+
+    // Build WHERE conditions
+    const conditions = [
+      eq(product.categoryId, accessoryCategory.id), // ✅ Filter by product's categoryId
+      eq(variant.isActive, true),
+      eq(stockBatches.isActive, true),
+    ];
 
     if (search) {
       conditions.push(
         or(
           ilike(variant.variantName, `%${search}%`),
-          ilike(product.name, `%${search}%`),
-          ilike(brand.name, `%${search}%`)
+          ilike(product.name, `%${search}%`)
         )
       );
     }
 
-    if (brandName) {
-      conditions.push(eq(brand.name, brandName));
-    }
-
     const catalog = await db
       .select({
-        id: variant.id,
-        name: product.name,
-        brand: brand.name,
+        stockId: stockBatches.id,
+        variantId: variant.id,
         variantName: variant.variantName,
+        productName: product.name,
+        quantity: stockBatches.quantity,
+        salePrice: stockBatches.salePrice,
+        purchasePrice: stockBatches.purchasePrice,
+        notes: stockBatches.notes,
+        barcode: stockBatches.barcode,
       })
-      .from(variant)
+      .from(stockBatches)
+      .leftJoin(variant, eq(stockBatches.variantId, variant.id))
       .leftJoin(product, eq(variant.productId, product.id))
-      .leftJoin(brand, eq(product.brandId, brand.id))
-      .leftJoin(category, eq(product.categoryId, categories.id))
-      .where(and(...conditions))
-      .orderBy(brand.name, product.name);
+      .where(and(...conditions)) // ✅ No need to join categories table
+      .orderBy(variant.variantName);
 
     res.json({ catalog });
   } catch (error) {
     console.error("Get accessory catalog error:", error);
-    res.status(500).json({ error: req.t("product.catalog_fetch_failed") });
+    res.status(500).json({
+      error: req.t
+        ? req.t("product.catalog_fetch_failed")
+        : "Failed to fetch catalog",
+    });
   }
 };
 
@@ -1395,30 +1472,64 @@ export const getMobileCatalogBrands = async (req, res) => {
   }
 };
 
-export const getAccessoryCatalogBrands = async (req, res) => {
+export const getAccessoryCatalog = async (req, res) => {
   try {
+    const { search } = req.query;
+
+    // Step 1: Get accessory category
     const [accessoryCategory] = await db
       .select()
       .from(categories)
-      .where(ilike(categories.name, "accessor%"))
+      .where(ilike(categories.name, "accessory%"))
       .limit(1);
 
-    let conditions = [eq(brand.isActive, true)];
-    if (accessoryCategory) {
-      conditions.push(eq(product.categoryId, accessoryCategory.id));
+    if (!accessoryCategory) {
+      return res.json({ catalog: [] });
     }
 
-    const brands = await db
-      .selectDistinct({ brand: brand.name })
-      .from(brand)
-      .innerJoin(product, eq(brand.id, product.brandId))
-      .where(and(...conditions))
-      .orderBy(brand.name);
+    // Step 2: Query stock_batches
+    let conditions = [
+      eq(variant.isActive, true),
+      eq(stockBatches.isActive, true),
+    ];
 
-    res.json({ brands: brands.map((b) => b.brand) });
+    if (accessoryCategory) {
+      conditions.push(
+        eq(product.categoryId, sql`${accessoryCategory.id}::uuid`)
+      );
+    }
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(variant.variantName, `%${search}%`),
+          ilike(product.name, `%${search}%`)
+        )
+      );
+    }
+
+    const catalog = await db
+      .select({
+        stockId: stockBatches.id,
+        variantId: variant.id,
+        variantName: variant.variantName,
+        productName: product.name,
+        quantity: stockBatches.quantity,
+        salePrice: stockBatches.salePrice,
+        purchasePrice: stockBatches.purchasePrice,
+        notes: stockBatches.notes,
+        barcode: stockBatches.barcode,
+      })
+      .from(stockBatches)
+      .innerJoin(variant, eq(stockBatches.variantId, variant.id))
+      .innerJoin(product, eq(variant.productId, product.id))
+      .where(and(...conditions))
+      .orderBy(variant.variantName);
+
+    res.json({ catalog });
   } catch (error) {
-    console.error("Get accessory catalog brands error:", error);
-    res.status(500).json({ error: req.t("product.catalog_fetch_failed") });
+    console.error("Get accessory catalog error:", error);
+    res.status(500).json({ error: "Failed to fetch catalog" });
   }
 };
 
@@ -1573,4 +1684,5 @@ export default {
   getMobileCatalogModels,
   getMobileCatalogColors,
   getMobileCatalogItem,
+  createAccessoryStock,
 };
