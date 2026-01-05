@@ -639,7 +639,7 @@ export const api = {
   },
 
   accessoryCatalog: {
-    // ✅ NEW: Create accessory stock/product
+    // ✅ Create / Update accessory stock (bulk variants only)
     create: (data: {
       variantId: string;
       shopId: string;
@@ -658,8 +658,8 @@ export const api = {
           variantId: string;
           shopId: string;
           quantity: number;
-          purchasePrice: string;
-          salePrice: string;
+          purchasePrice?: string;
+          salePrice?: string;
           vendorId?: string;
           taxId?: string;
           notes?: string;
@@ -673,24 +673,27 @@ export const api = {
         body: JSON.stringify(data),
       });
     },
-    getAll: (params?: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      brand?: string;
-    }) => {
+
+    // ✅ Get accessory catalog (bulk stock list)
+    getAll: (params?: { page?: number; limit?: number; search?: string }) => {
       const searchParams = new URLSearchParams();
       if (params?.page) searchParams.set("page", params.page.toString());
       if (params?.limit) searchParams.set("limit", params.limit.toString());
       if (params?.search) searchParams.set("search", params.search);
-      if (params?.brand) searchParams.set("brand", params.brand);
+
       const query = searchParams.toString();
+
       return request<{
         accessories: Array<{
-          id: string;
-          brand: string;
-          name: string;
-          category?: string;
+          stockId: string;
+          variantId: string;
+          variantName: string;
+          productName: string;
+          quantity: number;
+          purchasePrice?: string;
+          salePrice?: string;
+          notes?: string;
+          barcode?: string;
         }>;
         pagination: {
           page: number;
@@ -705,55 +708,16 @@ export const api = {
       );
     },
 
-    getBrands: () =>
-      request<{ brands: string[] }>("/api/products/catalog/accessories/brands"),
-
-    getVariants: (params?: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      categoryId?: string;
-      brandId?: string;
-      productId?: string;
-      isActive?: boolean;
-    }) => {
-      const searchParams = new URLSearchParams();
-
-      if (params?.page) searchParams.set("page", params.page.toString());
-      if (params?.limit) searchParams.set("limit", params.limit.toString());
-      if (params?.search) searchParams.set("search", params.search);
-      if (params?.categoryId) searchParams.set("categoryId", params.categoryId);
-      if (params?.brandId) searchParams.set("brandId", params.brandId);
-      if (params?.productId) searchParams.set("productId", params.productId);
-      if (params?.isActive !== undefined) {
-        searchParams.set("isActive", String(params.isActive));
-      }
-
-      const query = searchParams.toString();
-
-      return request<{
-        variants: Array<{
-          id: string; // ← variantId
+    // ✅ Get accessory models (bulk variants by brand)
+    getModelsByBrand: (brand: string) =>
+      request<{
+        models: Array<{
+          id: string;
+          name: string;
+          displayName: string;
           productId: string;
-          variantName: string;
-          color: string | null;
-          storageSize: string | null;
-          sku: string;
-          isActive: boolean;
-          productName: string;
-          brandId: string;
-          brandName: string;
-          categoryId: string;
-          categoryName: string;
         }>;
-        pagination: {
-          page: number;
-          limit: number;
-          total: number;
-          totalPages: number;
-        };
-      }>(query ? `/api/variants?${query}` : "/api/variants");
-    },
+      }>(`/api/products/catalog/accessories/brands?brand=${brand}`),
   },
 
   taxes: {

@@ -9,7 +9,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -32,11 +31,6 @@ interface AcessoryModel {
   memory?: string;
   displayName: string;
   productId: string;
-}
-
-interface AcessoryColor {
-  id: string;
-  color: string;
 }
 
 function SearchableSelect({
@@ -183,82 +177,7 @@ function AccessoryModelAutocomplete({
   );
 }
 
-function ColorAutocomplete({
-  colors,
-  value,
-  onChange,
-  isLoading,
-  disabled,
-}: {
-  colors: AcessoryColor[];
-  value: string;
-  onChange: (color: AcessoryColor | null, displayValue: string) => void;
-  isLoading: boolean;
-  disabled: boolean;
-}) {
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [inputValue, setInputValue] = useState(value);
-
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
-
-  const filteredColors = useMemo(() => {
-    if (!inputValue.trim()) return colors;
-    return colors.filter((c) =>
-      c.color.toLowerCase().includes(inputValue.toLowerCase())
-    );
-  }, [colors, inputValue]);
-
-  const handleInputChange = (val: string) => {
-    setInputValue(val);
-    onChange(null, val);
-    setShowSuggestions(val.length > 0 && filteredColors.length > 0);
-  };
-
-  const handleSelectColor = (color: AcessoryColor) => {
-    setInputValue(color.color);
-    onChange(color, color.color);
-    setShowSuggestions(false);
-  };
-
-  return (
-    <div className="relative">
-      <div className="flex items-center gap-2">
-        <Input
-          value={inputValue}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onFocus={() => setShowSuggestions(filteredColors.length > 0)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          placeholder={
-            disabled ? "Select model first" : "e.g., Black, White, Blue"
-          }
-          disabled={disabled}
-          data-testid="input-color"
-        />
-        {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-      </div>
-      {showSuggestions && filteredColors.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-64 overflow-auto">
-          {filteredColors.map((color, idx) => (
-            <button
-              key={color.id}
-              type="button"
-              className="w-full px-3 py-2 text-left text-sm hover-elevate active-elevate-2"
-              onClick={() => handleSelectColor(color)}
-              data-testid={`suggestion-color-${idx}`}
-            >
-              {color.color}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export interface AccessoryProductPayload {
-  color: string;
   purchasePrice: number;
   sellingPrice: number;
   taxId?: string;
@@ -268,10 +187,10 @@ export interface AccessoryProductPayload {
   variantId: string;
   notes?: string;
   vendorId: string;
-  vendorType: string;
   barcode?: string;
   categoryId?: string;
   lowStockThreshold?: number;
+  shopId: string;
 }
 
 interface AccessoryProductFormProps {
@@ -282,6 +201,20 @@ interface AccessoryProductFormProps {
   isEditing?: boolean;
 }
 
+interface AccessoryModel {
+  id: string;
+  name: string;
+  memory?: string;
+  displayName: string;
+  productId: string;
+}
+interface AccessoryProductFormProps {
+  onSubmit: (payload: AccessoryProductPayload) => void;
+  onCancel: () => void;
+  initialData?: Partial<AccessoryProductPayload>;
+  shopId?: string;
+  isEditing?: boolean;
+}
 export function AccessoryProductForm({
   onSubmit,
   onCancel,
@@ -293,19 +226,13 @@ export function AccessoryProductForm({
   const { user } = useAuthStore();
 
   const [brand, setBrand] = useState<string>(initialData?.brand || "");
-  const [selectedModel, setSelectedModel] = useState<AcessoryModel | null>(
+  const [selectedModel, setSelectedModel] = useState<AccessoryModel | null>(
     null
   );
-
   const [modelDisplay, setModelDisplay] = useState<string>(
     initialData?.model || ""
   );
-  const [selectedColor, setSelectedColor] = useState<AcessoryColor | null>(
-    null
-  );
-  const [colorDisplay, setColorDisplay] = useState<string>(
-    initialData?.color || ""
-  );
+
   const [purchasePrice, setPurchasePrice] = useState<string>(
     initialData?.purchasePrice?.toString() || ""
   );
@@ -315,18 +242,34 @@ export function AccessoryProductForm({
   const [taxId, setTaxId] = useState<string | undefined>(initialData?.taxId);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState<number>(1);
-  const [variantId, setVariantId] = useState<string | null>(null);
-  const [notes, setNotes] = useState<string>(initialData?.notes || "");
-  const [barcode, setBarcode] = useState<string>(initialData?.barcode || "");
-  const [lowStockThreshold, setLowStockThreshold] = useState<number>(0);
-  const vendorType = "VENDOR" as const;
-
-  const [vendorId, setVendorId] = useState<string>("");
 
   const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const authStorage = localStorage.getItem("auth-storage");
   const authState = authStorage ? JSON.parse(authStorage)?.state : null;
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [notes, setNotes] = useState<string>(initialData?.notes || "");
+
+  const [barcode, setBarcode] = useState<string>(initialData?.barcode || "");
+  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || "");
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(0);
+
+  const { data: brandsData, isLoading: brandsLoading } = useQuery<{
+    brands: Array<{ id: string; name: string }>;
+  }>({
+    queryKey: ["/api/products/brands"],
+  });
+
+  const { data: modelsData, isLoading: modelsLoading } = useQuery({
+    queryKey: ["/api/products/catalog/accessories/brands", brand],
+    queryFn: () => api.accessoryCatalog.getModelsByBrand(brand),
+    enabled: !!brand,
+  });
+
+  const { data: taxesData, isLoading: taxesLoading } = useQuery({
+    queryKey: ["/api/taxes", { isActive: true }],
+    queryFn: () => api.taxes.getAll({ isActive: true }),
+  });
 
   useEffect(() => {
     if (!authState?.user?.id) return;
@@ -346,25 +289,15 @@ export function AccessoryProductForm({
       .finally(() => setVendorsLoading(false));
   }, [authState?.user?.id]);
 
-  const { data: brandsData, isLoading: brandsLoading } = useQuery<{
-    brands: Array<{ id: string; name: string }>;
-  }>({
-    queryKey: ["/api/products/brands"],
-  });
-
-  const colors: AcessoryColor[] = [];
-
-  const { data: taxesData, isLoading: taxesLoading } = useQuery({
-    queryKey: ["/api/taxes", { isActive: true }],
-    queryFn: () => api.taxes.getAll({ isActive: true }),
-  });
-
   const brands = useMemo(() => {
     return brandsData?.brands?.map((b) => ({ id: b.id, name: b.name })) || [];
   }, [brandsData]);
 
+  const models = useMemo(() => {
+    return modelsData?.models || [];
+  }, [modelsData]);
+
   const taxes = useMemo(() => {
-    type TaxType = "flat" | "percent";
     const taxList = taxesData?.taxes || [];
     return [
       {
@@ -390,18 +323,29 @@ export function AccessoryProductForm({
     setBrand(newBrand);
     setSelectedModel(null);
     setModelDisplay("");
-    setSelectedColor(null);
-    setColorDisplay("");
-    setVariantId(newBrand.id);
   }, []);
 
-  const handleColorChange = useCallback(
-    (color: AcessoryColor | null, displayValue: string) => {
-      setSelectedColor(color);
-      setColorDisplay(displayValue);
+  const handleModelChange = useCallback(
+    (model: AccessoryModel | null, displayValue: string) => {
+      setSelectedModel(model);
+      setModelDisplay(displayValue);
+      if (model) {
+        setVariantId(model.id);
+      }
     },
     []
   );
+  interface AccessoryModel {
+    id: string;
+    name: string;
+    displayName: string;
+    productId: string;
+  }
+
+  const handleQuantityChange = useCallback((newQty: number) => {
+    const qty = Math.max(1, Math.min(100, newQty));
+    setQuantity(qty);
+  }, []);
 
   const finalPrice = useMemo(() => {
     const price = parseFloat(sellingPrice) || 0;
@@ -421,14 +365,8 @@ export function AccessoryProductForm({
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
-    if (!brand) newErrors.brand = t("products.form.brand_required");
-    if (!selectedModel) {
-      newErrors.model = t("products.form.select_model_from_list");
-    }
-    if (colorDisplay && colorDisplay.trim().length < 2) {
-      newErrors.color = t("products.form.invalid_color");
-    }
 
+    if (!brand) newErrors.brand = t("products.form.brand_required");
     if (!purchasePrice || parseFloat(purchasePrice) <= 0) {
       newErrors.purchasePrice = t("products.form.purchase_price_required");
     }
@@ -445,59 +383,25 @@ export function AccessoryProductForm({
     if (!selectedModel) {
       return;
     }
-    if (!variantId) {
-      newErrors.model = "Variant selection is required";
-    }
-    if (!vendorType) {
-      setErrors({ vendorType: "Vendor type is required" });
-      return;
-    }
 
-    if (!vendorId) {
-      setErrors({ vendorId: "Vendor is required" });
-      return;
-    }
-
-    // main payload or data that will be sent to backend for adding single mobile
     const payload: AccessoryProductPayload = {
-      brand,
-      color:
-        selectedColor?.color ||
-        (colorDisplay.trim() ? colorDisplay.trim() : undefined),
-      purchasePrice: parseFloat(purchasePrice),
-      sellingPrice: parseFloat(sellingPrice),
+      shopId: shopId!, // ✅ REQUIRED
+      variantId: variantId!, // ✅ REQUIRED
+      quantity,
+      purchasePrice: Number(purchasePrice),
+      salePrice: Number(sellingPrice), // ✅ rename
       taxId: taxId === "no_tax" ? undefined : taxId,
-      category: "accessory",
-      quantity: !isEditing && quantity > 1 ? quantity : undefined,
-      variantId: variantId || "",
-      notes: notes || undefined,
-      vendorId: vendorId,
-      vendorType: vendorType,
+      vendorId,
       barcode: barcode || undefined,
-      lowStockThreshold: lowStockThreshold || 0,
+      notes: notes || undefined,
+      lowStockThreshold: lowStockThreshold || 5,
     };
-    console.log("FINAL PAYLOAD", payload);
+
     onSubmit(payload);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label className="text-sm font-medium">
-          Select Vendor <span className="text-destructive">*</span>
-        </Label>
-
-        <SearchableSelect
-          items={vendors}
-          value={vendorId}
-          onChange={setVendorId}
-          placeholder="Select vendor"
-          isLoading={vendorsLoading}
-        />
-        {errors.vendorId && (
-          <p className="text-destructive text-xs mt-1">{errors.vendorId}</p>
-        )}
-      </div>
       <div>
         <Label htmlFor="brand" className="text-sm font-medium">
           {t("products.form.brand")} <span className="text-destructive">*</span>
@@ -513,22 +417,26 @@ export function AccessoryProductForm({
           <p className="text-destructive text-xs mt-1">{errors.brand}</p>
         )}
       </div>
-      <div>
-        <Label htmlFor="color" className="text-sm font-medium">
-          {t("products.form.color")}
-          <span className="text-muted-foreground text-xs ml-1">(optional)</span>
-        </Label>
-        <ColorAutocomplete
-          colors={[]} // ← no backend dependency
-          value={colorDisplay}
-          onChange={handleColorChange}
-          isLoading={false}
-          disabled={!brand}
-        />
 
-        {errors.color && (
-          <p className="text-destructive text-xs mt-1">{errors.color}</p>
-        )}
+      <div>
+        <Label htmlFor="quantity" className="text-sm font-medium">
+          {t("products.form.quantity")}{" "}
+          <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="quantity"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={100}
+          value={quantity}
+          onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
+          placeholder={t("products.form.enter_quantity")}
+          data-testid="input-quantity"
+        />
+        <p className="text-muted-foreground text-xs mt-1">
+          {t("products.form.quantity_hint")}
+        </p>
       </div>
       <div>
         <Label htmlFor="barcode" className="text-sm font-medium">
@@ -543,20 +451,22 @@ export function AccessoryProductForm({
           data-testid="input-barcode"
         />
       </div>
+
       <div>
         <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
-          {t("products.form.quantity")}
+          {t("products.form.lowStockThreshold")}
         </Label>
         <Input
           type="number"
           min={0}
           id="lowStockThreshold"
           value={lowStockThreshold}
-          placeholder={t("products.form.quantity_of_products")}
+          placeholder={t("products.form.lowStockThreshold_placeholder")}
           onChange={(e) => setLowStockThreshold(Number(e.target.value))}
           data-testid="input-lowStockThreshold"
         />
       </div>
+
       <div>
         <Label htmlFor="purchasePrice" className="text-sm font-medium">
           {t("products.form.purchase_price")}{" "}
@@ -578,6 +488,7 @@ export function AccessoryProductForm({
           </p>
         )}
       </div>
+
       <div>
         <Label htmlFor="sellingPrice" className="text-sm font-medium">
           {t("products.form.selling_price")}{" "}
@@ -597,6 +508,7 @@ export function AccessoryProductForm({
           <p className="text-destructive text-xs mt-1">{errors.sellingPrice}</p>
         )}
       </div>
+
       <div>
         <Label htmlFor="tax" className="text-sm font-medium">
           {t("products.form.tax")}
@@ -609,6 +521,7 @@ export function AccessoryProductForm({
           isLoading={taxesLoading}
         />
       </div>
+
       {sellingPrice && parseFloat(sellingPrice) > 0 && (
         <div className="p-3 bg-muted rounded-md">
           <div className="flex justify-between items-center text-sm">
@@ -621,6 +534,7 @@ export function AccessoryProductForm({
           </div>
         </div>
       )}
+
       <div>
         <Label htmlFor="notes" className="text-sm font-medium">
           {t("products.form.notes")}
@@ -633,6 +547,7 @@ export function AccessoryProductForm({
           data-testid="input-notes"
         />
       </div>
+
       <div className="flex justify-end gap-2 pt-4">
         <Button
           type="button"

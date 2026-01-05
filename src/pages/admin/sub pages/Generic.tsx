@@ -124,11 +124,8 @@ export default function GenericProducts() {
   const [stockSearch, setStockSearch] = useState("");
   const [isManageStockOpen, setIsManageStockOpen] = useState(false);
   const [currentStock, setCurrentStock] = useState<StockItem | null>(null);
-  const [categoryForm, setCategoryForm] = useState({ name: "", newName: "" });
   const [categoryToEdit, setCategoryToEdit] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [shopFilter, setShopFilter] = useState<string>("");
 
   const debouncedSearch = useDebounce(searchInput, 500);
 
@@ -277,14 +274,18 @@ export default function GenericProducts() {
         variantId: payload.variantId,
         salePrice: payload.sellingPrice,
         purchasePrice: payload.purchasePrice,
+        quantity: payload.quantity,
         barcode: payload.barcode || null,
         notes: payload.notes || null,
         vendorId: payload.vendorId,
-        vendorType: payload.vendorType || "vendor",
         taxId: payload.taxId,
         lowStockThreshold: payload.lowStockThreshold || 0,
       });
-      console.log("FINAL PAYLOAD", payload);
+      console.log("Creating accessory:", {
+        shopId: selectedShopId,
+        variantId: payload.variantId,
+        vendorId: payload.vendorId,
+      });
     } catch (err) {
       console.error("Error creating product:", err);
       toast({ title: "Failed to create product", variant: "destructive" });
