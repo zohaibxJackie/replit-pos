@@ -350,8 +350,18 @@ export default function GenericProducts() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-end flex-col gap-8">
-        <div className="flex items-center justify-end gap-3 flex-wrap">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Page size selector on the left */}
+        <TablePageSizeSelector
+          limit={limit}
+          onChange={(val) => {
+            setLimit(val);
+            setPage(1);
+          }}
+        />
+
+        {/* Buttons on the right */}
+        <div className="flex items-center gap-3 flex-wrap">
           <Button
             variant="outline"
             onClick={() => handleOpenModal()}
@@ -361,6 +371,7 @@ export default function GenericProducts() {
             <span className="hidden sm:inline">Create New Product</span>
             <span className="sm:hidden">New Product</span>
           </Button>
+
           <Button
             variant="outline"
             onClick={() => setIsManageStockOpen(true)}
@@ -370,16 +381,6 @@ export default function GenericProducts() {
             <span className="hidden sm:inline">Manage Stock</span>
             <span className="sm:hidden">Stock</span>
           </Button>
-        </div>
-
-        <div className="flex w-full justify-end">
-          <TablePageSizeSelector
-            limit={limit}
-            onChange={(val) => {
-              setLimit(val);
-              setPage(1);
-            }}
-          />
         </div>
       </div>
 
