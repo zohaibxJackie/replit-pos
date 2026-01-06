@@ -25,14 +25,6 @@ interface Tax {
   isActive: boolean;
 }
 
-interface AcessoryModel {
-  id: string;
-  name: string;
-  memory?: string;
-  displayName: string;
-  productId: string;
-}
-
 function SearchableSelect({
   items,
   placeholder,
@@ -101,94 +93,16 @@ function SearchableSelect({
   );
 }
 
-function AccessoryModelAutocomplete({
-  models,
-  value,
-  onChange,
-  isLoading,
-  disabled,
-}: {
-  models: AcessoryModel[];
-  value: string;
-  onChange: (model: AcessoryModel | null, displayValue: string) => void;
-  isLoading: boolean;
-  disabled: boolean;
-}) {
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [inputValue, setInputValue] = useState(value);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
-
-  const filteredModels = useMemo(() => {
-    if (!inputValue.trim()) return models;
-    return models.filter((model) =>
-      model.displayName.toLowerCase().includes(inputValue.toLowerCase())
-    );
-  }, [models, inputValue]);
-
-  const handleInputChange = (val: string) => {
-    setInputValue(val);
-    onChange(null, val);
-    setShowSuggestions(val.length > 0 && filteredModels.length > 0);
-  };
-
-  const handleSelectModel = (model: AcessoryModel) => {
-    setInputValue(model.displayName);
-    onChange(model, model.displayName);
-    setShowSuggestions(false);
-  };
-
-  return (
-    <div className="relative">
-      <div className="flex items-center gap-2">
-        <Input
-          ref={inputRef}
-          value={inputValue}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onFocus={() => setShowSuggestions(filteredModels.length > 0)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          placeholder={
-            disabled ? "Select brand first" : "Start typing phone model..."
-          }
-          disabled={disabled}
-          data-testid="input-phone-model"
-        />
-        {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-      </div>
-      {showSuggestions && filteredModels.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-64 overflow-auto">
-          {filteredModels.map((model, idx) => (
-            <button
-              key={model.id}
-              type="button"
-              className="w-full px-3 py-2 text-left text-sm hover-elevate active-elevate-2"
-              onClick={() => handleSelectModel(model)}
-              data-testid={`suggestion-model-${idx}`}
-            >
-              {model.displayName}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export interface AccessoryProductPayload {
   purchasePrice: number;
-  sellingPrice: number;
+  salePrice: number;
   taxId?: string;
   accessoryCatalogId?: string;
-  category: string;
   quantity?: number;
   variantId: string;
   notes?: string;
   vendorId: string;
   barcode?: string;
-  categoryId?: string;
   lowStockThreshold?: number;
   shopId: string;
 }
@@ -201,13 +115,6 @@ interface AccessoryProductFormProps {
   isEditing?: boolean;
 }
 
-interface AccessoryModel {
-  id: string;
-  name: string;
-  memory?: string;
-  displayName: string;
-  productId: string;
-}
 interface AccessoryProductFormProps {
   onSubmit: (payload: AccessoryProductPayload) => void;
   onCancel: () => void;
@@ -215,6 +122,7 @@ interface AccessoryProductFormProps {
   shopId?: string;
   isEditing?: boolean;
 }
+
 export function AccessoryProductForm({
   onSubmit,
   onCancel,
@@ -226,13 +134,9 @@ export function AccessoryProductForm({
   const { user } = useAuthStore();
 
   const [brand, setBrand] = useState<string>(initialData?.brand || "");
-  const [selectedModel, setSelectedModel] = useState<AccessoryModel | null>(
-    null
+  const [variantId, setVariantId] = useState<string | null>(
+    initialData?.variantId || null
   );
-  const [modelDisplay, setModelDisplay] = useState<string>(
-    initialData?.model || ""
-  );
-
   const [purchasePrice, setPurchasePrice] = useState<string>(
     initialData?.purchasePrice?.toString() || ""
   );
@@ -240,19 +144,32 @@ export function AccessoryProductForm({
     initialData?.sellingPrice?.toString() || ""
   );
   const [taxId, setTaxId] = useState<string | undefined>(initialData?.taxId);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [quantity, setQuantity] = useState<number>(1);
-
+  const [quantity, setQuantity] = useState<number>(initialData?.quantity || 1);
   const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || "");
+  const [notes, setNotes] = useState<string>(initialData?.notes || "");
+  const [barcode, setBarcode] = useState<string>(initialData?.barcode || "");
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(
+    initialData?.lowStockThreshold || 5
+  );
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>(
+    []
+  );
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.categories.getAll().then((res) => {
+      const accessoryCategory = res.categories.find(
+        (c) => c.name.toLowerCase() === "accessory"
+      );
+      setCategoryId(accessoryCategory?.id || null);
+    });
+  }, []);
+
   const authStorage = localStorage.getItem("auth-storage");
   const authState = authStorage ? JSON.parse(authStorage)?.state : null;
-  const [variantId, setVariantId] = useState<string | null>(null);
-  const [notes, setNotes] = useState<string>(initialData?.notes || "");
-
-  const [barcode, setBarcode] = useState<string>(initialData?.barcode || "");
-  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || "");
-  const [lowStockThreshold, setLowStockThreshold] = useState<number>(0);
 
   const { data: brandsData, isLoading: brandsLoading } = useQuery<{
     brands: Array<{ id: string; name: string }>;
@@ -260,42 +177,41 @@ export function AccessoryProductForm({
     queryKey: ["/api/products/brands"],
   });
 
-  const { data: modelsData, isLoading: modelsLoading } = useQuery({
-    queryKey: ["/api/products/catalog/accessories/brands", brand],
-    queryFn: () => api.accessoryCatalog.getModelsByBrand(brand),
-    enabled: !!brand,
+  const brands = useMemo(() => brandsData?.brands || [], [brandsData]);
+  // ✅ Fetch vendors
+  useEffect(() => {
+    if (!authState?.user?.id) return;
+    setVendorsLoading(true);
+
+    api.vendors
+      .getAll({ userId: authState.user.id })
+      .then((res) =>
+        setVendors(res.vendors.map((v) => ({ id: v.id, name: v.name })))
+      )
+      .finally(() => setVendorsLoading(false));
+  }, [authState?.user?.id]);
+
+  useEffect(() => {
+    if (!brands || brands.length === 0) return;
+    if (!brand) setBrand(brands[0].id);
+  }, [brands, brand]);
+
+  const { data: variantsData, isLoading: variantsLoading } = useQuery({
+    queryKey: ["accessory-variants", brand, categoryId],
+    queryFn: () =>
+      api.accessoryCatalog.getAccessoryVariants({
+        brandId: brand!,
+        categoryId: categoryId!,
+      }),
+    enabled: !!brand && !!categoryId, // fetch only after brand & categoryId exist
   });
+
+  const variants = variantsData?.variants || [];
 
   const { data: taxesData, isLoading: taxesLoading } = useQuery({
     queryKey: ["/api/taxes", { isActive: true }],
     queryFn: () => api.taxes.getAll({ isActive: true }),
   });
-
-  useEffect(() => {
-    if (!authState?.user?.id) return;
-
-    setVendorsLoading(true);
-
-    api.vendors
-      .getAll({ userId: authState.user.id })
-      .then((res) => {
-        setVendors(
-          res.vendors.map((v) => ({
-            id: v.id,
-            name: v.name,
-          }))
-        );
-      })
-      .finally(() => setVendorsLoading(false));
-  }, [authState?.user?.id]);
-
-  const brands = useMemo(() => {
-    return brandsData?.brands?.map((b) => ({ id: b.id, name: b.name })) || [];
-  }, [brandsData]);
-
-  const models = useMemo(() => {
-    return modelsData?.models || [];
-  }, [modelsData]);
 
   const taxes = useMemo(() => {
     const taxList = taxesData?.taxes || [];
@@ -319,34 +235,6 @@ export function AccessoryProductForm({
     ];
   }, [taxesData, t]);
 
-  const handleBrandChange = useCallback((newBrand: string) => {
-    setBrand(newBrand);
-    setSelectedModel(null);
-    setModelDisplay("");
-  }, []);
-
-  const handleModelChange = useCallback(
-    (model: AccessoryModel | null, displayValue: string) => {
-      setSelectedModel(model);
-      setModelDisplay(displayValue);
-      if (model) {
-        setVariantId(model.id);
-      }
-    },
-    []
-  );
-  interface AccessoryModel {
-    id: string;
-    name: string;
-    displayName: string;
-    productId: string;
-  }
-
-  const handleQuantityChange = useCallback((newQty: number) => {
-    const qty = Math.max(1, Math.min(100, newQty));
-    setQuantity(qty);
-  }, []);
-
   const finalPrice = useMemo(() => {
     const price = parseFloat(sellingPrice) || 0;
     if (!taxId || taxId === "no_tax") return price;
@@ -363,38 +251,31 @@ export function AccessoryProductForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     const newErrors: Record<string, string> = {};
 
     if (!brand) newErrors.brand = t("products.form.brand_required");
-    if (!purchasePrice || parseFloat(purchasePrice) <= 0) {
+    if (!variantId) newErrors.variant = "Variant is required";
+    if (!purchasePrice || parseFloat(purchasePrice) <= 0)
       newErrors.purchasePrice = t("products.form.purchase_price_required");
-    }
-    if (!sellingPrice || parseFloat(sellingPrice) <= 0) {
+    if (!sellingPrice || parseFloat(sellingPrice) <= 0)
       newErrors.sellingPrice = t("products.form.selling_price_required");
-    }
 
     setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      return;
-    }
-
-    if (!selectedModel) {
-      return;
-    }
+    if (Object.keys(newErrors).length > 0) return;
 
     const payload: AccessoryProductPayload = {
-      shopId: shopId!, // ✅ REQUIRED
-      variantId: variantId!, // ✅ REQUIRED
+      shopId: shopId!,
+      variantId: variantId!,
       quantity,
       purchasePrice: Number(purchasePrice),
-      salePrice: Number(sellingPrice), // ✅ rename
+      salePrice: Number(sellingPrice),
       taxId: taxId === "no_tax" ? undefined : taxId,
       vendorId,
       barcode: barcode || undefined,
       notes: notes || undefined,
-      lowStockThreshold: lowStockThreshold || 5,
+      lowStockThreshold: Number.isFinite(lowStockThreshold)
+        ? lowStockThreshold
+        : 5,
     };
 
     onSubmit(payload);
@@ -402,6 +283,7 @@ export function AccessoryProductForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Brand */}
       <div>
         <Label htmlFor="brand" className="text-sm font-medium">
           {t("products.form.brand")} <span className="text-destructive">*</span>
@@ -410,7 +292,7 @@ export function AccessoryProductForm({
           items={brands}
           placeholder={t("products.form.select_brand")}
           value={brand}
-          onChange={handleBrandChange}
+          onChange={setBrand}
           isLoading={brandsLoading}
         />
         {errors.brand && (
@@ -418,40 +300,40 @@ export function AccessoryProductForm({
         )}
       </div>
 
+      {/* Variant */}
       <div>
-        <Label htmlFor="quantity" className="text-sm font-medium">
-          {t("products.form.quantity")}{" "}
-          <span className="text-destructive">*</span>
+        <Label htmlFor="variant" className="text-sm font-medium">
+          Variant <span className="text-destructive">*</span>
         </Label>
-        <Input
-          id="quantity"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={100}
-          value={quantity}
-          onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-          placeholder={t("products.form.enter_quantity")}
-          data-testid="input-quantity"
+        <SearchableSelect
+          items={variants.map((v) => ({
+            id: v.variantId,
+            name: v.variantName,
+          }))}
+          placeholder="Select Variant"
+          value={variantId || ""} // keep controlled
+          onChange={setVariantId}
+          disabled={variantsLoading || !brand} // only disable while loading or brand not selected
+          isLoading={variantsLoading}
         />
-        <p className="text-muted-foreground text-xs mt-1">
-          {t("products.form.quantity_hint")}
-        </p>
-      </div>
-      <div>
-        <Label htmlFor="barcode" className="text-sm font-medium">
-          {t("products.form.barcode")}
-        </Label>
-        <Input
-          type="text"
-          id="barcode"
-          value={barcode}
-          placeholder={t("products.form.barcode_placeholder")}
-          onChange={(e) => setBarcode(e.target.value)}
-          data-testid="input-barcode"
-        />
+        {errors.variant && (
+          <p className="text-destructive text-xs mt-1">{errors.variant}</p>
+        )}
       </div>
 
+      {/* Vendors */}
+      <div>
+        <Label htmlFor="vendor" className="text-sm font-medium">
+          Vendor
+        </Label>
+        <SearchableSelect
+          items={vendors}
+          placeholder="Select Vendor"
+          value={vendorId}
+          onChange={setVendorId}
+          isLoading={vendorsLoading}
+        />
+      </div>
       <div>
         <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
           {t("products.form.lowStockThreshold")}
@@ -467,20 +349,45 @@ export function AccessoryProductForm({
         />
       </div>
 
+      {/* Quantity */}
+      <div>
+        <Label htmlFor="quantity" className="text-sm font-medium">
+          {t("products.form.quantity")}{" "}
+          <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          type="number"
+          min={1}
+          max={100}
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          placeholder={t("products.form.enter_quantity")}
+        />
+      </div>
+
+      {/* Barcode */}
+      <div>
+        <Label htmlFor="barcode" className="text-sm font-medium">
+          {t("products.form.barcode")}
+        </Label>
+        <Input
+          value={barcode}
+          onChange={(e) => setBarcode(e.target.value)}
+          placeholder={t("products.form.barcode_placeholder")}
+        />
+      </div>
+
+      {/* Purchase Price */}
       <div>
         <Label htmlFor="purchasePrice" className="text-sm font-medium">
           {t("products.form.purchase_price")}{" "}
           <span className="text-destructive">*</span>
         </Label>
         <Input
-          id="purchasePrice"
           type="number"
-          inputMode="decimal"
-          step="0.01"
           value={purchasePrice}
           onChange={(e) => setPurchasePrice(e.target.value)}
           placeholder={t("products.form.enter_purchase_price")}
-          data-testid="input-purchase-price"
         />
         {errors.purchasePrice && (
           <p className="text-destructive text-xs mt-1">
@@ -489,26 +396,25 @@ export function AccessoryProductForm({
         )}
       </div>
 
+      {/* Selling Price */}
       <div>
         <Label htmlFor="sellingPrice" className="text-sm font-medium">
           {t("products.form.selling_price")}{" "}
           <span className="text-destructive">*</span>
         </Label>
         <Input
-          id="sellingPrice"
           type="number"
           inputMode="decimal"
           step="0.01"
           value={sellingPrice}
           onChange={(e) => setSellingPrice(e.target.value)}
           placeholder={t("products.form.enter_selling_price")}
-          data-testid="input-selling-price"
         />
+
         {errors.sellingPrice && (
           <p className="text-destructive text-xs mt-1">{errors.sellingPrice}</p>
         )}
       </div>
-
       <div>
         <Label htmlFor="tax" className="text-sm font-medium">
           {t("products.form.tax")}
@@ -534,33 +440,24 @@ export function AccessoryProductForm({
           </div>
         </div>
       )}
-
+      {/* Notes */}
       <div>
         <Label htmlFor="notes" className="text-sm font-medium">
           {t("products.form.notes")}
         </Label>
         <Textarea
-          id="notes"
           value={notes}
-          placeholder={t("products.form.notes_placeholder")}
           onChange={(e) => setNotes(e.target.value)}
-          data-testid="input-notes"
+          placeholder={t("products.form.notes_placeholder")}
         />
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          data-testid="button-cancel"
-        >
-          {t("common.cancel")}
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
         </Button>
-        <Button type="submit" data-testid="button-submit-mobile">
-          {initialData
-            ? t("products.form.update_mobile")
-            : t("products.form.add_accessory")}
+        <Button type="submit">
+          {isEditing ? "Update Accessory" : "Add Accessory"}
         </Button>
       </div>
     </form>

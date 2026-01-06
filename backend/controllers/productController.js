@@ -1421,24 +1421,51 @@ export const createAccessoryStock = async (req, res) => {
   }
 };
 
+export const getAccessoryVariants = async (req, res) => {
+  try {
+    const { brandId, categoryId } = req.query;
+
+    if (!brandId || !categoryId) {
+      return res.status(400).json({
+        error: "brandId and categoryId are required",
+      });
+    }
+
+    const variants = await db
+      .select({
+        variantId: variant.id,
+        variantName: variant.variantName,
+      })
+      .from(variant)
+      .innerJoin(product, eq(variant.productId, product.id))
+      .where(
+        sql`${product.brandId}::text = ${brandId} 
+            AND ${product.categoryId}::text = ${categoryId}
+            AND ${product.isActive} = true 
+            AND ${variant.isActive} = true`
+      )
+      .orderBy(variant.variantName);
+
+    res.status(200).json({ variants });
+  } catch (error) {
+    console.error("Get catalog variants error:", error);
+    res.status(500).json({
+      error: "Failed to fetch catalog variants",
+    });
+  }
+};
+
 export const getAccessoryCatalog = async (req, res) => {
   try {
-    const { search, page = 1, limit = 50 } = req.query;
+    const { search, page = 1, limit = 10 } = req.query;
 
-    // ✅ Base conditions
     const conditions = [
-      eq(variant.trackingMode, "bulk"),
       eq(variant.isActive, true),
       eq(stockBatches.isActive, true),
     ];
 
     if (search) {
-      conditions.push(
-        or(
-          ilike(variant.variantName, `%${search}%`),
-          ilike(product.name, `%${search}%`)
-        )
-      );
+      conditions.push(ilike(variant.variantName, `%${search}%`));
     }
 
     const catalog = await db
@@ -1446,28 +1473,46 @@ export const getAccessoryCatalog = async (req, res) => {
         stockId: stockBatches.id,
         variantId: variant.id,
         variantName: variant.variantName,
-        productName: product.name,
+        productName: variant.productName,
         quantity: stockBatches.quantity,
-        salePrice: stockBatches.salePrice,
         purchasePrice: stockBatches.purchasePrice,
+        salePrice: stockBatches.salePrice,
         notes: stockBatches.notes,
         barcode: stockBatches.barcode,
+
+        shopId: shops.id, // ✅ include shop info
+        shopName: shops.name,
+
+        vendorId: vendors.id, // ✅ include vendor info
+        vendorName: vendors.name,
       })
       .from(stockBatches)
       .leftJoin(variant, eq(stockBatches.variantId, variant.id))
-      .leftJoin(product, eq(variant.productId, product.id))
+      .leftJoin(shops, eq(stockBatches.shopId, shops.id))
+      .leftJoin(vendors, eq(stockBatches.vendorId, vendors.id))
       .where(and(...conditions))
       .orderBy(variant.variantName)
       .limit(Number(limit))
       .offset((Number(page) - 1) * Number(limit));
 
+    // Add stock status
+    const withStatus = catalog.map((item) => ({
+      ...item,
+      stockStatus:
+        item.quantity === 0
+          ? "out_of_stock"
+          : item.quantity < 5
+          ? "low_stock"
+          : "in_stock",
+    }));
+
     res.json({
-      accessories: catalog,
+      accessories: withStatus,
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total: catalog.length,
-        totalPages: Math.ceil(catalog.length / Number(limit)),
+        total: withStatus.length,
+        totalPages: Math.ceil(withStatus.length / Number(limit)),
       },
     });
   } catch (error) {
