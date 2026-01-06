@@ -639,14 +639,13 @@ export const api = {
   },
 
   accessoryCatalog: {
-    // ✅ Create / Update accessory stock (bulk variants only)
     create: (data: {
       variantId: string;
       shopId: string;
       quantity: number;
-      purchasePrice?: number;
-      salePrice?: number;
-      vendorId?: string;
+      purchasePrice: number;
+      salePrice: number;
+      vendorId: string;
       taxId?: string;
       notes?: string;
       barcode?: string;
@@ -670,11 +669,25 @@ export const api = {
         };
       }>("/api/products/accessories", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: data, // ✅ pass object
       });
     },
 
-    // ✅ Get accessory catalog (bulk stock list)
+    getAccessoryVariants: (params: { brandId: string; categoryId: string }) => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("brandId", params.brandId);
+      searchParams.set("categoryId", params.categoryId);
+
+      return request<{
+        variants: Array<{
+          variantId: string;
+          variantName: string;
+        }>;
+      }>(
+        `/api/products/catalog/accessories/variants?${searchParams.toString()}`
+      );
+    },
+
     getAll: (params?: { page?: number; limit?: number; search?: string }) => {
       const searchParams = new URLSearchParams();
       if (params?.page) searchParams.set("page", params.page.toString());
@@ -685,15 +698,25 @@ export const api = {
 
       return request<{
         accessories: Array<{
-          stockId: string;
+          stockId: string; // ← changed from `id`
+
+          shopId: string;
+          shopName: string;
+
+          vendorId?: string;
+          vendorName?: string;
+
           variantId: string;
           variantName: string;
-          productName: string;
+          productName: string; // ← add this, backend returns it
+
           quantity: number;
           purchasePrice?: string;
           salePrice?: string;
           notes?: string;
           barcode?: string;
+          isActive?: boolean;
+          stockStatus?: string; // ← this is computed in backend
         }>;
         pagination: {
           page: number;

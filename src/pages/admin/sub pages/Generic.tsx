@@ -27,48 +27,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useTitle } from "@/context/TitleContext";
 
-interface variant {
-  id: string;
-  color: string;
-  sky: string;
-  storageSize: string;
-  variantName: string;
-}
-
-interface category {
-  id: string;
-  name: string;
-}
-
-interface product {
-  id: string;
-  name: string;
-}
-
 interface StockItem {
   id: string;
+
   shopId: string;
-  shopName?: string;
-  variantId: string;
-  variantName: variant;
-  productName: product;
-  brandName: string;
-  categoryName: category;
-  color?: variant;
-  storageSize?: variant;
-  barcode?: string;
-  serialNumber?: string;
-  purchasePrice?: string;
-  salePrice: string;
-  stockStatus: string;
-  isSold: boolean;
-  condition: string;
+  shopName: string;
+
   vendorId?: string;
-  sku?: variant;
-  notes?: string;
-  stock?: number; // ✅ Added missing field
-  createdAt: string;
-  updatedAt: string;
+  vendorName?: string;
+
+  variantId: string;
+  variantName: string;
+
+  quantity: number;
+
+  purchasePrice?: string;
+  salePrice?: string;
+
+  isActive?: boolean;
 }
 
 // ✅ Custom debounce hook
@@ -141,19 +117,13 @@ export default function GenericProducts() {
   const { data: accessoriesData, isLoading } = useQuery({
     queryKey: [
       "/api/products/catalog/accessories",
-      {
-        page,
-        limit,
-        search: debouncedSearch,
-        brand: brandFilter,
-      },
+      { page, limit, search: debouncedSearch },
     ],
     queryFn: () =>
       api.accessoryCatalog.getAll({
         page,
         limit,
         search: debouncedSearch || undefined,
-        brand: brandFilter || undefined,
       }),
   });
 
@@ -272,7 +242,7 @@ export default function GenericProducts() {
       createProductMutation.mutate({
         shopId: selectedShopId,
         variantId: payload.variantId,
-        salePrice: payload.sellingPrice,
+        salePrice: payload.salePrice,
         purchasePrice: payload.purchasePrice,
         quantity: payload.quantity,
         barcode: payload.barcode || null,
@@ -285,6 +255,10 @@ export default function GenericProducts() {
         shopId: selectedShopId,
         variantId: payload.variantId,
         vendorId: payload.vendorId,
+        quantity: payload.quantity,
+        lowStockThreshold: payload.lowStockThreshold,
+        salePrice: payload.salePrice,
+        purchasePrice: payload.purchasePrice,
       });
     } catch (err) {
       console.error("Error creating product:", err);
@@ -316,15 +290,6 @@ export default function GenericProducts() {
       onAfterPrint: () => document.body.removeChild(container),
     });
   };
-  const { data: brandsData, isLoading: brandsLoading } = useQuery<{
-    brands: Array<{ id: string; name: string }>;
-  }>({
-    queryKey: ["/api/products/brands"],
-  });
-
-  const brands = useMemo(() => {
-    return brandsData?.brands?.map((b) => ({ id: b.id, name: b.name })) || [];
-  }, [brandsData]);
 
   const handleOpenModal = (product?: any) => {
     setCurrentStock(null);
@@ -347,42 +312,38 @@ export default function GenericProducts() {
     {
       key: "index",
       label: "#",
-      filterType: "none",
       render: (_: any, __: any, index: number) =>
         (page - 1) * limit + index + 1,
     },
     {
-      key: "categoryName",
-      label: "Category",
-      filterType: "select",
-      filterOptions: ["Accessory"],
+      key: "shopName",
+      label: "Shop",
     },
     {
-      key: "color",
-      label: "Color",
-      filterType: "text",
+      key: "productName",
+      label: "Product name",
+    },
+    {
+      key: "variantName",
+      label: "Variant",
+    },
+    {
+      key: "quantity",
+      label: "Qty",
     },
     {
       key: "purchasePrice",
-      label: "Buy Price",
-      filterType: "none",
+      label: "Purchase",
+      render: (v: string) => (v ? `PKR ${v}` : "—"),
     },
     {
       key: "salePrice",
-      label: "Sale Price",
-      filterType: "none",
+      label: "Selling",
+      render: (v: string) => `PKR ${v}`,
     },
     {
-      key: "vendorName",
-      label: "Vendor",
-      filterType: "select",
-      filterOptions: vendorsData?.vendors?.map((v) => v.name) || [],
-    },
-    {
-      key: "createdAt",
-      label: "Created At",
-      filterType: "none",
-      render: (val: string) => new Date(val).toLocaleDateString(),
+      key: "IsActive",
+      label: "Status",
     },
   ];
 

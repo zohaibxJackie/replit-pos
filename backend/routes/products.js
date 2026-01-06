@@ -27,6 +27,10 @@ router.get("/catalog/mobiles/item", productController.getMobileCatalogItem);
 router.post("/accessories", productController.createAccessoryStock);
 router.get("/catalog/accessories", productController.getAccessoryCatalog);
 router.get(
+  "/catalog/accessories/variants",
+  productController.getAccessoryVariants
+);
+router.get(
   "/catalog/accessories/brands",
   productController.getAccessoryCatalogModels
 );
