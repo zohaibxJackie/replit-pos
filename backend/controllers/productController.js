@@ -19,6 +19,7 @@ import {
   fetchAccessoryProducts,
 } from "../helpers/productHelpers.js";
 import dotenv from "dotenv";
+import { t } from "i18next";
 dotenv.config();
 
 export const getProducts = async (req, res) => {
@@ -1427,7 +1428,7 @@ export const getAccessoryVariants = async (req, res) => {
 
     if (!brandId || !categoryId) {
       return res.status(400).json({
-        error: "brandId and categoryId are required",
+        error: t("product.get_accessory_product"),
       });
     }
 
@@ -1450,7 +1451,7 @@ export const getAccessoryVariants = async (req, res) => {
   } catch (error) {
     console.error("Get catalog variants error:", error);
     res.status(500).json({
-      error: "Failed to fetch catalog variants",
+      error: t("get_accesssory_variant"),
     });
   }
 };

@@ -123,7 +123,7 @@ export const brand = pgTable("brand", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),
-  category: text("category").notNull().default('mobile'),
+  category: text("category").notNull().default("mobile"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -154,7 +154,9 @@ export const product = pgTable("product", {
 // variant_name is auto-generated from product name + storage_size
 // trackingMode determines if inventory is tracked per-unit (serialized) or by quantity (bulk)
 export const variant = pgTable("variant", {
-  id: varchar("id").default(sql`gen_random_uuid()`).primaryKey(), // ← Change from varchar to uuid
+  id: varchar("id")
+    .default(sql`gen_random_uuid()`)
+    .primaryKey(), // ← Change from varchar to uuid
   productId: varchar("product_id").notNull(), // ← Change from varchar to uuid
   variantName: text("variant_name").notNull(),
   color: text("color"),
@@ -287,7 +289,7 @@ export const vendors = pgTable("vendors", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
-  // shopId: varchar("shop_id").notNull(),
+  shopId: varchar("shop_id").notNull(),
   name: text("name").notNull(),
   phone: text("phone"),
   email: text("email"),
@@ -420,13 +422,17 @@ export const sales = pgTable("sales", {
   shopId: varchar("shop_id").notNull(),
   salesPersonId: varchar("sales_person_id").notNull(),
   customerId: varchar("customer_id"),
-  paymentMethod: text("payment_method").notNull().default("cash"),
+  invoiceNumber: varchar("invoice_number").unique(),
+  paymentMethod: text("payment_method").default("cash"),
+  paymentStatus: text("payment_status").default("paid"),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
-  discount: decimal("discount", { precision: 10, scale: 2 })
-    .notNull()
-    .default("0"),
+  discountType: text("discount_type").default("fixed"),
+  discount: decimal("discount", { precision: 10, scale: 2 }).default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  saleStatus: text("sale_status").default("completed"),
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }),
+  changeAmount: decimal("change_amount", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
