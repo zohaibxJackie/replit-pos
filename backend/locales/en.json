@@ -41,6 +41,8 @@
     "delete_failed": "Failed to delete customer"
   },
   "product": {
+    "get_accessory_product": "brandId and categoryId are required",
+    "get_accesssory_variant": "Failed to fetch catalog variants",
     "fetch_failed": "Failed to fetch products",
     "not_found": "Product not found",
     "barcode_exists": "Product with this barcode already exists",
