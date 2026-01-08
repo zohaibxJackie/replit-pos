@@ -79,6 +79,8 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
   const [transferQty, setTransferQty] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
+  // Following variable is repsonsible for the stock quantity of selected product
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(0);
 
   useEffect(() => {
     if (isOpen && shops.length > 0 && !sourceShopId) {
@@ -101,14 +103,28 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['/api/products', { shopId: sourceShopId, search: searchQuery, limit: 100, productCategory: 'mobile' }],
-    queryFn: () => api.products.getAll({ 
-      shopId: sourceShopId, 
+    queryFn: () => api.products.getAll({
+      shopId: sourceShopId,
       search: searchQuery,
       limit: 100,
       productCategory: 'mobile'
     }),
     enabled: !!sourceShopId && isOpen,
   });
+
+  const { data: stockData, isLoading: isLoadingStock } = useQuery({
+    queryKey: ['/api/stockQty', { shopId: sourceShopId, productId: selectedProduct?.id }],
+    queryFn: () => api.products.getStockQty(sourceShopId, selectedProduct?.variant.id || ''),
+    enabled: !!selectedProduct && !!sourceShopId && isOpen
+  });
+
+  // Update selectedQuantity when stockData changes
+  useEffect(() => {
+    if (stockData?.stockQty?.stockCount !== undefined) {
+      setSelectedQuantity(stockData.stockQty.stockCount);
+    }
+    console.log(selectedQuantity)
+  }, [stockData]);
 
   const products = productsData?.products || [];
 
@@ -121,25 +137,19 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
 
   const stockTransferMutation = useMutation({
     mutationFn: async (data: { productId: string; fromShopId: string; toShopId: string; quantity: number; notes?: string }) => {
-      const response = await fetch('/api/stock-transfers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: data.productId,
-          fromShopId: data.fromShopId,
-          toShopId: data.toShopId,
-          quantity: data.quantity,
-          notes: data.notes
-        })
+      return api.stockTransfers.create({
+        productId: data.productId,
+        fromShopId: data.fromShopId,
+        toShopId: data.toShopId,
+        quantity: data.quantity,
+        notes: data.notes
       });
-      if (!response.ok) throw new Error(await response.text());
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      toast({ 
-        title: t("admin.products.stock_transferred"), 
-        description: t("admin.products.stock_transferred_desc") 
+      toast({
+        title: t("admin.products.stock_transferred"),
+        description: t("admin.products.stock_transferred_desc")
       });
       handleClose();
     },
@@ -171,7 +181,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
       return;
     }
 
-    if (transferQty <= 0 || transferQty > (selectedProduct.stock ?? 0)) {
+    if (transferQty <= 0 || transferQty > selectedQuantity) {
       toast({ title: t("admin.products.error"), description: t("admin.products.insufficient_stock"), variant: "destructive" });
       return;
     }
@@ -181,7 +191,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
 
   const handleConfirmTransfer = () => {
     if (!selectedProduct || !targetShopId) return;
-    
+
     stockTransferMutation.mutate({
       productId: selectedProduct.id,
       fromShopId: sourceShopId,
@@ -274,11 +284,10 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                     {products.map((product) => (
                       <Card
                         key={product.id}
-                        className={`p-3 cursor-pointer transition-colors hover-elevate ${
-                          selectedProduct?.id === product.id
-                            ? "border-primary bg-primary/5"
-                            : ""
-                        }`}
+                        className={`p-3 cursor-pointer transition-colors hover-elevate ${selectedProduct?.id === product.id
+                          ? "border-primary bg-primary/5"
+                          : ""
+                          }`}
                         onClick={() => handleProductSelect(product)}
                         data-testid={`card-product-${product.id}`}
                       >
@@ -327,7 +336,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                       <p className="text-xs text-muted-foreground truncate">IMEI: {selectedProduct.primaryImei || selectedProduct.imei1}</p>
                     )}
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      {t("admin.products.available_stock")}: <span className="font-medium">{selectedProduct.stock ?? 0}</span>
+                      {t("admin.products.available_stock")}: <span className="font-medium">{selectedQuantity}</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -336,7 +345,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                       id="transfer-qty"
                       type="number"
                       min="1"
-                      max={selectedProduct.stock ?? 1}
+                      max={selectedQuantity}
                       value={transferQty}
                       onChange={(e) => setTransferQty(Number(e.target.value) || 1)}
                       className="w-16 sm:w-20 text-sm"
@@ -346,7 +355,7 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setTransferQty(selectedProduct.stock ?? 1)}
+                      onClick={() => setTransferQty(selectedQuantity)}
                       data-testid="button-send-all"
                     >
                       {t("admin.products.send_all")}
@@ -384,21 +393,21 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg">{t("admin.products.confirm_transfer")}</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2 text-xs sm:text-sm">
-              <p>{t("admin.products.confirm_transfer_message")}</p>
+              <div>{t("admin.products.confirm_transfer_message")}</div>
               <div className="mt-3 p-2.5 sm:p-3 bg-muted rounded-md space-y-1 text-xs sm:text-sm">
-                <p className="truncate"><strong>{t("admin.products.product")}:</strong> {selectedProduct?.customName || `Product ${selectedProduct?.id.slice(0, 8)}`}</p>
-                <p><strong>{t("admin.products.quantity")}:</strong> {transferQty}</p>
-                <p className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <div className="truncate"><strong>{t("admin.products.product")}:</strong> {selectedProduct?.customName || `Product ${selectedProduct?.id.slice(0, 8)}`}</div>
+                <div><strong>{t("admin.products.quantity")}:</strong> {transferQty}</div>
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <strong className="truncate max-w-[100px] sm:max-w-none">{sourceShopName}</strong>
                   <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   <strong className="truncate max-w-[100px] sm:max-w-none">{targetShopName}</strong>
-                </p>
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
             <AlertDialogCancel className="w-full sm:w-auto">{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirmTransfer}
               data-testid="button-confirm-transfer"
               className="w-full sm:w-auto"

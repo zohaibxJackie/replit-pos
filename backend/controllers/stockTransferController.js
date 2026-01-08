@@ -114,7 +114,7 @@ export const createStockTransfer = async (req, res) => {
           eq(stock.stockStatus, "in_stock"),
           eq(stock.isActive, true),
           eq(stock.isSold, false),
-          or(eq(variant.id, productId), eq(product.id, productId))
+          or(eq(variant.id, productId), eq(product.id, productId), eq(stock.id, productId))
         )
       )
       .limit(quantity);

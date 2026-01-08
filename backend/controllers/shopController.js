@@ -1,25 +1,25 @@
 import { db } from '../config/database.js';
-import { shops, users, userShop, pricingPlans, stock } from '../../shared/schema.js';
+import { shops, users, userShop, pricingPlans, stock, variant } from '../../shared/schema.js';
 import { eq, desc, ilike, sql, and, or, inArray } from 'drizzle-orm';
 import { paginationHelper } from '../utils/helpers.js';
 
 const getMaxShopsFromPlan = async (userId) => {
   const ownedShops = await db.select().from(shops).where(eq(shops.ownerId, userId));
-  
+
   if (ownedShops.length === 0) {
     const [defaultPlan] = await db.select().from(pricingPlans)
       .where(eq(pricingPlans.name, 'Silver'))
       .limit(1);
     return defaultPlan?.maxShops || 1;
   }
-  
+
   const primaryShop = ownedShops[0];
   const tierName = primaryShop.subscriptionTier.charAt(0).toUpperCase() + primaryShop.subscriptionTier.slice(1);
-  
+
   const [plan] = await db.select().from(pricingPlans)
     .where(eq(pricingPlans.name, tierName))
     .limit(1);
-  
+
   return plan?.maxShops || 1;
 };
 
@@ -27,14 +27,14 @@ const getAdminShopCount = async (userId) => {
   const myUserShops = await db.select({ shopId: userShop.shopId })
     .from(userShop)
     .where(eq(userShop.userId, userId));
-  
+
   const ownedShops = await db.select({ id: shops.id }).from(shops).where(eq(shops.ownerId, userId));
-  
+
   const uniqueShopIds = new Set([
     ...myUserShops.map(us => us.shopId),
     ...ownedShops.map(s => s.id)
   ]);
-  
+
   return uniqueShopIds.size;
 };
 
@@ -59,7 +59,7 @@ export const getShops = async (req, res) => {
     }
 
     let query = db.select().from(shops);
-    
+
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
@@ -70,11 +70,11 @@ export const getShops = async (req, res) => {
       .offset(offset);
 
     let countQuery = db.select({ count: sql`count(*)::int` }).from(shops);
-    
+
     if (conditions.length > 0) {
       countQuery = countQuery.where(and(...conditions));
     }
-    
+
     const [{ count }] = await countQuery;
 
     res.json({
@@ -133,7 +133,7 @@ export const createShop = async (req, res) => {
     const currentShops = await getAdminShopCount(userId);
 
     if (currentShops >= maxShops) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: req.t('shop.max_shops_reached'),
         maxShops,
         currentShops
@@ -218,17 +218,17 @@ export const deleteShop = async (req, res) => {
 export const getMyShops = async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     const myUserShops = await db.select({ shopId: userShop.shopId })
       .from(userShop)
       .where(eq(userShop.userId, userId));
-    
+
     const shopIds = myUserShops.map(us => us.shopId);
-    
+
     const ownedShops = await db.select().from(shops).where(eq(shops.ownerId, userId));
-    
+
     let allShops = [...ownedShops];
-    
+
     if (shopIds.length > 0) {
       const linkedShops = await db.select().from(shops).where(inArray(shops.id, shopIds));
       const existingIds = new Set(allShops.map(s => s.id));
@@ -238,9 +238,9 @@ export const getMyShops = async (req, res) => {
         }
       });
     }
-    
+
     const maxShops = await getMaxShopsFromPlan(userId);
-    
+
     res.json({
       shops: allShops,
       maxShops,
@@ -256,21 +256,21 @@ export const createAdminShop = async (req, res) => {
   try {
     const { name, phone, whatsapp, address, currencyCode } = req.body;
     const userId = req.user.id;
-    
+
     const maxShops = await getMaxShopsFromPlan(userId);
     const currentShops = await getAdminShopCount(userId);
-    
+
     if (currentShops >= maxShops) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: req.t('shop.max_shops_reached'),
         maxShops,
         currentShops
       });
     }
-    
+
     const ownedShops = await db.select().from(shops).where(eq(shops.ownerId, userId));
     const subscriptionTier = ownedShops.length > 0 ? ownedShops[0].subscriptionTier : 'silver';
-    
+
     const [newShop] = await db.insert(shops).values({
       name,
       ownerId: userId,
@@ -280,7 +280,7 @@ export const createAdminShop = async (req, res) => {
       subscriptionTier,
       currencyCode: currencyCode || 'USD'
     }).returning();
-    
+
     await db.insert(userShop).values({
       userId,
       shopId: newShop.id
@@ -304,9 +304,9 @@ export const updateAdminShop = async (req, res) => {
       return res.status(404).json({ error: req.t('shop.not_found') });
     }
 
-    const hasAccess = existingShop.ownerId === userId || 
+    const hasAccess = existingShop.ownerId === userId ||
       (await db.select().from(userShop).where(and(eq(userShop.userId, userId), eq(userShop.shopId, id))).limit(1)).length > 0;
-    
+
     if (!hasAccess && req.user.role !== 'super_admin') {
       return res.status(403).json({ error: req.t('shop.access_denied') });
     }
@@ -330,4 +330,42 @@ export const updateAdminShop = async (req, res) => {
   }
 };
 
-export default { getShops, getShopById, createShop, updateShop, deleteShop, getMyShops, createAdminShop, updateAdminShop };
+export const getStockQty = async (req, res) => {
+  try {
+    const { shopId, productId } = req.params;
+
+    if (!shopId || !productId) {
+      return res.status(400).json({ error: req.t('shop.invalid_id') });
+    }
+
+    const [existingShop] = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
+    if (!existingShop) {
+      return res.status(404).json({ error: req.t('shop.not_found') });
+    }
+
+    const [existingProduct] = await db.select().from(variant).where(eq(variant.id, productId)).limit(1);
+    if (!existingProduct) {
+      return res.status(404).json({ error: req.t('shop.product_not_found') });
+    }
+
+    const [stockQty] = await db.select({
+      stockCount: sql`count(*)::int`,
+    })
+      .from(stock)
+      .where(
+        and(
+          eq(stock.shopId, shopId),
+          eq(stock.variantId, productId),
+          eq(stock.isActive, true),
+          eq(stock.isSold, false)
+        )
+      );
+
+    res.status(200).json({ stockQty });
+  } catch (error) {
+    console.error('Get stock quantity error:', error);
+    res.status(500).json({ error: req.t('shop.get_stock_qty_failed') });
+  }
+};
+
+export default { getShops, getShopById, createShop, updateShop, deleteShop, getMyShops, createAdminShop, updateAdminShop, getStockQty };

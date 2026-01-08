@@ -421,6 +421,9 @@ export const api = {
       data: { type: "add" | "subtract" | "set"; quantity: number }
     ) => request(`/api/products/${id}/stock`, { method: "PATCH", body: data }),
 
+    getStockQty: (shopId: string, productId: string) =>
+      request<{ stockQty: number }>(`/api/shops/${shopId}/products/${productId}/stock`),
+
     delete: (id: string) =>
       request(`/api/products/${id}`, { method: "DELETE" }),
 
@@ -820,19 +823,20 @@ export const api = {
       }>("/api/stock-transfers"),
 
     create: (data: {
-      stockId: string;
+      productId: string;
       fromShopId: string;
       toShopId: string;
+      quantity: number;
       notes?: string;
     }) =>
       request<{
         transfer: {
           id: string;
-          stockId: string;
           fromShopId: string;
           toShopId: string;
           status: string;
         };
+        transferredCount: number;
       }>("/api/stock-transfers", { method: "POST", body: data }),
 
     getProductByImei: (imei: string) =>

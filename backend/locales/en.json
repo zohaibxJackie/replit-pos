@@ -149,11 +149,13 @@
     "fetch_failed": "Failed to fetch shops",
     "fetch_one_failed": "Failed to fetch shop",
     "not_found": "Shop not found",
+    "product_not_found": "Product not found",
     "create_failed": "Failed to create shop",
     "update_failed": "Failed to update shop",
     "deactivated": "Shop deactivated successfully",
     "delete_failed": "Failed to delete shop",
-    "access_denied": "Access denied"
+    "access_denied": "Access denied",
+    "invalid_id": "one or more id not provided"
   },
   "repair": {
     "jobs_fetch_failed": "Failed to fetch repair jobs",
