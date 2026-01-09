@@ -180,11 +180,9 @@ export const createSale = async (req, res) => {
         .limit(1);
 
       if (!stockItem) {
-        return res
-          .status(404)
-          .json({
-            error: req.t("product.product_id_not_found", { id: item.stockId }),
-          });
+        return res.status(404).json({
+          error: req.t("product.product_id_not_found", { id: item.stockId }),
+        });
       }
 
       if (stockItem.isSold || stockItem.stockStatus !== "in_stock") {
@@ -192,13 +190,11 @@ export const createSale = async (req, res) => {
           stockItem.variant?.variantName ||
           stockItem.product?.name ||
           stockItem.barcode;
-        return res
-          .status(400)
-          .json({
-            error: req.t("product.not_available_for_sale", {
-              name: displayName,
-            }),
-          });
+        return res.status(400).json({
+          error: req.t("product.not_available_for_sale", {
+            name: displayName,
+          }),
+        });
       }
 
       const itemPrice = item.price || parseFloat(stockItem.salePrice) || 0;
@@ -214,6 +210,10 @@ export const createSale = async (req, res) => {
     }
 
     const discountAmount = discount || 0;
+    const discountType = req.validatedBody.discountType || "fixed";
+    const paidAmount = req.validatedBody.paidAmount || total;
+    const changeAmount = paidAmount > total ? paidAmount - total : 0;
+
     const taxAmount = tax || 0;
     const total = subtotal - discountAmount + taxAmount;
 
@@ -223,12 +223,19 @@ export const createSale = async (req, res) => {
         shopId,
         salesPersonId,
         customerId: customerId || null,
+        invoiceNumber: `INV-${Date.now()}`,
         paymentMethod: paymentMethod || "cash",
+        paymentStatus: "paid",
+        discountType,
         subtotal: subtotal.toString(),
         discount: discountAmount.toString(),
         tax: taxAmount.toString(),
         total: total.toString(),
+        paidAmount: paidAmount.toString(),
+        changeAmount: changeAmount.toString(),
+        saleStatus: "completed",
       })
+
       .returning();
 
     for (const item of itemsWithTotal) {
