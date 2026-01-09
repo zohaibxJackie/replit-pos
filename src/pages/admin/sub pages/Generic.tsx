@@ -112,7 +112,6 @@ export default function GenericProducts() {
   });
 
   const shops = useMemo(() => shopsData?.shops || [], [shopsData]);
-  const [brandFilter, setBrandFilter] = useState<string | undefined>(undefined);
 
   const { data: accessoriesData, isLoading } = useQuery({
     queryKey: [
@@ -130,12 +129,6 @@ export default function GenericProducts() {
   const products = accessoriesData?.accessories || [];
   const total = accessoriesData?.pagination?.total || 0;
 
-  // ✅ Fetch Vendors
-  const { data: vendorsData } = useQuery({
-    queryKey: ["/api/vendors", authState?.user?.id],
-    queryFn: () => api.vendors.getAll({ userId: authState?.user?.id }),
-    enabled: !!authState?.user?.id,
-  });
   const searchedProducts = useMemo(() => {
     if (!stockSearch.trim()) return products;
 

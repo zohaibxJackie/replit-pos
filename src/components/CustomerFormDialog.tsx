@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,23 +109,22 @@ export function CustomerFormDialog({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // Basic validation
     const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
+    if (!formData.name.trim()) newErrors.name = "Name is required";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      toast({ title: "Please fill all required fields", variant: "destructive" });
+      toast({
+        title: "Please fill all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      let customerId: string;
-
       const customerPayload = {
         name: formData.name,
         email: formData.email || undefined,
@@ -135,36 +139,35 @@ export function CustomerFormDialog({
         province: formData.province || undefined,
       };
 
-      if (editingCustomer?.id) {
-        await api.customers.update(editingCustomer.id.toString(), customerPayload);
-        customerId = editingCustomer.id.toString();
+      // If editingCustomer exists, update; else create
+      const response = editingCustomer?.id
+        ? await api.customers.update(
+            editingCustomer.id.toString(),
+            customerPayload
+          )
+        : await api.customers.create(customerPayload);
 
-        toast({
-          title: "Customer Updated",
-          description: `${formData.name} has been updated.`,
-        });
-      } else {
-        const response = await api.customers.create(customerPayload);
-        customerId = response.customer.id;
+      const customerId = editingCustomer?.id || response.customer.id;
 
-        toast({
-          title: "Customer Added",
-          description: `${formData.name} has been saved to the database.`,
-        });
-      }
+      toast({
+        title: editingCustomer ? "Customer Updated" : "Customer Added",
+        description: `${formData.name} has been ${
+          editingCustomer ? "updated" : "saved to the database"
+        }.`,
+      });
 
-      const customerData: CustomerFormData = {
-        ...formData,
-        id: customerId,
-      };
-
+      // Pass customer back to parent
+      const customerData: CustomerFormData = { ...formData, id: customerId };
       onCustomerAdded(customerData);
+
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to save customer:", error);
       toast({
         title: "Error",
-        description: `Failed to ${editingCustomer ? "update" : "save"} customer. Please try again.`,
+        description: `Failed to ${
+          editingCustomer ? "update" : "save"
+        } customer. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -174,7 +177,10 @@ export function CustomerFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-customer-form">
+      <DialogContent
+        className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+        data-testid="dialog-customer-form"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5" />
@@ -279,9 +285,15 @@ export function CustomerFormDialog({
             <Label>Nationality</Label>
             <ReactSelect
               options={options}
-              value={options.find((c: any) => c.label === formData.nationality) || null}
+              value={
+                options.find((c: any) => c.label === formData.nationality) ||
+                null
+              }
               onChange={(selected: any) => {
-                setFormData((prev) => ({ ...prev, nationality: selected?.label || "" }));
+                setFormData((prev) => ({
+                  ...prev,
+                  nationality: selected?.label || "",
+                }));
                 setErrors((prev) => ({ ...prev, nationality: "" }));
               }}
               placeholder="Select country"
@@ -322,8 +334,14 @@ export function CustomerFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting} data-testid="button-submit-customer">
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              data-testid="button-submit-customer"
+            >
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {editingCustomer ? "Update Customer" : "Add Customer"}
             </Button>
           </div>

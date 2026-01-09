@@ -4,7 +4,7 @@ import {
   repairPayments,
   repairPersons,
 } from "../../shared/schema.js";
-import { eq, and, desc, sql, or, ilike } from "drizzle-orm";
+import { eq, and, desc, sql, or, ilike, inArray } from "drizzle-orm";
 import { paginationHelper, generateTicketNumber } from "../utils/helpers.js";
 
 export const getRepairJobs = async (req, res) => {
@@ -23,7 +23,8 @@ export const getRepairJobs = async (req, res) => {
     let conditions = [eq(repairJobs.shopId, shopId)];
 
     if (status) {
-      conditions.push(eq(repairJobs.status, status));
+      const statuses = status.split(","); // split comma-separated string
+      conditions.push(inArray(repairJobs.status, statuses));
     }
 
     if (priority) {

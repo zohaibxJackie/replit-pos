@@ -55,7 +55,6 @@ async function request<T>(
 ): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
-
   const currentLang = getCurrentLanguage();
 
   const config: RequestInit = {
@@ -408,7 +407,9 @@ export const api = {
     ) => request(`/api/products/${id}/stock`, { method: "PATCH", body: data }),
 
     getStockQty: (shopId: string, productId: string) =>
-      request<{ stockQty: number }>(`/api/shops/${shopId}/products/${productId}/stock`),
+      request<{ stockQty: number }>(
+        `/api/shops/${shopId}/products/${productId}/stock`
+      ),
 
     delete: (id: string) =>
       request(`/api/products/${id}`, { method: "DELETE" }),
@@ -681,35 +682,37 @@ export const api = {
       );
     },
 
-    getAll: (params?: { page?: number; limit?: number; search?: string }) => {
+    getAll: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      shopId?: string;
+    }) => {
       const searchParams = new URLSearchParams();
+
       if (params?.page) searchParams.set("page", params.page.toString());
       if (params?.limit) searchParams.set("limit", params.limit.toString());
       if (params?.search) searchParams.set("search", params.search);
+      if (params?.shopId) searchParams.set("shopId", params.shopId); // ✅ REQUIRED
 
       const query = searchParams.toString();
 
       return request<{
         accessories: Array<{
-          stockId: string; // ← changed from `id`
-
+          stockId: string;
           shopId: string;
           shopName: string;
-
           vendorId?: string;
           vendorName?: string;
-
           variantId: string;
           variantName: string;
-          productName: string; // ← add this, backend returns it
-
+          productName: string;
           quantity: number;
           purchasePrice?: string;
           salePrice?: string;
           notes?: string;
           barcode?: string;
-          isActive?: boolean;
-          stockStatus?: string; // ← this is computed in backend
+          stockStatus?: string;
         }>;
         pagination: {
           page: number;
@@ -939,26 +942,29 @@ export const api = {
       request(`/api/customers/${id}`, { method: "DELETE" }),
   },
 
-  sales: {
+  stock: {
+    // Get all stock, optionally filtered by shopId
     getAll: (shopId?: string) =>
-      request(shopId ? `/api/sales?shopId=${shopId}` : "/api/sales"),
+      request(shopId ? `/api/stock?shopId=${shopId}` : "/api/stock"),
 
-    getById: (id: string) => request(`/api/sales/${id}`),
-
+    // Create new stock item
     create: (data: {
+      variantId: string;
       shopId: string;
-      salesPersonId: string;
-      customerId?: string;
-      paymentMethod?: string;
-      subtotal: string;
-      tax?: string;
-      discount?: string;
-      total: string;
-      items: { stockId: string; price: string; total: string }[];
-    }) => request("/api/sales", { method: "POST", body: data }),
-
-    getItems: (saleId: string) => request(`/api/sales/${saleId}/items`),
+      primaryImei?: string;
+      secondaryImei?: string;
+      serialNumber?: string;
+      barcode?: string;
+      purchasePrice?: string | number;
+      salePrice?: string | number;
+      stockStatus?: "in_stock" | "out_of_stock";
+      notes?: string;
+      condition?: "new" | "used" | "refurbished";
+      lowStockThreshold?: number;
+      vendorId?: string;
+    }) => request("/api/stock", { method: "POST", body: data }),
   },
+
   variants: {
     create: (data: {
       productId: string;

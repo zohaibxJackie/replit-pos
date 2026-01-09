@@ -12,6 +12,7 @@ import notificationRoutes from "./notifications.js";
 import vendorRoutes from "./vendors.js";
 import taxRoutes from "./taxes.js";
 import stockTransferRoutes from "./stockTransfers.js";
+import stockRoutes from "./stock.js";
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/customers", customerRoutes);
 router.use("/sales", saleRoutes);
+router.use("/stock", stockRoutes);
 router.use("/repairs", repairRoutes);
 router.use("/wholesaler", wholesalerRoutes);
 router.use("/notifications", notificationRoutes);

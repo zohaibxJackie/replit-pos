@@ -6,7 +6,10 @@ import {
   CustomerFormDialog,
   CustomerFormData,
 } from "@/components/CustomerFormDialog";
-import { CustomerSearchSelect, CustomerOption } from "@/components/CustomerSearchSelect";
+import {
+  CustomerSearchSelect,
+  CustomerOption,
+} from "@/components/CustomerSearchSelect";
 import { QuickProductsDialog } from "@/components/QuickProductsDialog";
 import { BarcodeScannerDialog } from "@/components/BarcodeScannerDialog";
 import { useQuickProducts } from "@/hooks/useQuickProducts";
@@ -51,6 +54,7 @@ import { useTitle } from "@/context/TitleContext";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { MobileInvoice } from "@/components/MobileInvoice";
 import { printElement } from "@/utils/print";
+import ProductGridDropdown from "@/components/ProductGridDropdown";
 
 interface CartItemType {
   id: string;
@@ -79,14 +83,17 @@ export default function POS() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [result, setResult] = useState("");
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(
-    null,
-  );
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerOption | null>(null);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [currentReceipt, setCurrentReceipt] = useState<Receipt | null>(null);
+  const [activeCategory, setActiveCategory] = useState<
+    "mobile" | "accessory" | null
+  >(null);
+  const [products, setProducts] = useState("");
   const [paymentDetails, setPaymentDetails] = useState<{
     amountPaid: number;
     change: number;
@@ -105,7 +112,7 @@ export default function POS() {
     const product = mockProducts.find(
       (p) =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.barcode === search,
+        p.barcode === search
     );
     if (product) {
       handleAddToCart(product);
@@ -121,8 +128,8 @@ export default function POS() {
           cart.map((item) =>
             item.id === product.id
               ? { ...item, quantity: item.quantity + 1 }
-              : item,
-          ),
+              : item
+          )
         );
       } else {
         toast({
@@ -149,7 +156,7 @@ export default function POS() {
 
   const handleUpdateQuantity = (id: string, quantity: number) => {
     setCart(
-      cart.map((item) => (item.id === id ? { ...item, quantity } : item)),
+      cart.map((item) => (item.id === id ? { ...item, quantity } : item))
     );
   };
 
@@ -159,7 +166,7 @@ export default function POS() {
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0,
+    0
   );
   const tax = subtotal * taxRate;
   const total = subtotal + tax - discount;
@@ -258,19 +265,19 @@ export default function POS() {
   const processPayment = async (
     receipt: Receipt,
     amountPaid?: number,
-    change?: number,
+    change?: number
   ) => {
     try {
       const cartSnapshot = [...cart];
       const hasMobileProduct = cartSnapshot.some(
-        (item) => item.type === "mobile",
+        (item) => item.type === "mobile"
       );
       const hasAccessoryProduct = cartSnapshot.some(
-        (item) => item.type === "accessory" || !item.type,
+        (item) => item.type === "accessory" || !item.type
       );
 
       setPaymentDetails(
-        amountPaid && change !== undefined ? { amountPaid, change } : null,
+        amountPaid && change !== undefined ? { amountPaid, change } : null
       );
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -546,77 +553,106 @@ export default function POS() {
         <div className="p-3 sm:p-4 lg:p-6 max-w-[1600px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 flex flex-col gap-4">
-              <Card>
+              <Card className="transition-all duration-300">
                 <CardHeader className="pb-3 sm:pb-4">
                   <CardTitle className="text-base sm:text-lg">
                     Product Search
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+
+                <CardContent className="space-y-3">
+                  {/* 🔍 Search */}
                   <ProductSearch
-                    products={mockProducts}
+                    products={[]} // <-- optional: can leave empty, we'll fetch products inside ProductGridDropdown
                     onSelectProduct={handleAddToCart}
                     handleScanning={handleScanning}
                     search={search}
-                    onKeyDown={performSearch}
                     setSearch={setSearch}
                     result={result}
                     setResult={setResult}
                     autoFocus
                   />
+
+                  {/* 🟦 Category Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={
+                        activeCategory === "mobile" ? "default" : "outline"
+                      }
+                      onClick={() => setActiveCategory("mobile")}
+                    >
+                      Mobile Products
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant={
+                        activeCategory === "accessory" ? "default" : "outline"
+                      }
+                      onClick={() => setActiveCategory("accessory")}
+                    >
+                      Accessory Products
+                    </Button>
+                  </div>
+
+                  {/* ⬇️ EXPANDING AREA (pushes card down) */}
+                  {activeCategory && (
+                    <div className="mt-3 border-t pt-3 animate-in slide-in-from-top-2 fade-in duration-200">
+                      <ProductGridDropdown
+                        category={activeCategory!} // non-null assertion
+                        cart={cart}
+                        onSelectProduct={handleAddToCart}
+                        onClose={() => setActiveCategory(null)}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleScanning}
-                  data-testid="button-scan-barcode"
-                  className="flex-shrink-0"
-                >
-                  <Camera className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Scan Barcode</span>
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleHoldOrder}
                   disabled={cart.length === 0}
                   data-testid="button-hold-order"
-                  className="flex-shrink-0"
+                  className="flex-1 min-w-[70px] flex items-center justify-center"
                 >
                   <PauseCircle className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Hold</span>
                 </Button>
+
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleRecallOrder}
                   disabled={heldOrders.length === 0}
                   data-testid="button-recall-order"
-                  className="flex-shrink-0"
+                  className="flex-1 min-w-[70px] flex items-center justify-center"
                 >
                   <RotateCcw className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Recall</span>
                 </Button>
+
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleClearCart}
                   disabled={cart.length === 0}
                   data-testid="button-clear-cart"
-                  className="flex-shrink-0"
+                  className="flex-1 min-w-[70px] flex items-center justify-center"
                 >
                   <Trash2 className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Clear</span>
                 </Button>
+
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleOpenDrawer}
                   data-testid="button-open-drawer"
-                  className="flex-shrink-0"
+                  className="flex-1 min-w-[70px] flex items-center justify-center"
                 >
                   <DollarSign className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Drawer</span>
@@ -626,7 +662,7 @@ export default function POS() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full"
+                    className="w-full flex items-center justify-center"
                     disabled
                   >
                     <span className="text-xs text-muted-foreground mr-1">
@@ -711,7 +747,7 @@ export default function POS() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {quickProducts.map((productId) => {
                             const product = mockProducts.find(
-                              (p) => p.id === productId,
+                              (p) => p.id === productId
                             );
                             if (!product) return null;
 
@@ -787,7 +823,7 @@ export default function POS() {
               <Check className="w-5 h-5 mr-2" />
               Checkout ({cart.reduce(
                 (sum, item) => sum + item.quantity,
-                0,
+                0
               )}{" "}
               items)
             </Button>

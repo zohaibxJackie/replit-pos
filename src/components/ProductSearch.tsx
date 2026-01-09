@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Search, Barcode, XCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Search, XCircle, Camera } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "./ui/button";
 
 interface Product {
   id: string;
@@ -25,16 +26,25 @@ interface ProductSearchProps {
   onKeyDown: () => void;
 }
 
-export default function ProductSearch({ products, onSelectProduct, autoFocus = false, handleScanning, search, setSearch, result, setResult }: ProductSearchProps) {
-  
+export default function ProductSearch({
+  products,
+  onSelectProduct,
+  autoFocus = false,
+  handleScanning,
+  search,
+  setSearch,
+  result,
+  setResult,
+}: ProductSearchProps) {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     if (search.trim()) {
-      const filtered = products.filter(p => 
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.barcode?.includes(search)
+      const filtered = products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(search.toLowerCase()) ||
+          p.barcode?.includes(search)
       );
       setFilteredProducts(filtered);
       setShowResults(true);
@@ -46,31 +56,53 @@ export default function ProductSearch({ products, onSelectProduct, autoFocus = f
 
   const handleSelect = (product: Product) => {
     onSelectProduct(product);
-    setSearch('');
+    setSearch("");
     setShowResults(false);
   };
   const clearInputField = () => {
     setSearch("");
-    setResult("")
-  }
+    setResult("");
+  };
 
   return (
     <div className="relative">
-      <div className="relative">
+      <div className="relative w-full">
+        {/* Search icon on left */}
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+
+        {/* Input with extra padding on right for button */}
         <Input
           type="text"
           placeholder="Search by name or scan barcode..."
           value={search || result}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 pr-10"
+          className="pl-10 pr-24" // space for camera button
           autoFocus={autoFocus}
           data-testid="input-product-search"
         />
-        <Barcode onClick={() => {handleScanning()}} className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        {(search != "" || result != "") ? <XCircle onClick={() => {clearInputField()}} className="absolute right-8 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" /> : ''}
+
+        {/* Camera button inside input on right */}
+        <div className="absolute right-0 top-1/2 transform -translate-y-1/2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleScanning}
+            className="flex items-center h-8"
+          >
+            <Camera className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Scan</span>
+          </Button>
+        </div>
+
+        {/* Clear X button */}
+        {(search !== "" || result !== "") && (
+          <XCircle
+            onClick={clearInputField}
+            className="absolute right-24 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground cursor-pointer"
+          />
+        )}
       </div>
-      
+
       {showResults && filteredProducts.length > 0 && (
         <Card className="absolute z-10 w-full mt-2 max-h-80 overflow-y-auto">
           {filteredProducts.map((product) => (
@@ -89,7 +121,9 @@ export default function ProductSearch({ products, onSelectProduct, autoFocus = f
               <div className="text-right">
                 <div className="font-semibold">${product.price}</div>
                 {product.stock < product.lowStockThreshold && (
-                  <Badge variant="destructive" className="text-xs">Low Stock</Badge>
+                  <Badge variant="destructive" className="text-xs">
+                    Low Stock
+                  </Badge>
                 )}
               </div>
             </button>

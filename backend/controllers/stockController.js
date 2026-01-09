@@ -756,6 +756,8 @@ export const getStockSummary = async (req, res) => {
   }
 };
 
+
+
 export default {
   getStock,
   getStockById,

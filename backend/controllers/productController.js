@@ -10,6 +10,7 @@ import {
   customers,
   taxes,
   stockBatches,
+  shops,
 } from "../../shared/schema.js";
 import { eq, and, desc, ilike, sql, or, lte, ne, inArray } from "drizzle-orm";
 import { paginationHelper } from "../utils/helpers.js";
@@ -1470,7 +1471,7 @@ export const getAccessoryVariants = async (req, res) => {
 
 export const getAccessoryCatalog = async (req, res) => {
   try {
-    const { search, page = 1, limit = 10 } = req.query;
+    const { search, page = 1, limit = 10, shopId } = req.query;
 
     const conditions = [
       eq(variant.isActive, true),
@@ -1492,12 +1493,10 @@ export const getAccessoryCatalog = async (req, res) => {
         salePrice: stockBatches.salePrice,
         notes: stockBatches.notes,
         barcode: stockBatches.barcode,
-
-        shopId: shops.id, // ✅ include shop info
-        shopName: shops.name,
-
-        vendorId: vendors.id, // ✅ include vendor info
-        vendorName: vendors.name,
+        vendorId: vendors.id ?? null,
+        vendorName: vendors.name ?? null,
+        shopId: shops.id ?? null,
+        shopName: shops.name ?? null,
       })
       .from(stockBatches)
       .leftJoin(variant, eq(stockBatches.variantId, variant.id))
@@ -1515,8 +1514,8 @@ export const getAccessoryCatalog = async (req, res) => {
         item.quantity === 0
           ? "out_of_stock"
           : item.quantity < 5
-            ? "low_stock"
-            : "in_stock",
+          ? "low_stock"
+          : "in_stock",
     }));
 
     res.json({
