@@ -62,7 +62,7 @@ function SearchableSelect({
   isLoading = false,
   disabled = false,
 }: {
-  items: { id: string; [k: string]: any }[];
+  items: { id: string;[k: string]: any }[];
   placeholder?: string;
   value?: string;
   onChange: (v: string) => void;
@@ -410,7 +410,8 @@ export function MobileProductForm({
   const { data: brandsData, isLoading: brandsLoading } = useQuery<{
     brands: Array<{ id: string; name: string }>;
   }>({
-    queryKey: ["/api/products/brands"],
+    queryKey: ["/api/products/brands", "mobile"],
+    queryFn: () => api.products.getBrands({ category: "mobile" }),
   });
 
   const { data: modelsData, isLoading: modelsLoading } = useQuery({
@@ -471,9 +472,8 @@ export function MobileProductForm({
       },
       ...taxList.map((tax) => ({
         id: tax.id,
-        name: `${tax.name} (${
-          tax.type === "percent" ? tax.value + "%" : tax.value
-        })`,
+        name: `${tax.name} (${tax.type === "percent" ? tax.value + "%" : tax.value
+          })`,
         type: tax.type as "percent" | "flat",
         value: tax.value,
         isActive: tax.isActive,

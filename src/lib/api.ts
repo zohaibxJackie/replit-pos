@@ -439,10 +439,14 @@ export const api = {
       );
     },
 
-    getBrands: () =>
-      request<{ brands: Array<{ id: string; name: string }> }>(
-        "/api/products/brands"
-      ),
+    getBrands: (params?: { category?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.category) searchParams.set("category", params.category);
+      const query = searchParams.toString();
+      return request<{ brands: Array<{ id: string; name: string }> }>(
+        query ? `/api/products/brands?${query}` : "/api/products/brands"
+      );
+    },
 
     getCategories: () =>
       request<{ categories: Array<{ id: string; name: string }> }>(

@@ -123,7 +123,6 @@ export default function InterStockTransferModal({ isOpen, onClose, shops }: Inte
     if (stockData?.stockQty?.stockCount !== undefined) {
       setSelectedQuantity(stockData.stockQty.stockCount);
     }
-    console.log(selectedQuantity)
   }, [stockData]);
 
   const products = productsData?.products || [];

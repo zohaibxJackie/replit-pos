@@ -10,7 +10,7 @@ export const getVendors = async (req, res) => {
     const { userId } = req.query;
 
     const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    console.log(user)
+    // console.log(user)
     if (user.length < 1) {
       return res.status(400).json({ error: req.t("vendors.invalid_user_id") })
     }
@@ -60,7 +60,7 @@ export const getVendorById = async (req, res) => {
     const { id } = req.params;
 
     const [vendor] = await db.select().from(vendors).where(
-      and(eq(vendors.id, id), eq(vendors.shopId, req.userShopIds?.[0]))
+      and(eq(vendors.id, id), eq(vendors.createdBy, req.user?.id))
     ).limit(1);
 
     if (!vendor) {
@@ -83,7 +83,7 @@ export const createVendor = async (req, res) => {
     const { name, phone, email, address } = req.validatedBody;
 
     const [newVendor] = await db.insert(vendors).values({
-      shopId: req.userShopIds?.[0],
+      createdBy: req.user?.id,
       name,
       phone: phone || null,
       email: email || null,
@@ -103,7 +103,7 @@ export const updateVendor = async (req, res) => {
     const { name, phone, email, address } = req.body;
 
     const [existingVendor] = await db.select().from(vendors).where(
-      and(eq(vendors.id, id), eq(vendors.shopId, req.userShopIds?.[0]))
+      and(eq(vendors.id, id), eq(vendors.createdBy, req.user?.id))
     ).limit(1);
 
     if (!existingVendor) {
@@ -133,7 +133,7 @@ export const deleteVendor = async (req, res) => {
     const { id } = req.params;
 
     const [existingVendor] = await db.select().from(vendors).where(
-      and(eq(vendors.id, id), eq(vendors.shopId, req.userShopIds?.[0]))
+      and(eq(vendors.id, id), eq(vendors.createdBy, req.user?.id))
     ).limit(1);
 
     if (!existingVendor) {
@@ -162,7 +162,7 @@ export const getVendorProducts = async (req, res) => {
     const { id } = req.params;
 
     const [vendor] = await db.select().from(vendors).where(
-      and(eq(vendors.id, id), eq(vendors.shopId, req.userShopIds?.[0]))
+      and(eq(vendors.id, id), eq(vendors.createdBy, req.user?.id))
     ).limit(1);
 
     if (!vendor) {

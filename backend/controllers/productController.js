@@ -1161,6 +1161,18 @@ export const getBrands = async (req, res) => {
           and(eq(brand.isActive, true), eq(product.categoryId, categoryId))
         )
         .orderBy(brand.name);
+    } else {
+      const { category } = req.query;
+      if (category) {
+        query = db
+          .select({
+            id: brand.id,
+            name: brand.name,
+          })
+          .from(brand)
+          .where(and(eq(brand.isActive, true), ilike(brand.category, category)))
+          .orderBy(brand.name);
+      }
     }
 
     const brands = await query;
@@ -1503,8 +1515,8 @@ export const getAccessoryCatalog = async (req, res) => {
         item.quantity === 0
           ? "out_of_stock"
           : item.quantity < 5
-          ? "low_stock"
-          : "in_stock",
+            ? "low_stock"
+            : "in_stock",
     }));
 
     res.json({
