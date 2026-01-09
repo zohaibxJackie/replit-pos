@@ -68,8 +68,8 @@ export function useLogin() {
       return response;
     },
     onSuccess: (data) => {
-      if (data.success && data.user && data.token) {
-        loginSuccess(data.user, data.token, data.shops || []);
+      if (data.success && data.user) {
+        loginSuccess(data.user, data.shops || []);
       }
     },
     onSettled: () => {
@@ -88,8 +88,8 @@ export function useSignup() {
       return response;
     },
     onSuccess: (data) => {
-      if (data.success && data.user && data.token) {
-        loginSuccess(data.user, data.token, data.shops || []);
+      if (data.success && data.user) {
+        loginSuccess(data.user, data.shops || []);
       }
     },
     onSettled: () => {

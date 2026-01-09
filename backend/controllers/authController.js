@@ -11,13 +11,13 @@ const getUserShops = async (userId) => {
   const userShops = await db.select({ shopId: userShop.shopId })
     .from(userShop)
     .where(eq(userShop.userId, userId));
-  
+
   const shopIds = userShops.map(us => us.shopId);
-  
+
   if (shopIds.length === 0) {
     return [];
   }
-  
+
   const shopList = await db.select().from(shops).where(inArray(shops.id, shopIds));
   return shopList;
 };
@@ -48,7 +48,7 @@ export const login = async (req, res) => {
 
     const userShops = await getUserShops(user.id);
     const primaryShop = userShops.length > 0 ? userShops[0] : null;
-    
+
     const accessToken = jwt.sign(
       { userId: user.id, role: user.role, shopIds: userShops.map(s => s.id) },
       jwtConfig.secret,
@@ -69,14 +69,23 @@ export const login = async (req, res) => {
       deviceInfo: req.headers['user-agent']
     });
 
+    // Set cookies
+    res.cookie('accessToken', accessToken, {
+      ...jwtConfig.cookie,
+      maxAge: jwtConfig.cookie.maxAge // 7 days
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      ...jwtConfig.cookie,
+      maxAge: jwtConfig.cookie.refreshMaxAge // 30 days
+    });
+
     res.json({
       success: true,
       message: req.t('auth.login_successful'),
       user: sanitizeUser(user),
-      token: accessToken,
       shop: primaryShop,
-      shops: userShops,
-      refreshToken
+      shops: userShops
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -125,7 +134,7 @@ export const register = async (req, res) => {
         userId: newUser.id,
         shopId: newShop.id
       });
-      
+
       userShops = [newShop];
     }
 
@@ -135,11 +144,16 @@ export const register = async (req, res) => {
       { expiresIn: jwtConfig.expiresIn }
     );
 
+    // Set cookies
+    res.cookie('accessToken', accessToken, {
+      ...jwtConfig.cookie,
+      maxAge: jwtConfig.cookie.maxAge
+    });
+
     res.status(201).json({
       success: true,
       message: req.t('auth.registration_successful'),
-      user: sanitizeUser(newUser),
-      token: accessToken
+      user: sanitizeUser(newUser)
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -152,6 +166,11 @@ export const logout = async (req, res) => {
     if (req.user) {
       await db.update(users).set({ refreshToken: null }).where(eq(users.id, req.user.id));
     }
+
+    // Clear cookies
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
     res.json({ success: true, message: req.t('auth.logout_successful') });
   } catch (error) {
     console.error('Logout error:', error);
@@ -161,7 +180,7 @@ export const logout = async (req, res) => {
 
 export const refreshToken = async (req, res) => {
   try {
-    const { refreshToken: token } = req.body;
+    const { refreshToken: token } = req.cookies;
 
     if (!token) {
       return res.status(401).json({ error: req.t('auth.refresh_token_required') });
@@ -177,14 +196,20 @@ export const refreshToken = async (req, res) => {
     }
 
     const userShops = await getUserShops(user.id);
-    
+
     const accessToken = jwt.sign(
       { userId: user.id, role: user.role, shopIds: userShops.map(s => s.id) },
       jwtConfig.secret,
       { expiresIn: jwtConfig.expiresIn }
     );
 
-    res.json({ accessToken });
+    // Set new access token cookie
+    res.cookie('accessToken', accessToken, {
+      ...jwtConfig.cookie,
+      maxAge: jwtConfig.cookie.maxAge
+    });
+
+    res.json({ success: true });
   } catch (error) {
     console.error('Refresh token error:', error);
     res.status(401).json({ error: req.t('auth.invalid_refresh_token') });
@@ -237,7 +262,7 @@ export const forgotPassword = async (req, res) => {
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (!user) {
-      return res.json({ 
+      return res.json({
         message: req.t('auth.password_reset_email_sent')
       });
     }
@@ -245,7 +270,7 @@ export const forgotPassword = async (req, res) => {
     if (user.role === 'sales_person') {
       const userShops = await getUserShops(user.id);
       const shop = userShops.length > 0 ? userShops[0] : null;
-      
+
       if (shop) {
         const [existingRequest] = await db.select().from(passwordResetRequests)
           .where(and(
@@ -272,13 +297,13 @@ export const forgotPassword = async (req, res) => {
         }
       }
 
-      return res.json({ 
+      return res.json({
         message: req.t('auth.password_reset_request_sent_admin'),
         type: 'admin_notification'
       });
     }
 
-    return res.json({ 
+    return res.json({
       message: req.t('auth.password_reset_email_sent'),
       type: 'email'
     });

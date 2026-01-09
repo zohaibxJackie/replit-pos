@@ -45,19 +45,6 @@ export interface CustomerCreateType {
   status?: string;
 }
 
-function getAuthToken(): string | null {
-  try {
-    const authStorage = localStorage.getItem("auth-storage");
-    if (authStorage) {
-      const parsed = JSON.parse(authStorage);
-      return parsed?.state?.token || null;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 function getCurrentLanguage(): string {
   return i18n.language || "en";
 }
@@ -68,7 +55,7 @@ async function request<T>(
 ): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
-  const token = getAuthToken();
+
   const currentLang = getCurrentLanguage();
 
   const config: RequestInit = {
@@ -77,7 +64,6 @@ async function request<T>(
       "Content-Type": "application/json",
       "Accept-Language": currentLang,
       ...headers,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     credentials: "include",
   };
